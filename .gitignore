@@ -1,0 +1,6 @@
+# 3rd party lib binaries should not be added to version control
+modules/3rd
+
+# Project specific ignores
+/scripts/
+!/scripts/move_gitflow_contents_here.sh
