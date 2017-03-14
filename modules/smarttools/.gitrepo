@@ -7,5 +7,5 @@
 	remote = git@github.com:fmidev/smartmet-library-smarttools.git
 	branch = master
 	commit = 9d8554600935052088f8193f4d0d3a6c5f388656
-	parent = f79ee364ffeb85b9bd7bb02e3a1c5fcead1feb66
+	parent = f3c0e58b79209cca8d0a2b788bde33884886cb3d
 	cmdver = 0.3.1
