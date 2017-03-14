@@ -6,6 +6,6 @@
 [subrepo]
 	remote = git@github.com:fmidev/smartmet-library-smarttools.git
 	branch = master
-	commit = cabe87cc4a6d3cbf63d1231e540cfbbfa5c68302
-	parent = 80bce82ec68fa147b0295a70b4ee3de4df7b4bd3
+	commit = 9d8554600935052088f8193f4d0d3a6c5f388656
+	parent = f79ee364ffeb85b9bd7bb02e3a1c5fcead1feb66
 	cmdver = 0.3.1
