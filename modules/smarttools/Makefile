@@ -75,8 +75,7 @@ CFLAGS_PROFILE = $(DEFINES) $(FLAGS) $(FLAGS_PROFILE) -DNDEBUG -O2 -g -pg
 LIBS = -L$(libdir) \
 	-lboost_filesystem \
 	-lboost_regex \
-	-lboost_thread \
-	-lgdal
+	-lboost_thread
 
 # What to install
 
