@@ -31,12 +31,12 @@
 // Usage: type inputTiedosto | QDVersionFilter.exe [infoversion=7] [keepCloudSymbol=0=false] >
 // outputTiedosto
 
-#include "NFmiStreamQueryData.h"
-#include "NFmiQueryDataUtil.h"
-#include "NFmiCmdLine.h"
-#include "NFmiValueString.h"
-#include "NFmiStringTools.h"
-#include "NFmiMilliSecondTimer.h"
+#include <newbase/NFmiStreamQueryData.h>
+#include <newbase/NFmiQueryDataUtil.h>
+#include <newbase/NFmiCmdLine.h>
+#include <newbase/NFmiValueString.h>
+#include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiMilliSecondTimer.h>
 
 #include <stdexcept>
 
@@ -97,6 +97,7 @@ void run(int argc, const char *argv[])
   FmiParameterName windGustParId =
       kFmiHourlyMaximumGust;  // täytä totalWind-parametrin windGust osio tällä parametrilla.
                               // Ota pois löytynyt windGust param päätason parametreista.
+
   int maxUsedThreadCount = 0;  // kuinko monta worker-threadia tekee töitä, < 1 -arvot tarkoittaa,
                                // että otetaan kaikki koneen threadit käyttöön
 

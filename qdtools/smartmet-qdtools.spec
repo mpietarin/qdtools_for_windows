@@ -2,7 +2,7 @@
 %define RPMNAME smartmet-%{BINNAME}
 Summary: Command line tools for handling querydata
 Name: %{RPMNAME}
-Version: 17.3.9
+Version: 17.3.22
 Release: 1%{?dist}.fmi
 License: MIT
 Group: Development/Tools
@@ -17,22 +17,22 @@ BuildRequires: libbufr >= 3.2
 BuildRequires: libecbufr
 BuildRequires: libjpeg-devel
 BuildRequires: libpng-devel
-BuildRequires: smartmet-library-calculator-devel >= 17.2.10
-BuildRequires: smartmet-library-gis-devel >= 17.1.18
-BuildRequires: smartmet-library-imagine-devel >= 17.2.10
-BuildRequires: smartmet-library-macgyver-devel >= 17.2.22
-BuildRequires: smartmet-library-newbase-devel >= 17.3.9
+BuildRequires: smartmet-library-calculator-devel >= 17.3.16
+BuildRequires: smartmet-library-gis-devel >= 17.3.14
+BuildRequires: smartmet-library-imagine-devel >= 17.3.14
+BuildRequires: smartmet-library-macgyver-devel >= 17.3.16
+BuildRequires: smartmet-library-newbase-devel >= 17.3.22
 BuildRequires: smartmet-library-smarttools-devel >= 17.3.9
 BuildRequires: mdsplib >= 14.9.3
 BuildRequires: netcdf-devel >= 4.3.3.1
 BuildRequires: zlib-devel
 BuildRequires: gdal-devel >= 1.11.4
 Requires: smartmet-timezones >= 17.3.6
-Requires: smartmet-library-calculator >= 17.2.10
-Requires: smartmet-library-gis >= 17.1.18
-Requires: smartmet-library-imagine >= 17.2.10
-Requires: smartmet-library-macgyver >= 17.2.22
-Requires: smartmet-library-newbase >= 17.3.9
+Requires: smartmet-library-calculator >= 17.3.16
+Requires: smartmet-library-gis >= 17.3.14
+Requires: smartmet-library-imagine >= 17.3.14
+Requires: smartmet-library-macgyver >= 17.3.16
+Requires: smartmet-library-newbase >= 17.3.22
 Requires: smartmet-library-smarttools >= 17.3.9
 Requires: grib_api >= 1.14.0
 Requires: hdf5 >= 1.8.12
@@ -86,6 +86,7 @@ Provides: qdpoint = %{Version}
 Provides: qdproject = %{Version} 
 Provides: qdscript = %{Version} 
 Provides: qdset = %{Version} 
+Provides: qdsignificantlevelfilter = %{Version}
 Provides: qdsmoother = %{Version} 
 Provides: qdsounding = %{Version} 
 Provides: qdsoundingindex = %{Version} 
@@ -161,6 +162,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qdproject 
 %{_bindir}/qdscript
 %{_bindir}/qdset
+%{_bindir}/qdsignificantlevelfilter
 %{_bindir}/qdsmoother 
 %{_bindir}/qdsounding 
 %{_bindir}/qdsoundingindex
@@ -182,6 +184,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/smartmet/stations.csv
 
 %changelog
+* Wed Mar 22 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.22-1.fmi
+- h5toqd now works with more parameters
+- h5toqd now allows gain, offset and undetect to be missing
+
+* Tue Mar 14 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.14-2.fmi
+- Recompiled with the latest macgyver
+
+* Tue Mar 14 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.14-1.fmi
+- Added qdsignificantlevelfilter
+
 * Thu Mar  9 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.9-1.fmi
 - Updated to use the latest newbase and smarttools
 
