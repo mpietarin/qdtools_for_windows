@@ -1,7 +1,7 @@
 #include "NFmiStation2GridMask.h"
 #include "NFmiDrawParam.h"
 #include "NFmiGriddingHelperInterface.h"
-#include "NFmiFastInfoUtils.h"
+#include <newbase/NFmiFastInfoUtils.h>
 #include <newbase/NFmiFastQueryInfo.h>
 
 // ****************************************************************************

@@ -1,6 +1,5 @@
 
-#ifndef NFMITEMPCODE_H
-#define NFMITEMPCODE_H
+#pragma once
 
 #include <newbase/NFmiMetTime.h>
 #include <newbase/NFmiStation.h>
@@ -100,4 +99,3 @@ class NFmiTEMPCode
   std::map<double, TEMPLevelData> itsLevels;
 };
 
-#endif  // NFMITEMPCODE_H

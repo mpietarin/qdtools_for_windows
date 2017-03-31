@@ -11,8 +11,7 @@
 // Aseman tiedot esitetään aina yhdellä rivillä, rivejä voi olla kuinka monta tahansa.
 // Asema_is lon lat nimi(rivin loppuun asti)
 
-#ifndef NFMIRAWTEMPSTATIONINFOSYSTEM_H
-#define NFMIRAWTEMPSTATIONINFOSYSTEM_H
+#pragma once
 
 #include <newbase/NFmiHPlaceDescriptor.h>
 #include <newbase/NFmiStation.h>
@@ -97,4 +96,3 @@ class NFmiWmoStationLookUpSystem
                                   // voi olla varoituksia lokiin.
 };
 
-#endif  // NFMIRAWTEMPSTATIONINFOSYSTEM_H

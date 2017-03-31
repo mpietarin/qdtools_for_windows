@@ -29,8 +29,7 @@
 // Changed 26.08.1999/Marko		Lisäsin uuden Find()-metodin.
 //
 //**********************************************************
-#ifndef NFMIDRAWPARAMLIST_H
-#define NFMIDRAWPARAMLIST_H
+#pragma once
 
 #include "NFmiSortedPtrList.h"
 #include <newbase/NFmiDataMatrix.h>
@@ -115,4 +114,3 @@ class NFmiDrawParamList
   bool fHasBorrowedParams;  // onko tällä listalla 'lainattuja' parametreja
 };
 
-#endif

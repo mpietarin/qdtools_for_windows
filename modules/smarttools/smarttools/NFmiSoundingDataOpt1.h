@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISOUNDINGDATAOPT1_H
-#define NFMISOUNDINGDATAOPT1_H
+#pragma once
 
 #include "NFmiSoundingData.h"
 
@@ -228,4 +227,3 @@ class NFmiSoundingDataOpt1
   LiftedAirParcelCacheType itsLiftedAirParcelCache;
 };
 
-#endif  // NFMISOUNDINGDATAOPT1_H

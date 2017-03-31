@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIINFOAREAMASKSOUNDINGINDEX_H
-#define NFMIINFOAREAMASKSOUNDINGINDEX_H
+#pragma once
 
 #include <newbase/NFmiInfoAreaMask.h>
 #include "NFmiSoundingIndexCalculator.h"
@@ -39,4 +38,3 @@ class NFmiInfoAreaMaskSoundingIndex : public NFmiInfoAreaMask
 
 };  // class NFmiInfoAreaMaskSoundingIndex
 
-#endif  // NFMIINFOAREAMASKSOUNDINGINDEX_H

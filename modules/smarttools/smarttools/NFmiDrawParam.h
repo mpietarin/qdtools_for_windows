@@ -28,8 +28,7 @@
 // päällekkäin)
 //
 //**********************************************************
-#ifndef NFMIDRAWPARAM_H
-#define NFMIDRAWPARAM_H
+#pragma once
 
 #include "NFmiColor.h"
 #include "NFmiMetEditorTypes.h"
@@ -959,4 +958,3 @@ inline std::istream& operator>>(std::istream& is, NFmiDrawParam& item)
 }
 //@}
 
-#endif

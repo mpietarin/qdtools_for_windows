@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMICOLOR_H
-#define NFMICOLOR_H
+#pragma once
 
 #include "FmiColorTypes.h"
 
@@ -240,6 +239,5 @@ inline void NFmiColor::Mix(const NFmiColor &anOtherColor, float mixingRatio)
       (1.F - mixingRatio) * static_cast<float>(itsColor.blue) + mixingRatio * anOtherColor.Blue());
 }
 
-#endif  // NFMICOLOR_H
 
 // ======================================================================

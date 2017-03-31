@@ -1,5 +1,4 @@
-#ifndef NFMIQUERYDATAKEEPER_H
-#define NFMIQUERYDATAKEEPER_H
+#pragma once
 
 #include <newbase/NFmiMilliSecondTimer.h>
 #include <newbase/NFmiDataMatrix.h>
@@ -135,4 +134,3 @@ class NFmiQueryDataSetKeeper
                             // yksikkö on minuutteja
 };
 
-#endif  // NFMIQUERYDATAKEEPER_H

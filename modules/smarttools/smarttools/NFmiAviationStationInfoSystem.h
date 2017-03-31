@@ -5,8 +5,7 @@
  */
 // ==========================================================================
 
-#ifndef AVIATIONSTATION_H
-#define AVIATIONSTATION_H
+#pragma once
 
 #include <newbase/NFmiStation.h>
 
@@ -61,6 +60,5 @@ class NFmiAviationStationInfoSystem
   bool fVerboseMode;
 };
 
-#endif  // AVIATIONSTATION_H
 
 // ======================================================================

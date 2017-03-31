@@ -32,8 +32,7 @@
 //  Change Log:
 //
 //**********************************************************
-#ifndef NFMIMULTILEVELMASK_H
-#define NFMIMULTILEVELMASK_H
+#pragma once
 
 #include <newbase/NFmiBitMask.h>
 
@@ -74,4 +73,3 @@ class NFmiMultiLevelMask
   unsigned long itsMaskSize;  //    NFmiBitmask:ien koko.
 };
 
-#endif

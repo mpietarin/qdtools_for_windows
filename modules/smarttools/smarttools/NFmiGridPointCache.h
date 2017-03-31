@@ -5,8 +5,7 @@
 // xy-pisteiden cachea.
 //---------------------------------------------------------- NFmiGridPointCache.h
 
-#ifndef NFMIGRIDPOINTCACHE_H
-#define NFMIGRIDPOINTCACHE_H
+#pragma once
 
 #include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiPoint.h>
@@ -43,4 +42,3 @@ class NFmiGridPointCache
   pointMap itsPointCache;
 };
 
-#endif  // NFMIGRIDPOINTCACHE_H

@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISOUNDINGINDEXCALCULATOR_H
-#define NFMISOUNDINGINDEXCALCULATOR_H
+#pragma once
 
 #include <boost/shared_ptr.hpp>
 
@@ -135,4 +134,3 @@ class NFmiSoundingIndexCalculator
       int theMaxThreadCount = 0);
 };
 
-#endif  // NFMISOUNDINGINDEXCALCULATOR_H

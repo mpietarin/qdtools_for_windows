@@ -4,8 +4,7 @@
 // namespacessa on muutamia helper funktioita ja 'ylimääräisen' datan talletus luokka.
 //---------------------------------------------------------- NFmiDataStoringHelpers.h
 
-#ifndef NFMIDATASTORINGHELPERS_H
-#define NFMIDATASTORINGHELPERS_H
+#pragma once
 
 #include <newbase/NFmiString.h>
 #include <newbase/NFmiStringTools.h>
@@ -137,4 +136,3 @@ inline std::istream &operator>>(std::istream &is,
   return is;
 }
 
-#endif  // NFMIDATASTORINGHELPERS_H

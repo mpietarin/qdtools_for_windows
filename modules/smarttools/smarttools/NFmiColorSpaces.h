@@ -5,8 +5,7 @@
 // Koodit on pöölitty CodeProject:ista:
 // http://www.codeproject.com/KB/recipes/colorspace1.aspx
 
-#ifndef NFMICOLORSPACES_H
-#define NFMICOLORSPACES_H
+#pragma once
 
 #include "NFmiColor.h"
 
@@ -56,4 +55,3 @@ RGB_color HSLtoRGB(double h, double s, double l);
 NFmiColor GetBrighterColor(const NFmiColor &theColor, double theBrightningFactor);
 }
 
-#endif

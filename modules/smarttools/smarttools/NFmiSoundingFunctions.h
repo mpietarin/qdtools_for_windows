@@ -8,8 +8,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISOUNDINGFUNCTIONS_H
-#define NFMISOUNDINGFUNCTIONS_H
+#pragma once
 
 #include <newbase/NFmiGlobals.h>
 #include <cmath>
@@ -64,4 +63,3 @@ MyPoint CalcTwoLineIntersectionPoint(const MyPoint &P1,
                                      const MyPoint &P4);
 }
 
-#endif  // NFMISOUNDINGDATA_H

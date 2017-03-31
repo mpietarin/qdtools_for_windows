@@ -4,8 +4,7 @@
  * Kieli versiot stringeihin tulevat täältä.
  */
 
-#ifndef NFMIDICTIONARYFUNCTION_H
-#define NFMIDICTIONARYFUNCTION_H
+#pragma once
 
 #include <newbase/NFmiSettings.h>
 
@@ -13,4 +12,3 @@
 // dokumenttia
 std::string GetDictionaryString(const char *theMagicWord);
 
-#endif

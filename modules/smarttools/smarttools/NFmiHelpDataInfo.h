@@ -7,8 +7,7 @@
 // NFmiHelpDataInfoSystem-luokka taas pitää sisällään kaikki Metkun editorin
 // käyttämät apudatat.
 
-#ifndef NFMIHELPDATAINFO_H
-#define NFMIHELPDATAINFO_H
+#pragma once
 
 #include <newbase/NFmiInfoData.h>
 #include <newbase/NFmiDataIdent.h>
@@ -290,4 +289,3 @@ class NFmiHelpDataInfoSystem
   std::string itsBaseNameSpace;
 };
 
-#endif  // NFMIHELPDATAINFO_H

@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISOUNDINGDATA_H
-#define NFMISOUNDINGDATA_H
+#pragma once
 
 #include <newbase/NFmiMetTime.h>
 #include <newbase/NFmiLocation.h>
@@ -163,4 +162,3 @@ class NFmiSoundingData
   bool fHeightDataAvailable;
 };
 
-#endif  // NFMISOUNDINGDATA_H

@@ -13,8 +13,7 @@
  * funktioilla.
  */
 // ======================================================================
-#ifndef NFMISMARTTOOLUTIL_H
-#define NFMISMARTTOOLUTIL_H
+#pragma once
 
 #include <newbase/NFmiDataMatrix.h>
 #include <string>
@@ -60,4 +59,3 @@ class NFmiSmartToolUtil
                                      bool fMakeStaticIfOneTimeStepData);
   static std::string GetWorkingDirectory(void);
 };
-#endif  // NFMISMARTTOOLUTIL_H

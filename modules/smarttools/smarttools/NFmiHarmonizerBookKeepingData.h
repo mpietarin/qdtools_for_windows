@@ -1,5 +1,4 @@
-#ifndef NFMIHARMONIZERBOOKKEEPINGDATA_H
-#define NFMIHARMONIZERBOOKKEEPINGDATA_H
+#pragma once
 
 #include <newbase/NFmiMetTime.h>
 #include <newbase/NFmiParamBag.h>
@@ -32,4 +31,3 @@ class NFmiHarmonizerBookKeepingData
       itsHarmonizerParams;  // tähän merkitään parametrit, joita on muokattu eri työkaluilla.
 };
 
-#endif  // NFMIHARMONIZERBOOKKEEPINGDATA_H

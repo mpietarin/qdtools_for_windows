@@ -27,8 +27,7 @@
 //  Change Log:
 //
 //**********************************************************
-#ifndef NFMIUNDOABLEMULTILEVELMASK_H
-#define NFMIUNDOABLEMULTILEVELMASK_H
+#pragma once
 
 #include <newbase/NFmiPtrList.h>
 
@@ -67,4 +66,3 @@ class NFmiUndoableMultiLevelMask
   int itsCurrentRedoLevel;
 };
 
-#endif

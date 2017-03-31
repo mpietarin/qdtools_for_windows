@@ -91,6 +91,7 @@ class NFmiSmartToolIntepreter
  public:
   typedef std::map<std::string, FmiProducerName> ProducerMap;
   typedef std::map<std::string, double> ConstantMap;  // esim. MISS 32700 tai PI 3.14159
+  typedef std::map<std::string, FmiParameterName> ParamMap;
   void Interpret(const std::string &theMacroText, bool fThisIsMacroParamSkript = false);
 
   NFmiSmartToolIntepreter(NFmiProducerSystem *theProducerSystem,
@@ -114,7 +115,6 @@ class NFmiSmartToolIntepreter
   std::unique_ptr<NFmiExtraMacroParamData> GetOwnershipOfExtraMacroParamData();
 
  private:
-  typedef std::map<std::string, FmiParameterName> ParamMap;
 
   bool CheckoutPossibleNextCalculationBlockVector(
       boost::shared_ptr<NFmiSmartToolCalculationBlockInfoVector> &theBlockVector);

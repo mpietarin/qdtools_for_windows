@@ -24,8 +24,7 @@
 //					luontiin mukaan tiedon levelistä.
 //
 //**********************************************************
-#ifndef NFMIDRAWPARAMFACTORY_H
-#define NFMIDRAWPARAMFACTORY_H
+#pragma once
 
 #include <boost/shared_ptr.hpp>
 
@@ -56,4 +55,3 @@ class NFmiDrawParamFactory
   bool fOnePressureLevelDrawParam;
 };
 
-#endif

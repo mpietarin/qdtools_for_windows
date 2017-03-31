@@ -26,8 +26,7 @@
 //  Change Log:
 //
 //**********************************************************
-#ifndef NFMISORTEDPTRLIST_H
-#define NFMISORTEDPTRLIST_H
+#pragma once
 
 #include <newbase/NFmiPtrList.h>
 
@@ -90,4 +89,3 @@ class NFmiSortedPtrList : public NFmiPtrList<Type>
   bool fAscending;  //   Määrää listan järjestyksen (true = nouseva).
 };
 
-#endif
