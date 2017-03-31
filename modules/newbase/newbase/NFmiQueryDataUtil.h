@@ -456,6 +456,20 @@ class _FMI_DLL NFmiQueryDataUtil
                                           bool fDoaccuratePrecip,
                                           bool fForceTimeBag = false);
 
+  static NFmiQueryData *MakeCombineParams(NFmiFastQueryInfo &theSourceInfo,
+      double theWantedInfoVersion,
+      bool fKeepCloudSymbolParameter,
+      bool fDoTotalWind,
+      bool fDoWeatherAndCloudiness,
+      FmiParameterName theWindGustParId,
+      const std::vector<int> &thePrecipFormParIds,
+      const std::vector<int> &theFogParIds,
+      const std::vector<int> &thePotParIds,
+      bool fAllowLessParamsWhenCreatingWeather,
+      int theMaxUsedThreadCount,
+      bool fDoaccuratePrecip,
+      bool fForceTimeBag = false);
+
   static NFmiQueryData *CreateEmptyData(NFmiQueryInfo &srcInfo);
   static NFmiQueryData *CreateEmptyData(NFmiQueryInfo &srcInfo,
                                         const std::string &theFilename,

@@ -2423,7 +2423,7 @@ NFmiQueryData *NFmiQueryDataUtil::CombineTimes(checkedVector<std::string> &theFi
  */
 // ----------------------------------------------------------------------
 
-void WeatherAndCloudinessFromHessaa(NFmiFastQueryInfo &theSourceInfo,
+static void WeatherAndCloudinessFromHessaa(NFmiFastQueryInfo &theSourceInfo,
                                     NFmiFastQueryInfo &theDestInfo)
 {
   double destInfoVersion = theDestInfo.InfoVersion();
@@ -2454,24 +2454,37 @@ void WeatherAndCloudinessFromHessaa(NFmiFastQueryInfo &theSourceInfo,
   }
 }
 
-static void SetPrecipitationFormValue(
+static void SetSubParamValue(
     NFmiFastQueryInfo &theSourceInfo,
     NFmiWeatherAndCloudiness &theWeather,
-    const std::vector<unsigned long> &thePrecipFormParamIndexVector)
+    const std::vector<unsigned long> &theParamIndexVector,
+    FmiParameterName wantedSubParam)
 {
-  float precipFormValue = kFloatMissing;
-  for (size_t i = 0; i < thePrecipFormParamIndexVector.size(); i++)
+  float subParamValue = kFloatMissing;
+  for (size_t i = 0; i < theParamIndexVector.size(); i++)
   {
     theSourceInfo.ParamIndex(
-        thePrecipFormParamIndexVector[i]);  // asetetaan hetkeksi precipForm parametri päälle
+        theParamIndexVector[i]);  // asetetaan hetkeksi precipForm parametri päälle
     if (theSourceInfo.FloatValue() != kFloatMissing)
     {
-      precipFormValue = theSourceInfo.FloatValue();
+        subParamValue = theSourceInfo.FloatValue();
       break;
     }
   }
 
-  if (precipFormValue != kFloatMissing) theWeather.SubValue(precipFormValue, kFmiPrecipitationForm);
+  if (subParamValue != kFloatMissing)
+      theWeather.SubValue(subParamValue, wantedSubParam);
+}
+
+static std::vector<unsigned long> GetParamIndexVector(NFmiFastQueryInfo &theSourceInfo, const std::vector<int> &theParamIds)
+{
+    std::vector<unsigned long> paramIndexVector;
+    for(size_t i = 0; i < theParamIds.size(); i++)
+    {
+        theSourceInfo.Param(static_cast<FmiParameterName>(std::abs(theParamIds[i])));
+        paramIndexVector.push_back(theSourceInfo.ParamIndex());
+    }
+    return paramIndexVector;
 }
 
 // ----------------------------------------------------------------------
@@ -2481,11 +2494,13 @@ static void SetPrecipitationFormValue(
  */
 // ----------------------------------------------------------------------
 
-void WeatherAndCloudinessFromManyParams(NFmiFastQueryInfo &theSourceInfo,
+static void WeatherAndCloudinessFromManyParams(NFmiFastQueryInfo &theSourceInfo,
                                         NFmiFastQueryInfo &theDestInfo,
                                         bool fAllowLessParamsWhenCreatingWeather,
                                         bool fDoaccuratePrecip,
-                                        const std::vector<int> &thePrecipFormParIds)
+                                        const std::vector<int> &thePrecipFormParIds,
+                                        const std::vector<int> &theFogParIds,
+                                        const std::vector<int> &thePotParIds)
 {
   double destInfoVersion = theDestInfo.InfoVersion();
   NFmiWeatherAndCloudiness weather(destInfoVersion);
@@ -2527,12 +2542,9 @@ void WeatherAndCloudinessFromManyParams(NFmiFastQueryInfo &theSourceInfo,
   theDestInfo.Param(kFmiPrecipitationRate);
   unsigned long destAccurePrecipParIndex = theDestInfo.ParamIndex();
 
-  std::vector<unsigned long> precipFormParamIndexVector;
-  for (size_t i = 0; i < thePrecipFormParIds.size(); i++)
-  {
-    theSourceInfo.Param(static_cast<FmiParameterName>(std::abs(thePrecipFormParIds[i])));
-    precipFormParamIndexVector.push_back(theSourceInfo.ParamIndex());
-  }
+  std::vector<unsigned long> precipFormParamIndexVector = ::GetParamIndexVector(theSourceInfo, thePrecipFormParIds);
+  std::vector<unsigned long> fogParamIndexVector = ::GetParamIndexVector(theSourceInfo, theFogParIds);
+  std::vector<unsigned long> potParamIndexVector = ::GetParamIndexVector(theSourceInfo, thePotParIds);
 
   // käydään läpi infon Paramit kFmiWeatherSymbol1, kFmiCloudSymbol, kFmiFogSymbol ja
   // kFmiTotalCloudCover
@@ -2681,9 +2693,13 @@ void WeatherAndCloudinessFromManyParams(NFmiFastQueryInfo &theSourceInfo,
           theSourceInfo.ParamIndex(chParIndex);
           weather.SubValue(theSourceInfo.FloatValue(), kFmiHighCloudCover);
         }
-        if (precipFormParamIndexVector
-                .size())  // tässä on optimoitu mahd. sateen olomuoto arvojen hakua
-          ::SetPrecipitationFormValue(theSourceInfo, weather, precipFormParamIndexVector);
+        // tässä on optimoitu mahd. sateen olomuoto arvojen hakua
+        if (precipFormParamIndexVector.size()) 
+          ::SetSubParamValue(theSourceInfo, weather, precipFormParamIndexVector, kFmiPrecipitationForm);
+        if(fogParamIndexVector.size())
+            ::SetSubParamValue(theSourceInfo, weather, fogParamIndexVector, kFmiFogIntensity);
+        if(potParamIndexVector.size())
+            ::SetSubParamValue(theSourceInfo, weather, potParamIndexVector, kFmiProbabilityThunderstorm);
 
         theDestInfo.FloatValue(weather.TransformedFloatValue());
 
@@ -2859,13 +2875,15 @@ void TotalWindFromUandVcomponents(NFmiFastQueryInfo &theSourceInfo,
   }
 }
 
-void FillCombineParamsOneTime(NFmiFastQueryInfo &theSourceInfo,
+static void FillCombineParamsOneTime(NFmiFastQueryInfo &theSourceInfo,
                               NFmiFastQueryInfo &theDestInfo,
                               const CombinedParamStruct &theCombinedParamStruct,
                               FmiParameterName theWindGustParId,
                               bool fAllowLessParamsWhenCreatingWeather,
                               bool fDoaccuratePrecip,
-                              const std::vector<int> &thePrecipFormParIds)
+                              const std::vector<int> &thePrecipFormParIds,
+                              const std::vector<int> &theFogParIds,
+                              const std::vector<int> &thePotParIds)
 {
   for (theDestInfo.ResetParam(); theDestInfo.NextParam();)
   {
@@ -2883,7 +2901,9 @@ void FillCombineParamsOneTime(NFmiFastQueryInfo &theSourceInfo,
                                        theDestInfo,
                                        fAllowLessParamsWhenCreatingWeather,
                                        fDoaccuratePrecip,
-                                       thePrecipFormParIds);
+                                       thePrecipFormParIds,
+                                       theFogParIds,
+                                       thePotParIds);
   else if (theCombinedParamStruct.weather2)
     WeatherAndCloudinessFromHessaa(theSourceInfo, theDestInfo);
 
@@ -2895,14 +2915,31 @@ void FillCombineParamsOneTime(NFmiFastQueryInfo &theSourceInfo,
     TotalWindFromUandVcomponents(theSourceInfo, theDestInfo, theWindGustParId);
 }
 
-void MakeCombineParamsOneThread(NFmiFastQueryInfo &theSourceInfo,
+// Piti luoda uusi luokka että saatoin sitoa muutaman parametrin yhteen nippuun.
+// boost:in thread kun ei tue kuin maksimissaan 10 parametria ja se raja täyttyi.
+struct OptionalParamIdHolder
+{
+    OptionalParamIdHolder(const std::vector<int> &thePrecipFormParIds,
+        const std::vector<int> &theFogParIds,
+        const std::vector<int> &thePotParIds)
+        :itsPrecipFormParIds(thePrecipFormParIds),
+        itsFogParIds(theFogParIds),
+        itsPotParIds(thePotParIds)
+    {}
+
+    std::vector<int> itsPrecipFormParIds;
+    std::vector<int> itsFogParIds;
+    std::vector<int> itsPotParIds;
+};
+
+static void MakeCombineParamsOneThread(NFmiFastQueryInfo &theSourceInfo,
                                 NFmiFastQueryInfo &theDestInfo,
                                 const CombinedParamStruct &theCombinedParamStruct,
                                 FmiParameterName theWindGustParId,
                                 bool fAllowLessParamsWhenCreatingWeather,
                                 NFmiTimeIndexCalculator &theTimeIndexCalculator,
                                 bool fDoaccuratePrecip,
-                                const std::vector<int> &thePrecipFormParIds)
+                                const OptionalParamIdHolder &theParamHolder)
 {
   unsigned long workedTimeIndex = 0;
   for (; theTimeIndexCalculator.GetCurrentTimeIndex(workedTimeIndex);)
@@ -2915,7 +2952,9 @@ void MakeCombineParamsOneThread(NFmiFastQueryInfo &theSourceInfo,
                                theWindGustParId,
                                fAllowLessParamsWhenCreatingWeather,
                                fDoaccuratePrecip,
-                               thePrecipFormParIds);
+                               theParamHolder.itsPrecipFormParIds,
+                               theParamHolder.itsFogParIds,
+                               theParamHolder.itsPotParIds);
     }
   }
 }
@@ -2939,6 +2978,26 @@ static bool WantedWeatherAndCloudinessParamsFound(NFmiFastQueryInfo &theInfo,
   return false;
 }
 
+static void RemoveOptionalParameters(NFmiFastQueryInfo &theSourceInfo, NFmiParamBag &adjustedParambag, bool *theWeather1, bool *theWeather2, const std::vector<int> &theOptionalParamIds)
+{
+    if(theOptionalParamIds.size() && (*theWeather1 || *theWeather2))
+    {
+        for(size_t i = 0; i < theOptionalParamIds.size(); i++)
+        {
+            if(theOptionalParamIds[i] > 0)
+            {
+                FmiParameterName precipFormParId = static_cast<FmiParameterName>(theOptionalParamIds[i]);
+                if(theSourceInfo.Param(precipFormParId))
+                {
+                    // poista precipForm parametri uudesta parambagistä, koska sillä rakennetaan Weatheria
+                    if(adjustedParambag.SetCurrent(precipFormParId)) 
+                        adjustedParambag.Remove();
+                }
+            }
+        }
+    }
+}
+
 // ----------------------------------------------------------------------
 /*!
  * \param theSourceInfo Undocumented
@@ -2952,7 +3011,7 @@ static bool WantedWeatherAndCloudinessParamsFound(NFmiFastQueryInfo &theInfo,
  */
 // ----------------------------------------------------------------------
 
-NFmiParamBag CheckAndMakeCombinedParamBag(NFmiFastQueryInfo &theSourceInfo,
+static NFmiParamBag CheckAndMakeCombinedParamBag(NFmiFastQueryInfo &theSourceInfo,
                                           bool *theWeather1,
                                           bool *theWeather2,
                                           bool *theWind1,
@@ -2963,6 +3022,8 @@ NFmiParamBag CheckAndMakeCombinedParamBag(NFmiFastQueryInfo &theSourceInfo,
                                           bool fDoWeatherAndCloudiness,
                                           FmiParameterName theWindGustParId,
                                           const std::vector<int> &thePrecipFormParIds,
+                                          const std::vector<int> &theFogParIds,
+                                          const std::vector<int> &thePotParIds,
                                           bool fAllowLessParamsWhenCreatingWeather,
                                           bool fDoaccuratePrecip)
 {
@@ -3076,23 +3137,10 @@ NFmiParamBag CheckAndMakeCombinedParamBag(NFmiFastQueryInfo &theSourceInfo,
     }
 
     // katsotaan vielä precipitation form parametrin tilanne, onko niitä vektorissa ja
-    // poistetaanko
-    // niitä (positiiviset arvot) vai ei (negatiiviset arvot)
-    if (thePrecipFormParIds.size() && (*theWeather1 || *theWeather2))
-    {
-      for (size_t i = 0; i < thePrecipFormParIds.size(); i++)
-      {
-        if (thePrecipFormParIds[i] > 0)
-        {
-          FmiParameterName precipFormParId = static_cast<FmiParameterName>(thePrecipFormParIds[i]);
-          if (theSourceInfo.Param(precipFormParId))
-          {
-            // poista precipForm parametri uudesta parambagistä, koska sillä rakennetaan Weatheria
-            if (bag.SetCurrent(precipFormParId)) bag.Remove();
-          }
-        }
-      }
-    }
+    // poistetaanko niitä (positiiviset arvot) vai ei (negatiiviset arvot)
+    ::RemoveOptionalParameters(theSourceInfo, bag, theWeather1, theWeather2, thePrecipFormParIds);
+    ::RemoveOptionalParameters(theSourceInfo, bag, theWeather1, theWeather2, theFogParIds);
+    ::RemoveOptionalParameters(theSourceInfo, bag, theWeather1, theWeather2, thePotParIds);
   }
 
   return bag;
@@ -3148,16 +3196,47 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
 }
 
 NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSourceInfo,
-                                                    double theWantedInfoVersion,
-                                                    bool fKeepCloudSymbolParameter,
-                                                    bool fDoTotalWind,
-                                                    bool fDoWeatherAndCloudiness,
-                                                    FmiParameterName theWindGustParId,
-                                                    const std::vector<int> &thePrecipFormParIds,
-                                                    bool fAllowLessParamsWhenCreatingWeather,
-                                                    int theMaxUsedThreadCount,
-                                                    bool fDoaccuratePrecip,
-                                                    bool fForceTimeBag)
+    double theWantedInfoVersion,
+    bool fKeepCloudSymbolParameter,
+    bool fDoTotalWind,
+    bool fDoWeatherAndCloudiness,
+    FmiParameterName theWindGustParId,
+    const std::vector<int> &thePrecipFormParIds,
+    bool fAllowLessParamsWhenCreatingWeather,
+    int theMaxUsedThreadCount,
+    bool fDoaccuratePrecip,
+    bool fForceTimeBag)
+{
+    const std::vector<int> theFogParIds;
+    const std::vector<int> thePotParIds;
+    return MakeCombineParams(theSourceInfo,
+        theWantedInfoVersion,
+        fKeepCloudSymbolParameter,
+        fDoTotalWind,
+        fDoWeatherAndCloudiness,
+        theWindGustParId,
+        thePrecipFormParIds,
+        theFogParIds,
+        thePotParIds,
+        fAllowLessParamsWhenCreatingWeather,
+        theMaxUsedThreadCount,
+        fDoaccuratePrecip,
+        fForceTimeBag);
+}
+
+NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSourceInfo,
+    double theWantedInfoVersion,
+    bool fKeepCloudSymbolParameter,
+    bool fDoTotalWind,
+    bool fDoWeatherAndCloudiness,
+    FmiParameterName theWindGustParId,
+    const std::vector<int> &thePrecipFormParIds,
+    const std::vector<int> &theFogParIds,
+    const std::vector<int> &thePotParIds,
+    bool fAllowLessParamsWhenCreatingWeather,
+    int theMaxUsedThreadCount,
+    bool fDoaccuratePrecip,
+    bool fForceTimeBag)
 {
   if (theWantedInfoVersion < 6.)
     theWantedInfoVersion =
@@ -3176,6 +3255,8 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
                                                       fDoWeatherAndCloudiness,
                                                       theWindGustParId,
                                                       thePrecipFormParIds,
+                                                      theFogParIds,
+                                                      thePotParIds,
                                                       fAllowLessParamsWhenCreatingWeather,
                                                       fDoaccuratePrecip));
   NFmiParamDescriptor newParDesc(newParBag);
@@ -3219,7 +3300,9 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
                                  theWindGustParId,
                                  fAllowLessParamsWhenCreatingWeather,
                                  fDoaccuratePrecip,
-                                 thePrecipFormParIds);
+                                 thePrecipFormParIds,
+                                 theFogParIds,
+                                 thePotParIds);
       }
     }
     else
@@ -3235,7 +3318,7 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
 
       unsigned long usedStartTimeIndex = 0;
       unsigned long usedEndTimeIndex = destInfo.SizeTimes() - 1;
-
+      OptionalParamIdHolder paramHolder(thePrecipFormParIds, theFogParIds, thePotParIds);
       NFmiTimeIndexCalculator timeIndexCalculator(usedStartTimeIndex, usedEndTimeIndex);
       boost::thread_group calcParts;
       for (unsigned int i = 0; i < usedThreadCount; i++)
@@ -3247,7 +3330,7 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
                                                fAllowLessParamsWhenCreatingWeather,
                                                boost::ref(timeIndexCalculator),
                                                fDoaccuratePrecip,
-                                               thePrecipFormParIds));
+                                               paramHolder));
       calcParts.join_all();  // odotetaan että threadit lopettavat
     }
   }
