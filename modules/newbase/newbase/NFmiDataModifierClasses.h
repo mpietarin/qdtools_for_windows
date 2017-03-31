@@ -5,31 +5,28 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERCLASSES_H
-#define NFMIDATAMODIFIERCLASSES_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
+#include "NFmiDataModifierAdd.h"
+#include "NFmiDataModifierAllValidAvg.h"
+#include "NFmiDataModifierAllValidClipSum.h"
+#include "NFmiDataModifierAllValidSum.h"
+#include "NFmiDataModifierAvg.h"
 #include "NFmiDataModifierDummy.h"
 #include "NFmiDataModifierExtreme.h"
-#include "NFmiDataModifierMax.h"
-#include "NFmiDataModifierMode.h"
-#include "NFmiDataModifierMin.h"
-#include "NFmiDataModifierAvg.h"
-#include "NFmiDataModifierMedian.h"  // 8.10.03/EL
-#include "NFmiDataModifierAllValidAvg.h"
 #include "NFmiDataModifierGreaterThan.h"
-#include "NFmiDataModifierAdd.h"
-#include "NFmiDataModifierWithModifier.h"
+#include "NFmiDataModifierMax.h"
 #include "NFmiDataModifierMaxMean.h"
+#include "NFmiDataModifierMedian.h"  // 8.10.03/EL
+#include "NFmiDataModifierMin.h"
+#include "NFmiDataModifierMinMax.h"
+#include "NFmiDataModifierMode.h"
+#include "NFmiDataModifierPrecFormUnion.h"
+#include "NFmiDataModifierReplace.h"
 #include "NFmiDataModifierSingleExtremeValuesFilter.h"
 #include "NFmiDataModifierSum.h"
-#include "NFmiDataModifierPrecFormUnion.h"
-#include "NFmiDataModifierAllValidSum.h"
-#include "NFmiDataModifierAllValidClipSum.h"
-#include "NFmiDataModifierMinMax.h"
-#include "NFmiDataModifierReplace.h"
-
-#endif  // NFMIDATAMODIFIERCLASSES_H
+#include "NFmiDataModifierWithModifier.h"
 
 // ======================================================================

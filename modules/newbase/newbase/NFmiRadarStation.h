@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIRADARSTATION_H
-#define NFMIRADARSTATION_H
+#pragma once
 
 #include "NFmiStation.h"
 
@@ -110,6 +109,5 @@ inline NFmiLocation* NFmiRadarStation::Clone(void) const { return new NFmiRadarS
 // ----------------------------------------------------------------------
 
 inline unsigned long NFmiRadarStation::ClassId(void) const { return kNFmiRadarStation; }
-#endif  // NFMIRADARSTATION_H
 
 // ======================================================================

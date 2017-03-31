@@ -5,13 +5,12 @@
  */
 // ======================================================================
 
-#ifndef NFMILEVELBAG_H
-#define NFMILEVELBAG_H
+#pragma once
 
 #include "NFmiGlobals.h"
-#include "NFmiString.h"
 #include "NFmiLevel.h"
 #include "NFmiSize.h"
+#include "NFmiString.h"
 
 class NFmiLevel;
 
@@ -139,6 +138,5 @@ inline NFmiLevel *NFmiLevelBag::Level(unsigned long theIndex) const
 // ----------------------------------------------------------------------
 
 inline const char *NFmiLevelBag::ClassName(void) const { return "NFmiLevelBag"; }
-#endif  // NFMILEVELBAG_H
 
 // ======================================================================

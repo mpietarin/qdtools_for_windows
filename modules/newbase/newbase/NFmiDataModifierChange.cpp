@@ -14,19 +14,19 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierChange::~NFmiDataModifierChange(void) {}
+NFmiDataModifierChange::~NFmiDataModifierChange() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierChange::NFmiDataModifierChange(void)
+NFmiDataModifierChange::NFmiDataModifierChange()
     : itsFirstValueOK(false), itsFirstValue(kFloatMissing), itsLastValue(kFloatMissing)
 {
 }
 
-NFmiDataModifier* NFmiDataModifierChange::Clone(void) const
+NFmiDataModifier* NFmiDataModifierChange::Clone() const
 {
   return new NFmiDataModifierChange(*this);
 }
@@ -64,7 +64,7 @@ void NFmiDataModifierChange::Calculate(NFmiQueryInfo* theQI)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierChange::Clear(void)
+void NFmiDataModifierChange::Clear()
 {
   itsFirstValueOK = false;
   itsFirstValue = kFloatMissing;
@@ -77,7 +77,7 @@ void NFmiDataModifierChange::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierChange::CalculationResult(void)
+float NFmiDataModifierChange::CalculationResult()
 {
   if (!itsFirstValueOK) return kFloatMissing;
 

@@ -23,7 +23,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiStaticTime::NFmiStaticTime(void)
+NFmiStaticTime::NFmiStaticTime()
     : NFmiSortable(), fYear(), fMonth(), fDay(), fHour(), fMin(), fSec()
 {
   _setCurrent();
@@ -115,7 +115,7 @@ NFmiStaticTime::NFmiStaticTime(time_t theTime, bool fMakeLocal)
  */
 // ----------------------------------------------------------------------
 
-void NFmiStaticTime::_setCurrent(void)
+void NFmiStaticTime::_setCurrent()
 {
   struct tm xTime = GetSystemTime();
 
@@ -164,7 +164,7 @@ void NFmiStaticTime::_set2CurrentLocalTime(time_t theTime)
  */
 // ----------------------------------------------------------------------
 
-struct tm NFmiStaticTime::GetSystemTime(void)
+struct tm NFmiStaticTime::GetSystemTime()
 {
   time_t t;
   static_cast<void>(time(&t));
@@ -274,14 +274,14 @@ bool NFmiStaticTime::IsLessThan(const NFmiSortable &aFmiTest) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiStaticTime::SetMissing(void) { fYear = 0; }
+void NFmiStaticTime::SetMissing() { fYear = 0; }
 // ----------------------------------------------------------------------
 /*!
  *
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStaticTime::IsMissing(void) { return fYear == 0; }
+bool NFmiStaticTime::IsMissing() { return fYear == 0; }
 // ----------------------------------------------------------------------
 /*!
  * \param year Undocumented
@@ -430,7 +430,7 @@ void NFmiStaticTime::GetTime(short &hour, short &minute, short &sec) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiStaticTime::ReadDateTime(void)  // testausfunktio!!!!
+void NFmiStaticTime::ReadDateTime()  // testausfunktio!!!!
 {
   short y, m, d, h;
   std::cout << " Input date 'yy mm dd hh': ";
@@ -445,7 +445,7 @@ void NFmiStaticTime::ReadDateTime(void)  // testausfunktio!!!!
  */
 // ----------------------------------------------------------------------
 
-void NFmiStaticTime::XPrint(void) const  // testausfunktio!!!!
+void NFmiStaticTime::XPrint() const  // testausfunktio!!!!
 {
   Print();
 }
@@ -539,7 +539,7 @@ const NFmiString NFmiStaticTime::ToStr(const unsigned long theTimeMask) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiStaticTime::Print(void) const  // testausfunktio!!!!
+void NFmiStaticTime::Print() const  // testausfunktio!!!!
 {
   std::cout << fDay << "." << fMonth << "." << fYear << " " << fHour << ":" << fMin << ":"
             << fSec;  //<< "\n";

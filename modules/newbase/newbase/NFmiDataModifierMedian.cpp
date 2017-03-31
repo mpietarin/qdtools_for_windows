@@ -15,7 +15,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMedian::~NFmiDataModifierMedian(void) {}
+NFmiDataModifierMedian::~NFmiDataModifierMedian() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
@@ -33,7 +33,7 @@ NFmiDataModifierMedian::NFmiDataModifierMedian(const NFmiDataModifierMedian& the
 {
 }
 
-NFmiDataModifier* NFmiDataModifierMedian::Clone(void) const
+NFmiDataModifier* NFmiDataModifierMedian::Clone() const
 {
   return new NFmiDataModifierMedian(*this);
 }
@@ -46,7 +46,7 @@ NFmiDataModifier* NFmiDataModifierMedian::Clone(void) const
 
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierMedian::Median(void)
+float NFmiDataModifierMedian::Median()
 {
   if (itsMedianArray.empty())
     return kFloatMissing;  // mielestäni tämän pitää palauttaa missing value eikä heittää poikkeusta
@@ -86,7 +86,7 @@ void NFmiDataModifierMedian::Calculate(NFmiQueryInfo* theQI) { Calculate(theQI->
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierMedian::Clear(void)
+void NFmiDataModifierMedian::Clear()
 {
   itsMedianArray.resize(0);
   fCalculationResultOk = false;
@@ -98,7 +98,7 @@ void NFmiDataModifierMedian::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierMedian::CalculationResult(void)
+float NFmiDataModifierMedian::CalculationResult()
 {
   if (fCalculationResultOk) return Median();
 

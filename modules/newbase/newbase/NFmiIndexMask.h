@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIINDEXMASK_H
-#define NFMIINDEXMASK_H
+#pragma once
 
 #include "NFmiDef.h"  // for std::auto_ptr
 #include <vector>     // for std::vector
@@ -78,7 +77,5 @@ NFmiIndexMask operator|(const NFmiIndexMask& theLhs, const NFmiIndexMask& theRhs
 NFmiIndexMask operator-(const NFmiIndexMask& theLhs, const NFmiIndexMask& theRhs);
 
 NFmiIndexMask operator^(const NFmiIndexMask& theLhs, const NFmiIndexMask& theRhs);
-
-#endif  // NFMIINDEXMASK_H
 
 // ======================================================================

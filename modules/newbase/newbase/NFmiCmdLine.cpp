@@ -234,14 +234,14 @@ void NFmiCmdLine::Init(int argc, const char **argv, const char *optallow)
     itsArgv[i] = new char[strlen(argv[i]) + 1];
     strcpy(itsArgv[i], argv[i]);
     itsOptionLetters[i] = '?';
-    itsOptionValues[i] = NULL;
-    itsParameters[i] = NULL;
+    itsOptionValues[i] = nullptr;
+    itsParameters[i] = nullptr;
   }
   // Save optallow
   // If optallow is NULL, force it to "" (No options allowed)
   char nopt[1] = "";
   p = optallow;
-  if (p == NULL) p = nopt;
+  if (p == nullptr) p = nopt;
   itsOptionsAllowed = new char[strlen(p) + 1];
   strcpy(itsOptionsAllowed, p);
   // Save Command
@@ -262,7 +262,7 @@ void NFmiCmdLine::Init(int argc, const char **argv, const char *optallow)
       break;
     }
 
-    if ((p = strchr(itsOptionsAllowed, itsArgv[i][1])) == NULL)
+    if ((p = strchr(itsOptionsAllowed, itsArgv[i][1])) == nullptr)
     {
       char e[256];
 #ifdef _MSC_VER
@@ -346,7 +346,7 @@ NFmiCmdLine::~NFmiCmdLine()
  */
 // ----------------------------------------------------------------------
 
-int NFmiCmdLine::NumberofOptions(void) const { return itsOptionCount; }
+int NFmiCmdLine::NumberofOptions() const { return itsOptionCount; }
 // ----------------------------------------------------------------------
 /*!
  * Returns the number of parameters on the command line
@@ -355,7 +355,7 @@ int NFmiCmdLine::NumberofOptions(void) const { return itsOptionCount; }
  */
 // ----------------------------------------------------------------------
 
-int NFmiCmdLine::NumberofParameters(void) const { return itsParameterCount; }
+int NFmiCmdLine::NumberofParameters() const { return itsParameterCount; }
 // ----------------------------------------------------------------------
 /*!
  * Returns the desired parameter from the command line. if the
@@ -383,7 +383,7 @@ const char *NFmiCmdLine::Parameter(int i) const
  */
 // ----------------------------------------------------------------------
 
-char *NFmiCmdLine::Command(void) const { return itsCommand; }
+char *NFmiCmdLine::Command() const { return itsCommand; }
 // ----------------------------------------------------------------------
 /*!
  * Returns the desired option letter from the command line. If the
@@ -459,7 +459,7 @@ const char *NFmiCmdLine::OptionValue(char c) const
   if (i <= itsOptionCount)
     return itsOptionValues[i];
   else
-    return NULL;
+    return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -476,5 +476,5 @@ const char *NFmiCmdLine::OptionValue(char c) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiStatus &NFmiCmdLine::Status(void) const { return itsStatus; }
+const NFmiStatus &NFmiCmdLine::Status() const { return itsStatus; }
 // ======================================================================

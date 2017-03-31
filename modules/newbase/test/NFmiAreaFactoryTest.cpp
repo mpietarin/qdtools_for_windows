@@ -11,16 +11,16 @@
 #include "NFmiGnomonicArea.h"
 #include "NFmiLatLonArea.h"
 #include "NFmiMercatorArea.h"
+#include "NFmiOrthographicArea.h"
 #include "NFmiRotatedLatLonArea.h"
 #include "NFmiStereographicArea.h"
-#include "NFmiOrthographicArea.h"
 #include "NFmiYKJArea.h"
 
-#include <regression/tframe.h>
 #include <boost/shared_ptr.hpp>
+#include <regression/tframe.h>
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
 //! Protection against conflicts with global functions
 namespace NFmiAreaFactoryTest

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMBITMAPAREAMASK_H
-#define NFMBITMAPAREAMASK_H
+#pragma once
 
 #include "NFmiAreaMaskImpl.h"
 #include "NFmiDataIdent.h"
@@ -60,6 +59,7 @@ class _FMI_DLL NFmiBitmapAreaMask : public NFmiAreaMaskImpl
   const NFmiParam* Param(void) const { return itsDataIdent ? itsDataIdent->GetParam() : 0; }
   using NFmiAreaMaskImpl::Level;
   const NFmiLevel* Level(void) const { return itsLevel; }
+
  protected:
   double CalcValueFromLocation(const NFmiPoint& theLatLon) const;  // tee tämä lapsiin!!!
   const NFmiString MakeSubMaskString(
@@ -85,7 +85,5 @@ class _FMI_DLL NFmiBitmapAreaMask : public NFmiAreaMaskImpl
   NFmiLevel* itsLevel;          // omistaa, tuhoaa
 
 };  // class NFmiBitmapAreaMask
-
-#endif  // NFMIBITMAPAREAMASK_H
 
 // ======================================================================

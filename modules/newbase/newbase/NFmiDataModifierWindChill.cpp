@@ -18,8 +18,8 @@
 // ======================================================================
 
 #include "NFmiDataModifierWindChill.h"
-#include "NFmiQueryInfo.h"
 #include "NFmiMetMath.h"
+#include "NFmiQueryInfo.h"
 
 // ----------------------------------------------------------------------
 /*!
@@ -27,7 +27,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierWindChill::~NFmiDataModifierWindChill(void) {}
+NFmiDataModifierWindChill::~NFmiDataModifierWindChill() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -69,7 +69,7 @@ void NFmiDataModifierWindChill::Calculate(float /* theValue */)
 {
   if (itsQueryInfo)
   {
-    FmiParameterName oldParam = FmiParameterName(itsQueryInfo->Param().GetParamIdent());
+    auto oldParam = FmiParameterName(itsQueryInfo->Param().GetParamIdent());
 
     // unsigned long oldPlaceIndex = itsQueryInfo->LocationIndex(); // tämä toimii vain uudessa
     // newbase:ssa (parempi!)
@@ -101,7 +101,7 @@ void NFmiDataModifierWindChill::Calculate(float /* theValue */)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierWindChill::CalculationResult(void)
+float NFmiDataModifierWindChill::CalculationResult()
 {
   return itsDataModifier->CalculationResult();
 }
@@ -112,5 +112,5 @@ float NFmiDataModifierWindChill::CalculationResult(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierWindChill::Clear(void) { itsDataModifier->Clear(); }
+void NFmiDataModifierWindChill::Clear() { itsDataModifier->Clear(); }
 // ======================================================================

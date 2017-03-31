@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierSingleExtremeValuesFilter::~NFmiDataModifierSingleExtremeValuesFilter(void) {}
+NFmiDataModifierSingleExtremeValuesFilter::~NFmiDataModifierSingleExtremeValuesFilter() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierSingleExtremeValuesFilter::NFmiDataModifierSingleExtremeValuesFilter(void)
+NFmiDataModifierSingleExtremeValuesFilter::NFmiDataModifierSingleExtremeValuesFilter()
     : NFmiDataModifier(), itsAvgModifier(), itsValue(), itsLimit()
 {
 }
@@ -55,7 +55,7 @@ NFmiDataModifierSingleExtremeValuesFilter::NFmiDataModifierSingleExtremeValuesFi
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierSingleExtremeValuesFilter::Clear(void) {}
+void NFmiDataModifierSingleExtremeValuesFilter::Clear() {}
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -74,7 +74,7 @@ void NFmiDataModifierSingleExtremeValuesFilter::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierSingleExtremeValuesFilter::CalculationResult(void)
+float NFmiDataModifierSingleExtremeValuesFilter::CalculationResult()
 {
   float avg = itsAvgModifier.CalculationResult();
   if ((avg / itsValue < 0.12 && itsValue != kFloatMissing))

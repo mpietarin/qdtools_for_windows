@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERWINDCHILL_H
-#define NFMIDATAMODIFIERWINDCHILL_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 #include "NFmiPoint.h"
@@ -64,7 +63,5 @@ inline void NFmiDataModifierWindChill::LatLon(const NFmiPoint& newLatLon)
 {
   itsLatLonPoint = newLatLon;
 }
-
-#endif  // NFMIDATAMODIFIERWINDCHILL_H
 
 // ======================================================================

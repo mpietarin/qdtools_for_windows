@@ -109,27 +109,27 @@
 #include "NFmiEquidistArea.h"
 #include "NFmiGdalArea.h"
 #include "NFmiGnomonicArea.h"
+#include "NFmiLambertEqualArea.h"
 #include "NFmiLatLonArea.h"
 #include "NFmiMercatorArea.h"
 #include "NFmiOrthographicArea.h"
+#include "NFmiPKJArea.h"
 #include "NFmiRotatedLatLonArea.h"
 #include "NFmiStereographicArea.h"
-#include "NFmiLambertEqualArea.h"
 #include "NFmiStringTools.h"
-#include "NFmiPKJArea.h"
 #include "NFmiYKJArea.h"
 
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <deque>
 #include <list>
-#include <stdexcept>
-#include <string>
-#include <vector>
 #include <map>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <utility>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <vector>
 
 using namespace std;
 
@@ -206,11 +206,11 @@ double degrees_from_projparam(const string &inParam)
 void print_unused_parameters(const map<string, string> &inMap, const set<string> &usedParams)
 {
   cerr << "Unused parameters :" << endl;
-  for (map<string, string>::const_iterator it = inMap.begin(); it != inMap.end(); ++it)
+  for (const auto &it : inMap)
   {
-    if (usedParams.find(it->first) == usedParams.end())
+    if (usedParams.find(it.first) == usedParams.end())
     {
-      cerr << it->first << "=" << it->second << endl;
+      cerr << it.first << "=" << it.second << endl;
     }
   }
   cerr << endl;
@@ -272,7 +272,7 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
 
   try
   {
-    if (parts.size() == 1) parts.push_back("6,51.3,49,70.2");
+    if (parts.size() == 1) parts.emplace_back("6,51.3,49,70.2");
 
     if (parts.size() < 1 || parts.size() > 3)
       throw runtime_error("must have 1-3 parts separated by ':' or '|'");
@@ -514,8 +514,8 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
     {
       double w = area->WorldXYWidth();
       double h = area->WorldXYHeight();
-      int xsize = static_cast<int>(round(w / (unitfactor * width)));
-      int ysize = static_cast<int>(round(h / (unitfactor * height)));
+      auto xsize = static_cast<int>(round(w / (unitfactor * width)));
+      auto ysize = static_cast<int>(round(h / (unitfactor * height)));
       NFmiRect rect(0, 0, xsize, ysize);
       area->SetXYArea(rect);
     }
@@ -563,10 +563,10 @@ return_type CreateProj(const std::string &projString,
   return_type result;
 
   // Build token map, while validating the proj-string
-  for (vector<string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
+  for (auto &token : tokens)
   {
     // Split token into key->value pairs
-    boost::split(splitToken, *it, boost::is_any_of("="));
+    boost::split(splitToken, token, boost::is_any_of("="));
 
     if (!boost::starts_with(splitToken[0], "+"))
     {

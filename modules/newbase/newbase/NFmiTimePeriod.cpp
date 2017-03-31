@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiTimePerioid::NFmiTimePerioid(void)
+NFmiTimePerioid::NFmiTimePerioid()
     : itsYears(0),
       itsMonths(0),
       itsDays(0),
@@ -102,7 +102,7 @@ NFmiTimePerioid::NFmiTimePerioid(const NFmiTimePerioid& theTimePerioid)
  */
 // ----------------------------------------------------------------------
 
-void NFmiTimePerioid::CalculatePerioid(void)
+void NFmiTimePerioid::CalculatePerioid()
 {
   itsSeconds += itsMicroSeconds / 100;
   itsMicroSeconds = itsMicroSeconds % 100;

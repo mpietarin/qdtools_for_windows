@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIQUERYDATA_H
-#define NFMIQUERYDATA_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiQueryInfo.h"
@@ -680,6 +679,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiQueryData &ob)
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiQueryData &ob) { return ob.Read(file); }
-#endif  // NFMIQUERYDATA_H
 
 // ======================================================================

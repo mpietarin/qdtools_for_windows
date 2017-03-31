@@ -106,7 +106,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiPKJArea::NFmiPKJArea(void) : NFmiKKJArea() {}
+NFmiPKJArea::NFmiPKJArea() : NFmiKKJArea() {}
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -115,7 +115,7 @@ NFmiPKJArea::NFmiPKJArea(void) : NFmiKKJArea() {}
  */
 // ----------------------------------------------------------------------
 
-NFmiPKJArea::NFmiPKJArea(const NFmiPKJArea &thePKJArea) : NFmiKKJArea(thePKJArea) {}
+NFmiPKJArea::NFmiPKJArea(const NFmiPKJArea &thePKJArea) = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -306,7 +306,7 @@ NFmiArea *NFmiPKJArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiPKJArea::Clone(void) const { return new NFmiPKJArea(*this); }
+NFmiArea *NFmiPKJArea::Clone() const { return new NFmiPKJArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -317,11 +317,7 @@ NFmiArea *NFmiPKJArea::Clone(void) const { return new NFmiPKJArea(*this); }
  */
 // ----------------------------------------------------------------------
 
-NFmiPKJArea &NFmiPKJArea::operator=(const NFmiPKJArea &theArea)
-{
-  NFmiKKJArea::operator=(theArea);
-  return *this;
-}
+NFmiPKJArea &NFmiPKJArea::operator=(const NFmiPKJArea &theArea) = default;
 
 // ----------------------------------------------------------------------
 /*!

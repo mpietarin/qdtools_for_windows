@@ -23,15 +23,13 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiStation::~NFmiStation(void) {}
+NFmiStation::~NFmiStation() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
-NFmiStation::NFmiStation(void) : NFmiLocation(), itsMaxDistance(kFloatMissing), itsIdentType(kWMO)
-{
-}
+NFmiStation::NFmiStation() : NFmiLocation(), itsMaxDistance(kFloatMissing), itsIdentType(kWMO) {}
 
 // ----------------------------------------------------------------------
 /*!
@@ -177,7 +175,7 @@ void NFmiStation::SetLocation(const NFmiLocation &theLocation)
  */
 // ----------------------------------------------------------------------
 
-NFmiLocation *NFmiStation::Clone(void) const { return new NFmiStation(*this); }
+NFmiLocation *NFmiStation::Clone() const { return new NFmiStation(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Write the object to the given output stream

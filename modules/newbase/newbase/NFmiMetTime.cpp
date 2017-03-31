@@ -19,8 +19,8 @@
 
 #include "NFmiMetTime.h"
 #include "NFmiLocation.h"
-#include <iostream>
 #include <ctime>
+#include <iostream>
 #include <vector>
 
 using namespace std;
@@ -200,7 +200,7 @@ std::istream &NFmiMetTime::Read(std::istream &file)
  */
 // ----------------------------------------------------------------------
 
-NFmiMetTime &NFmiMetTime::operator++(void)
+NFmiMetTime &NFmiMetTime::operator++()
 {
   NextMetTime(GetTimeStep());
   return *this;
@@ -224,7 +224,7 @@ const NFmiMetTime NFmiMetTime::operator++(int)
  */
 // ----------------------------------------------------------------------
 
-NFmiMetTime &NFmiMetTime::operator--(void)  // prefix++
+NFmiMetTime &NFmiMetTime::operator--()  // prefix++
 {
   PreviousMetTime(GetTimeStep());
   return *this;
@@ -248,7 +248,7 @@ const NFmiMetTime NFmiMetTime::operator--(int)  // postfix++
  */
 // ----------------------------------------------------------------------
 
-void NFmiMetTime::NextMetTime(void)
+void NFmiMetTime::NextMetTime()
 {
   if (fTimeStepInMinutes.IsDate())
   {
@@ -405,7 +405,7 @@ void NFmiMetTime::SetTimeStep(const long timeStepInMinutes, bool fSetTime, FmiDi
  */
 // ----------------------------------------------------------------------
 
-struct tm NFmiMetTime::GetSystemTime(void)
+struct tm NFmiMetTime::GetSystemTime()
 {
   time_t t;
   static_cast<void>(time(&t));
@@ -495,7 +495,7 @@ const NFmiTime NFmiMetTime::UTCTime(const NFmiLocation &theLocation) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiTime NFmiMetTime::CorrectLocalTime(void) const
+const NFmiTime NFmiMetTime::CorrectLocalTime() const
 {
   // The UTC time
   struct ::tm utc;

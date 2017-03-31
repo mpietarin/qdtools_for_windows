@@ -110,8 +110,7 @@
  */
 // ======================================================================
 
-#ifndef NFMINEARTREEIMPL_H
-#define NFMINEARTREEIMPL_H
+#pragma once
 
 #include "NFmiDef.h"
 #include <cmath>
@@ -127,7 +126,7 @@ class _FMI_DLL NFmiNearTreeImpl
   typedef F functor_type;
 
   ~NFmiNearTreeImpl();
-  NFmiNearTreeImpl();
+  NFmiNearTreeImpl() = default;
 
   void Clear();
 
@@ -156,12 +155,12 @@ class _FMI_DLL NFmiNearTreeImpl
   NFmiNearTreeImpl(const NFmiNearTreeImpl& theTree);
   NFmiNearTreeImpl& operator=(const NFmiNearTreeImpl& theTree);
 
-  value_type* itsLeftObject;         //!< first object stored in this node
-  value_type* itsRightObject;        //!< second object stored in this node
-  double itsMaxLeft;                 //!< max dist from itsLeftObject to itsLeftBranch
-  double itsMaxRight;                //!< max dist from itsRightObject to itsRightBranch
-  NFmiNearTreeImpl* itsLeftBranch;   //!< nodes closer to itsLeftObject
-  NFmiNearTreeImpl* itsRightBranch;  //!< nodes closer to itsRightObject
+  value_type* itsLeftObject = nullptr;         //!< first object stored in this node
+  value_type* itsRightObject = nullptr;        //!< second object stored in this node
+  double itsMaxLeft{-1.0};                     //!< max dist from itsLeftObject to itsLeftBranch
+  double itsMaxRight{-1.0};                    //!< max dist from itsRightObject to itsRightBranch
+  NFmiNearTreeImpl* itsLeftBranch = nullptr;   //!< nodes closer to itsLeftObject
+  NFmiNearTreeImpl* itsRightBranch = nullptr;  //!< nodes closer to itsRightObject
 
   functor_type Distance;  // Template functor!!
 
@@ -184,28 +183,6 @@ NFmiNearTreeImpl<T, F>::~NFmiNearTreeImpl(void)
 
 // ----------------------------------------------------------------------
 /*!
- * \brief Default constructor for class NFmiNearTreeImpl
- *
- * Creates an empty tree with no right or left node and with the
- * dMax-below set to negative values so that any match found will be
- * stored since it will greater than the negative value
- *
- */
-// ----------------------------------------------------------------------
-
-template <typename T, typename F>
-NFmiNearTreeImpl<T, F>::NFmiNearTreeImpl(void)
-    : itsLeftObject(0),
-      itsRightObject(0),
-      itsMaxLeft(-1.0),
-      itsMaxRight(-1.0),
-      itsLeftBranch(0),
-      itsRightBranch(0)
-{
-}
-
-// ----------------------------------------------------------------------
-/*!
  * \brief Clear the tree
  */
 // ----------------------------------------------------------------------
@@ -219,10 +196,10 @@ void NFmiNearTreeImpl<T, F>::Clear(void)
   delete itsLeftBranch;
   delete itsRightBranch;
   // emulating constructor
-  itsLeftBranch = 0;
-  itsRightBranch = 0;
-  itsLeftObject = 0;
-  itsRightObject = 0;
+  itsLeftBranch = nullptr;
+  itsRightBranch = nullptr;
+  itsLeftObject = nullptr;
+  itsRightObject = nullptr;
   itsMaxLeft = -1.0;
   itsMaxRight = -1.0;
 }
@@ -393,12 +370,12 @@ unsigned long NFmiNearTreeImpl<T, F>::NearestOnes(std::vector<value_type>& theCl
   // first test each of the left and right positions to see if
   // one holds a point nearer than the search radius.
 
-  if ((itsLeftObject != 0) && (Distance(thePoint, *itsLeftObject) <= theRadius))
+  if ((itsLeftObject != nullptr) && (Distance(thePoint, *itsLeftObject) <= theRadius))
   {
     theClosest.push_back(*itsLeftObject);
     npoints++;
   }
-  if ((itsRightObject != 0) && (Distance(thePoint, *itsRightObject) <= theRadius))
+  if ((itsRightObject != nullptr) && (Distance(thePoint, *itsRightObject) <= theRadius))
   {
     theClosest.push_back(*itsRightObject);
     npoints++;
@@ -408,10 +385,11 @@ unsigned long NFmiNearTreeImpl<T, F>::NearestOnes(std::vector<value_type>& theCl
   // nearer than the search radius. The triangle rule is used
   // to test whether it's even necessary to descend.
 
-  if ((itsLeftBranch != 0) && (theRadius + itsMaxLeft >= Distance(thePoint, *itsLeftObject)))
+  if ((itsLeftBranch != nullptr) && (theRadius + itsMaxLeft >= Distance(thePoint, *itsLeftObject)))
     npoints += itsLeftBranch->NearestOnes(theClosest, thePoint, theRadius);
 
-  if ((itsRightBranch != 0) && (theRadius + itsMaxRight >= Distance(thePoint, *itsRightObject)))
+  if ((itsRightBranch != nullptr) &&
+      (theRadius + itsMaxRight >= Distance(thePoint, *itsRightObject)))
     npoints += itsRightBranch->NearestOnes(theClosest, thePoint, theRadius);
 
   return npoints;
@@ -445,9 +423,9 @@ bool NFmiNearTreeImpl<T, F>::Nearest(value_type& theClosest,
   // first test each of the left and right positions to see if
   // one holds a point nearer than the nearest so far discovered.
 
-  double dist_left;
+  double dist_left = -1.0;
 
-  if (itsLeftObject != 0)
+  if (itsLeftObject != nullptr)
   {
     dist_left = Distance(thePoint, *itsLeftObject);
     if (theRadius < 0 || dist_left <= theRadius)
@@ -458,8 +436,8 @@ bool NFmiNearTreeImpl<T, F>::Nearest(value_type& theClosest,
     }
   }
 
-  double dist_right;
-  if (itsRightObject != 0)
+  double dist_right = -1.0;
+  if (itsRightObject != nullptr)
   {
     dist_right = Distance(thePoint, *itsRightObject);
     if (theRadius < 0 || dist_right <= theRadius)
@@ -478,12 +456,12 @@ bool NFmiNearTreeImpl<T, F>::Nearest(value_type& theClosest,
   // nearer than the best so far found. The triangle rule is used
   // to test whether it's even necessary to descend.
 
-  if ((itsLeftBranch != 0) && ((theRadius + itsMaxLeft) >= dist_left))
+  if ((itsLeftBranch != nullptr) && ((theRadius + itsMaxLeft) >= dist_left))
   {
     found |= itsLeftBranch->Nearest(theClosest, thePoint, theRadius);
   }
 
-  if ((itsRightBranch != 0) && ((theRadius + itsMaxRight) >= dist_right))
+  if ((itsRightBranch != nullptr) && ((theRadius + itsMaxRight) >= dist_right))
   {
     found |= itsRightBranch->Nearest(theClosest, thePoint, theRadius);
   }
@@ -493,7 +471,7 @@ bool NFmiNearTreeImpl<T, F>::Nearest(value_type& theClosest,
 
 // ----------------------------------------------------------------------
 /*!
- * \brief Find farthes point from the probe point
+ * \brief Find farthest point from the probe point
  *
  * Private function to search a NFmiNearTreeImpl for the object farthest
  * from some probe point, thePoint.
@@ -520,14 +498,15 @@ bool NFmiNearTreeImpl<T, F>::Farthest(value_type& theFarthest,
   // the calling function is presumed initially to have set theRadius to a
   // negative value before the recursive calls to FarthestNeighbor
 
-  if ((itsLeftObject != 0) && ((tmpradius = Distance(thePoint, *itsLeftObject)) >= theRadius))
+  if ((itsLeftObject != nullptr) && ((tmpradius = Distance(thePoint, *itsLeftObject)) >= theRadius))
   {
     theRadius = tmpradius;
     theFarthest = *itsLeftObject;
     found = true;
   }
 
-  if ((itsRightObject != 0) && ((tmpradius = Distance(thePoint, *itsRightObject)) >= theRadius))
+  if ((itsRightObject != nullptr) &&
+      ((tmpradius = Distance(thePoint, *itsRightObject)) >= theRadius))
   {
     theRadius = tmpradius;
     theFarthest = *itsRightObject;
@@ -538,15 +517,15 @@ bool NFmiNearTreeImpl<T, F>::Farthest(value_type& theFarthest,
   // farther than the best so far found. The triangle rule is used
   // to test whether it's even necessary to descend.
 
-  if ((itsLeftBranch != 0) && ((theRadius - itsMaxLeft) <= Distance(thePoint, *itsLeftObject)))
+  if ((itsLeftBranch != nullptr) &&
+      ((theRadius - itsMaxLeft) <= Distance(thePoint, *itsLeftObject)))
     found |= itsLeftBranch->Farthest(theFarthest, thePoint, theRadius);
 
-  if ((itsRightBranch != 0) && ((theRadius - itsMaxRight) <= Distance(thePoint, *itsRightObject)))
+  if ((itsRightBranch != nullptr) &&
+      ((theRadius - itsMaxRight) <= Distance(thePoint, *itsRightObject)))
     found |= itsRightBranch->Farthest(theFarthest, thePoint, theRadius);
 
   return found;
 }
-
-#endif  // NFMINEARTREEIMPL_H
 
 // ======================================================================

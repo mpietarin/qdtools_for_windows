@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIPRODUCERIDLISTER_H
-#define NFMIPRODUCERIDLISTER_H
+#pragma once
 
-#include "NFmiTimeDescriptor.h"
 #include "NFmiDataMatrix.h"
+#include "NFmiTimeDescriptor.h"
 
 class NFmiQueryInfo;
 
@@ -52,4 +51,3 @@ class NFmiProducerIdLister
       itsModelOriginTimes;  // tähän talletetaan kunkin ajan mallin origin aika
   int itsDefaultProducerId;
 };
-#endif

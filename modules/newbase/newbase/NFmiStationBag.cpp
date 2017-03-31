@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiStationBag::NFmiStationBag(void) : NFmiLocationBag() {}
+NFmiStationBag::NFmiStationBag() : NFmiLocationBag() {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -60,14 +60,14 @@ NFmiStationBag::NFmiStationBag(NFmiStation *theStationArray, unsigned long numbe
  */
 // ----------------------------------------------------------------------
 
-NFmiStationBag::NFmiStationBag(const NFmiStationBag &theBag) : NFmiLocationBag(theBag) {}
+NFmiStationBag::NFmiStationBag(const NFmiStationBag &theBag) = default;
 // ----------------------------------------------------------------------
 /*!
  *
  */
 // ----------------------------------------------------------------------
 
-void NFmiStationBag::Destroy(void)
+void NFmiStationBag::Destroy()
 {
   for (unsigned long i = 0; i < itsLocations.size(); i++)
     delete itsLocations[i];
@@ -143,7 +143,7 @@ bool NFmiStationBag::AddStation(const NFmiStation &theStation)
  */
 // ----------------------------------------------------------------------
 
-NFmiLocationBag *NFmiStationBag::Clone(void) const { return new NFmiStationBag(*this); }
+NFmiLocationBag *NFmiStationBag::Clone() const { return new NFmiStationBag(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Write the object to the given output stream

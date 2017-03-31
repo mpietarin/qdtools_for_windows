@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIMERCATORAREA_H
-#define NFMIMERCATORAREA_H
+#pragma once
 
 #include "NFmiAngle.h"
 #include "NFmiArea.h"
@@ -87,6 +86,5 @@ inline unsigned long NFmiMercatorArea::ClassId(void) const { return kNFmiMercato
 // ----------------------------------------------------------------------
 
 inline const char *NFmiMercatorArea::ClassName(void) const { return "NFmiMercatorArea"; }
-#endif  // NFMIMERCATORAREA_H
 
 // ======================================================================

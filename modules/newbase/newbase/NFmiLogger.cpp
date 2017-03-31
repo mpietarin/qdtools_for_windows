@@ -36,7 +36,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiLogger::~NFmiLogger(void) {}
+NFmiLogger::~NFmiLogger() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
@@ -45,7 +45,7 @@ NFmiLogger::~NFmiLogger(void) {}
  */
 // ----------------------------------------------------------------------
 
-NFmiLogger::NFmiLogger(void)
+NFmiLogger::NFmiLogger()
     : itsUsedLoggingLevels(127),
       itsLogFilePath(),
       itsAbsolutLogFilePath(),
@@ -152,7 +152,7 @@ void NFmiLogger::InitFromSettings(const std::string &theBaseNameSpace)
   fLoggerInitialized = true;      // tämä pitää asettaa!
 }
 
-void NFmiLogger::StoreToSettings(void)
+void NFmiLogger::StoreToSettings()
 {
   if (itsBaseNameSpace.empty() == false)
   {
@@ -609,7 +609,7 @@ void NFmiLogger::TimeStampStringFormat(const string &newFormat)
 
 // tekee kaiken mahdollisen liittyen mahdollisiin backup systeemeihin
 
-bool NFmiLogger::CheckBackupSystem(void)
+bool NFmiLogger::CheckBackupSystem()
 {
   if (fUseBackupSystem)
   {
@@ -628,7 +628,7 @@ bool NFmiLogger::CheckBackupSystem(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiLogger::CleanBackupFiles(void)
+bool NFmiLogger::CleanBackupFiles()
 {
   if (fCleanBackupFiles && IsCleaningTime())
   {
@@ -665,7 +665,7 @@ bool NFmiLogger::CleanBackupFiles(void)
 
 // Tarkistaa, onko aika tehdä nykyisestä log-filestä aikaleimattu backup-file
 
-bool NFmiLogger::IsFileBackUpTime(void)
+bool NFmiLogger::IsFileBackUpTime()
 {
   int diffInHours = itsCurrentTime.DifferenceInHours(itsLastLoggedTime);
   if (fUseLocalTime)
@@ -721,7 +721,7 @@ bool NFmiLogger::IsFileBackUpTime(void)
 
 // tehdään siivousta vain kerran päivässä (päivän vaihtuessa)
 
-bool NFmiLogger::IsCleaningTime(void)
+bool NFmiLogger::IsCleaningTime()
 {
   int diffInHours = itsCurrentTime.DifferenceInHours(itsLastLoggedTime);
   if (fUseLocalTime)
@@ -743,7 +743,7 @@ bool NFmiLogger::IsCleaningTime(void)
  */
 // ----------------------------------------------------------------------
 
-const string NFmiLogger::MakeBackupFileFilter(void)
+const string NFmiLogger::MakeBackupFileFilter()
 {
   string filter(itsCurrentLogFileName);
   filter += ".*";
@@ -774,7 +774,7 @@ bool NFmiLogger::TooOldBackupFileTimeStamp(time_t theFileTimeStamp)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiLogger::MakeBackupFile(void)
+bool NFmiLogger::MakeBackupFile()
 {
   fNewLogFileInUse = true;
   string fileName(itsCurrentLogFileName);
@@ -796,7 +796,7 @@ bool NFmiLogger::MakeBackupFile(void)
 // ----------------------------------------------------------------------
 
 // kun logger käynnistyy, katsotaan loki-tiedostosta, milloin on viimeksi tehty lokia
-void NFmiLogger::GetLastLoggetTimeFromLogFile(void)
+void NFmiLogger::GetLastLoggetTimeFromLogFile()
 {
   string tmp;
   time_t fileTimeStamp = NFmiFileSystem::FindFile(
@@ -810,7 +810,7 @@ void NFmiLogger::GetLastLoggetTimeFromLogFile(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiLogger::MakeCurrentLogFileName(void)
+void NFmiLogger::MakeCurrentLogFileName()
 {
   itsCurrentLogFileName = itsAbsolutLogFilePath;
   if (itsCurrentLogFileName[itsCurrentLogFileName.size() - 1] != kFmiDirectorySeparator)
@@ -825,7 +825,7 @@ void NFmiLogger::MakeCurrentLogFileName(void)
  */
 // ----------------------------------------------------------------------
 
-const string NFmiLogger::MakeBackupFileNameTimeStamp(void)
+const string NFmiLogger::MakeBackupFileNameTimeStamp()
 {
   string str;
 

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERMINMAX_H
-#define NFMIDATAMODIFIERMINMAX_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -44,7 +43,5 @@ class _FMI_DLL NFmiDataModifierMinMax : public NFmiDataModifier
   float itsMaxValue;
 
 };  // class NFmiDataModifierMinMax
-
-#endif  // NFMIDATAMODIFIERMINMAX_H
 
 // ======================================================================

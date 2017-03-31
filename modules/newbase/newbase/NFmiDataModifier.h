@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIER_H
-#define NFMIDATAMODIFIER_H
+#pragma once
 
 #include "NFmiDataModifierBase.h"
 #include "NFmiDef.h"
@@ -174,6 +173,5 @@ inline bool NFmiDataModifier::IsAllowedValue(float theValue)
 // ----------------------------------------------------------------------
 
 inline void NFmiDataModifier::SetMissingAllowed(bool OnOff) { fMissingValuesAllowed = OnOff; }
-#endif  // NFMIDATAMODIFIER_H
 
 // ======================================================================

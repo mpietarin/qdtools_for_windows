@@ -37,9 +37,9 @@
 #include "NFmiLocationFinder.h"
 #include "NFmiStringTools.h"
 #include <cstdio>  // for sscanf()
-#include <vector>
-#include <fstream>
 #include <cstdlib>
+#include <fstream>
+#include <vector>
 // atoi()
 
 using namespace std;
@@ -50,14 +50,14 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiLocationFinder::~NFmiLocationFinder(void) {}
+NFmiLocationFinder::~NFmiLocationFinder() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiLocationFinder::NFmiLocationFinder(void)
+NFmiLocationFinder::NFmiLocationFinder()
     : itsPrimaryPoints(), itsSecondaryPoints(), itsLastSearchFailed(false)
 {
 }
@@ -72,11 +72,8 @@ NFmiLocationFinder::NFmiLocationFinder(void)
 // ----------------------------------------------------------------------
 
 NFmiLocationFinder::NFmiLocationFinder(const NFmiLocationFinder& theLocationFinder)
-    : itsPrimaryPoints(theLocationFinder.itsPrimaryPoints),
-      itsSecondaryPoints(theLocationFinder.itsSecondaryPoints),
-      itsLastSearchFailed(theLocationFinder.itsLastSearchFailed)
-{
-}
+
+    = default;
 
 // ======================================================================
 /*!

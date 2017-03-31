@@ -55,12 +55,12 @@ double Distance(const NFmiSvgPath& thePath, const NFmiPoint& thePoint)
 
   double minDist = -1;
 
-  NFmiSvgPath::const_iterator firstPoint = thePath.begin();
+  auto firstPoint = thePath.begin();
 
   double lastX = 0;
   double lastY = 0;
 
-  for (NFmiSvgPath::const_iterator it = thePath.begin(); it != thePath.end(); ++it)
+  for (auto it = thePath.begin(); it != thePath.end(); ++it)
   {
     switch (it->itsType)
     {
@@ -132,12 +132,12 @@ double GeoDistance(const NFmiSvgPath& thePath, const NFmiPoint& thePoint)
   NFmiPoint lastPoint = firstPoint;
   NFmiPoint center = area.LatLonToWorldXY(thePoint);
 
-  for (NFmiSvgPath::const_iterator it = thePath.begin(); it != thePath.end(); ++it)
+  for (const auto& it : thePath)
   {
-    switch (it->itsType)
+    switch (it.itsType)
     {
       case NFmiSvgPath::kElementMoveto:
-        lastPoint = area.LatLonToWorldXY(NFmiPoint(it->itsX, it->itsY));
+        lastPoint = area.LatLonToWorldXY(NFmiPoint(it.itsX, it.itsY));
         firstPoint = lastPoint;
         break;
       case NFmiSvgPath::kElementClosePath:
@@ -151,7 +151,7 @@ double GeoDistance(const NFmiSvgPath& thePath, const NFmiPoint& thePoint)
       }
       case NFmiSvgPath::kElementLineto:
       {
-        NFmiPoint p = area.LatLonToWorldXY(NFmiPoint(it->itsX, it->itsY));
+        NFmiPoint p = area.LatLonToWorldXY(NFmiPoint(it.itsX, it.itsY));
         double dist = NFmiGeoTools::DistanceFromLineSegment(
             center.X(), center.Y(), lastPoint.X(), lastPoint.Y(), p.X(), p.Y());
 
@@ -193,17 +193,17 @@ void BoundingBox(
 
   bool firstmove = true;
 
-  for (NFmiSvgPath::const_iterator it = thePath.begin(); it != thePath.end(); ++it)
+  for (const auto& it : thePath)
   {
-    switch (it->itsType)
+    switch (it.itsType)
     {
       case NFmiSvgPath::kElementMoveto:
       case NFmiSvgPath::kElementLineto:
 
-        if (firstmove || it->itsX < theXmin) theXmin = it->itsX;
-        if (firstmove || it->itsX > theXmax) theXmax = it->itsX;
-        if (firstmove || it->itsY < theYmin) theYmin = it->itsY;
-        if (firstmove || it->itsY > theYmax) theYmax = it->itsY;
+        if (firstmove || it.itsX < theXmin) theXmin = it.itsX;
+        if (firstmove || it.itsX > theXmax) theXmax = it.itsX;
+        if (firstmove || it.itsY < theYmin) theYmin = it.itsY;
+        if (firstmove || it.itsY > theYmax) theYmax = it.itsY;
         firstmove = false;
         break;
       case NFmiSvgPath::kElementNotValid:
@@ -226,16 +226,16 @@ void BoundingBox(
 void LatLonToWorldXY(NFmiSvgPath& thePath, const NFmiArea& theArea)
 {
   NFmiPoint tmp;
-  for (NFmiSvgPath::iterator it = thePath.begin(); it != thePath.end(); ++it)
+  for (auto& it : thePath)
   {
-    switch (it->itsType)
+    switch (it.itsType)
     {
       case NFmiSvgPath::kElementMoveto:
       case NFmiSvgPath::kElementLineto:
       {
-        tmp = theArea.LatLonToWorldXY(NFmiPoint(it->itsX, it->itsY));
-        it->itsX = tmp.X();
-        it->itsY = tmp.Y();
+        tmp = theArea.LatLonToWorldXY(NFmiPoint(it.itsX, it.itsY));
+        it.itsX = tmp.X();
+        it.itsY = tmp.Y();
         break;
       }
       case NFmiSvgPath::kElementNotValid:

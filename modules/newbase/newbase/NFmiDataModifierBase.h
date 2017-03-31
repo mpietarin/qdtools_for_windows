@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERBASE_H
-#define NFMIDATAMODIFIERBASE_H
+#pragma once
 
 #include "NFmiString.h"  // Added by ClassView
 
@@ -59,7 +58,5 @@ class _FMI_DLL NFmiDataModifierBase
   NFmiString itsExpressionType;
 
 };  // class NFmiDataModifierBase
-
-#endif  // NFMIDATAMODIFIERBASE_H
 
 // ======================================================================

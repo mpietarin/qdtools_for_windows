@@ -5,20 +5,19 @@
  */
 // ======================================================================
 
-#ifndef NFMIQUERYINFO_H
-#define NFMIQUERYINFO_H
+#pragma once
 
-#include "NFmiSaveBaseFactory.h"
 #include "NFmiGlobals.h"
+#include "NFmiGrid.h"
+#include "NFmiHPlaceDescriptor.h"
+#include "NFmiInfoData.h"
 #include "NFmiLocationBag.h"
 #include "NFmiParamDescriptor.h"
-#include "NFmiTimeDescriptor.h"
-#include "NFmiHPlaceDescriptor.h"
-#include "NFmiGrid.h"
-#include "NFmiVPlaceDescriptor.h"
-#include "NFmiTimeBag.h"
 #include "NFmiRawData.h"
-#include "NFmiInfoData.h"
+#include "NFmiSaveBaseFactory.h"
+#include "NFmiTimeBag.h"
+#include "NFmiTimeDescriptor.h"
+#include "NFmiVPlaceDescriptor.h"
 
 class NFmiQueryData;
 class NFmiCombinedParam;
@@ -1657,6 +1656,5 @@ inline std::ostream &operator<<(std::ostream &file, NFmiQueryInfo &ob) { return 
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiQueryInfo &ob) { return ob.Read(file); }
-#endif  // NFMIQUERYINFO_H
 
 // ======================================================================

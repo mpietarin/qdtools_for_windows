@@ -5,12 +5,11 @@
  */
 // ======================================================================
 
-#ifndef NFMISTRINGLIST_H
-#define NFMISTRINGLIST_H
+#pragma once
 
+#include "NFmiDataMatrix.h"
 #include "NFmiString.h"
 #include "NFmiVoidPtrList.h"
-#include "NFmiDataMatrix.h"
 
 //! Undocumented
 class _FMI_DLL NFmiStringList
@@ -130,6 +129,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiStringList &ob)
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiStringList &ob) { return ob.Read(file); }
-#endif  // NFMISTRINGLIST_H
 
 // ======================================================================

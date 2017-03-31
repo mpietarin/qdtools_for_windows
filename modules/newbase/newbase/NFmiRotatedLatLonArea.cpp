@@ -121,11 +121,10 @@ const NFmiPoint toreglatlon(const NFmiPoint &theRotLatLonPoint,
  */
 // ----------------------------------------------------------------------
 
-NFmiRotatedLatLonArea::NFmiRotatedLatLonArea(void) : NFmiLatLonArea(), itsSouthernPole() {}
+NFmiRotatedLatLonArea::NFmiRotatedLatLonArea() : NFmiLatLonArea(), itsSouthernPole() {}
 NFmiRotatedLatLonArea::NFmiRotatedLatLonArea(const NFmiRotatedLatLonArea &theRotatedLatLonArea)
-    : NFmiLatLonArea(theRotatedLatLonArea), itsSouthernPole(theRotatedLatLonArea.itsSouthernPole)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -163,7 +162,7 @@ NFmiRotatedLatLonArea::NFmiRotatedLatLonArea(const NFmiPoint &theBottomLeftLatLo
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiRotatedLatLonArea::Clone(void) const { return new NFmiRotatedLatLonArea(*this); }
+NFmiArea *NFmiRotatedLatLonArea::Clone() const { return new NFmiRotatedLatLonArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param theXYPoint Undocumented
@@ -289,7 +288,7 @@ std::istream &NFmiRotatedLatLonArea::Read(std::istream &file)
   return file;
 }
 
-const std::string NFmiRotatedLatLonArea::AreaStr(void) const
+const std::string NFmiRotatedLatLonArea::AreaStr() const
 {
   std::ostringstream out;
   out << "rotlatlon," << SouthernPole().Y() << ',' << SouthernPole().X() << ':'
@@ -314,12 +313,12 @@ const std::string NFmiRotatedLatLonArea::AreaStr(void) const
 const std::string NFmiRotatedLatLonArea::WKT() const
 {
   std::ostringstream ret;
-  ret << std::setprecision(16) << "GEOGCS[\"FMI_Sphere\","
-      << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"Degree\",0.0174532925199433]],"
-      << "PARAMETER[\"latitude_of_origin\"," << itsSouthernPole.Y() << "],"
-      << "PARAMETER[\"central_meridian\"," << itsSouthernPole.X() << "]";
+  ret << std::setprecision(16) << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PARAMETER["latitude_of_origin",)" << itsSouthernPole.Y() << "],"
+      << R"(PARAMETER["central_meridian",)" << itsSouthernPole.X() << "]";
   return ret.str();
 }
 

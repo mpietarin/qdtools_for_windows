@@ -21,31 +21,30 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAvg::~NFmiDataModifierAvg(void) {}
+NFmiDataModifierAvg::~NFmiDataModifierAvg() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAvg::NFmiDataModifierAvg(void) : NFmiDataModifier(), itsCounter(0), itsAverage(0.)
+NFmiDataModifierAvg::NFmiDataModifierAvg() : NFmiDataModifier(), itsCounter(0), itsAverage(0.)
 {
   fCalculationResultOk = false;
 }
 
 NFmiDataModifierAvg::NFmiDataModifierAvg(const NFmiDataModifierAvg& theOther)
-    : NFmiDataModifier(theOther), itsCounter(theOther.itsCounter), itsAverage(theOther.itsAverage)
-{
-}
 
-NFmiDataModifier* NFmiDataModifierAvg::Clone(void) const { return new NFmiDataModifierAvg(*this); }
+    = default;
+
+NFmiDataModifier* NFmiDataModifierAvg::Clone() const { return new NFmiDataModifierAvg(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierAvg::Avg(void) { return itsAverage; }
+float NFmiDataModifierAvg::Avg() { return itsAverage; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -74,7 +73,7 @@ void NFmiDataModifierAvg::Calculate(NFmiQueryInfo* theQI) { Calculate(theQI->Flo
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierAvg::Clear(void)
+void NFmiDataModifierAvg::Clear()
 {
   itsCounter = 0;
   itsAverage = 0;
@@ -87,7 +86,7 @@ void NFmiDataModifierAvg::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierAvg::CalculationResult(void)
+float NFmiDataModifierAvg::CalculationResult()
 {
   if (fCalculationResultOk)
     return itsAverage;
@@ -101,5 +100,5 @@ float NFmiDataModifierAvg::CalculationResult(void)
  */
 // ----------------------------------------------------------------------
 
-long NFmiDataModifierAvg::Counter(void) { return itsCounter; }
+long NFmiDataModifierAvg::Counter() { return itsCounter; }
 // ======================================================================

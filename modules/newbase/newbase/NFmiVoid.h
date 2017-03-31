@@ -13,8 +13,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIVOID_H
-#define NFMIVOID_H
+#pragma once
 
 #include "NFmiGlobals.h"
 
@@ -68,7 +67,5 @@ inline NFmiVoid& NFmiVoid::operator=(const NFmiVoid& theVoid)
   itsSize = theVoid.itsSize;
   return *this;
 }
-
-#endif  // NFMIVOID_H
 
 // ======================================================================

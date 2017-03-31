@@ -5,13 +5,12 @@
  */
 // ======================================================================
 
-#ifndef NFMITIME_H
-#define NFMITIME_H
+#pragma once
 
 #include "NFmiStaticTime.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time/local_date_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #define DICT_WEEKDAY_MONDAY "WeekdayMonday"
 #define DICT_WEEKDAY_TUESDAY "WeekdayTuesday"
@@ -259,6 +258,5 @@ inline long NFmiTime::DifferenceInDays(const NFmiTime &anotherTime) const
 // ----------------------------------------------------------------------
 
 inline short NFmiTime::GetZoneDifferenceHour(void) const { return itsZoneDifferenceHour; }
-#endif  // NFMITIME_H
 
 // ======================================================================

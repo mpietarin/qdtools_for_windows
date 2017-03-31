@@ -33,9 +33,9 @@
 
 #include "NFmiLagrange.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
-#include <cctype>
 
 // ----------------------------------------------------------------------
 /*!
@@ -43,7 +43,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiLagrange::NFmiLagrange(void)
+NFmiLagrange::NFmiLagrange()
     : itsSn(),
       itsTn(),
       itsSi(0),
@@ -112,7 +112,7 @@ NFmiLagrange::NFmiLagrange(const double *si, const double *yij, int sn)
  */
 // ----------------------------------------------------------------------
 
-NFmiLagrange::~NFmiLagrange(void) {}
+NFmiLagrange::~NFmiLagrange() = default;
 // ----------------------------------------------------------------------
 /*!
  * \param ti Undocumented
@@ -159,7 +159,7 @@ void NFmiLagrange::Si(const double *si, bool isJustCopyNewInputData)
  */
 // ----------------------------------------------------------------------
 
-double *NFmiLagrange::Ti(void)
+double *NFmiLagrange::Ti()
 {
   // Return independent variable t
 
@@ -172,7 +172,7 @@ double *NFmiLagrange::Ti(void)
  */
 // ----------------------------------------------------------------------
 
-double *NFmiLagrange::Si(void)
+double *NFmiLagrange::Si()
 {
   // Return independent variable s
 
@@ -204,7 +204,7 @@ void NFmiLagrange::Yij(const double *yij, bool isJustCopyNewInputData)
  */
 // ----------------------------------------------------------------------
 
-double *NFmiLagrange::Yij(void)
+double *NFmiLagrange::Yij()
 {
   // Return dependent variables
 
@@ -247,14 +247,14 @@ void NFmiLagrange::Denominator(const checkedVector<double> &xi,
  */
 // ----------------------------------------------------------------------
 
-void NFmiLagrange::SiDenominator(void) { Denominator(itsSi, itsSiDenominator, itsSn); }
+void NFmiLagrange::SiDenominator() { Denominator(itsSi, itsSiDenominator, itsSn); }
 // ----------------------------------------------------------------------
 /*!
  *
  */
 // ----------------------------------------------------------------------
 
-void NFmiLagrange::TiDenominator(void) { Denominator(itsTi, itsTiDenominator, itsTn); }
+void NFmiLagrange::TiDenominator() { Denominator(itsTi, itsTiDenominator, itsTn); }
 // ----------------------------------------------------------------------
 /*!
  * \param xi Undocumented

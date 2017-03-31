@@ -5,8 +5,8 @@
  */
 // ======================================================================
 
-#include "NFmiSvgPath.h"
 #include "NFmiPoint.h"
+#include "NFmiSvgPath.h"
 #include <regression/tframe.h>
 #include <cmath>
 #include <sstream>

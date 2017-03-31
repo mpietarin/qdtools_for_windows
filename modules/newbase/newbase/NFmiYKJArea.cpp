@@ -95,9 +95,9 @@
 // ======================================================================
 
 #include "NFmiYKJArea.h"
-#include <string>
 #include <cmath>
 #include <cstdlib>
+#include <string>
 
 // ----------------------------------------------------------------------
 /*!
@@ -105,7 +105,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiYKJArea::NFmiYKJArea(void) : NFmiKKJArea() {}
+NFmiYKJArea::NFmiYKJArea() : NFmiKKJArea() {}
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -114,7 +114,7 @@ NFmiYKJArea::NFmiYKJArea(void) : NFmiKKJArea() {}
  */
 // ----------------------------------------------------------------------
 
-NFmiYKJArea::NFmiYKJArea(const NFmiYKJArea &theYKJArea) : NFmiKKJArea(theYKJArea) {}
+NFmiYKJArea::NFmiYKJArea(const NFmiYKJArea &theYKJArea) = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -331,7 +331,7 @@ NFmiArea *NFmiYKJArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiYKJArea::Clone(void) const { return new NFmiYKJArea(*this); }
+NFmiArea *NFmiYKJArea::Clone() const { return new NFmiYKJArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -342,11 +342,7 @@ NFmiArea *NFmiYKJArea::Clone(void) const { return new NFmiYKJArea(*this); }
  */
 // ----------------------------------------------------------------------
 
-NFmiYKJArea &NFmiYKJArea::operator=(const NFmiYKJArea &theArea)
-{
-  NFmiKKJArea::operator=(theArea);
-  return *this;
-}
+NFmiYKJArea &NFmiYKJArea::operator=(const NFmiYKJArea &theArea) = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -430,7 +426,7 @@ std::istream &NFmiYKJArea::Read(std::istream &file)
   return file;
 }
 
-const std::string NFmiYKJArea::AreaStr(void) const
+const std::string NFmiYKJArea::AreaStr() const
 {
   std::ostringstream out;
   out << "ykj:" << BottomLeftLatLon().X() << ',' << BottomLeftLatLon().Y() << ','
@@ -459,18 +455,18 @@ const std::string NFmiYKJArea::AreaStr(void) const
 const std::string NFmiYKJArea::WKT() const
 {
   std::ostringstream ret;
-  ret << "PROJCS[\"KKJ / Finland Uniform Coordinate System\","
-      << "GEOGCS[\"KKJ\","
-      << "DATUM[\"Kartastokoordinaattijarjestelma\", SPHEROID[\"International 1924\",6378388,297]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"degree\",0.0174532925199433]],"
-      << "PROJECTION[\"Transverse_Mercator\"],"
-      << "PARAMETER[\"latitude_of_origin\",0],"
-      << "PARAMETER[\"central_meridian\",27],"
-      << "PARAMETER[\"scale_factor\",1],"
-      << "PARAMETER[\"false_easting\",3500000],"
-      << "PARAMETER[\"false_northing\",0],"
-      << "UNIT[\"metre\",1]]";
+  ret << R"(PROJCS["KKJ / Finland Uniform Coordinate System",)"
+      << R"(GEOGCS["KKJ",)"
+      << R"(DATUM["Kartastokoordinaattijarjestelma", SPHEROID["International 1924",6378388,297]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Transverse_Mercator"],)"
+      << R"(PARAMETER["latitude_of_origin",0],)"
+      << R"(PARAMETER["central_meridian",27],)"
+      << R"(PARAMETER["scale_factor",1],)"
+      << R"(PARAMETER["false_easting",3500000],)"
+      << R"(PARAMETER["false_northing",0],)"
+      << R"(UNIT["metre",1]])";
   return ret.str();
 }
 

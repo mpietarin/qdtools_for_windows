@@ -13,11 +13,11 @@
 // ======================================================================
 
 #include "NFmiTimeList.h"
-#include "NFmiTimeBag.h"
 #include "NFmiMetTime.h"
+#include "NFmiTimeBag.h"
+#include <algorithm>
 #include <cmath>
 #include <functional>
-#include <algorithm>
 
 #ifdef UNIX
 long int abs(long int theValue);
@@ -32,7 +32,7 @@ long int abs(long int theValue) { return (theValue < 0 ? -theValue : theValue); 
 
 using namespace std;
 
-NFmiTimeList::~NFmiTimeList(void) { Clear(true); }
+NFmiTimeList::~NFmiTimeList() { Clear(true); }
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -110,7 +110,7 @@ bool NFmiTimeList::Next(NFmiMetTime **theItem) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiTimeList::Next(void) const
+bool NFmiTimeList::Next() const
 {
   if (itsIsReset)
     return First();
@@ -133,7 +133,7 @@ bool NFmiTimeList::IndexOk(int theIndex) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiTimeList::Previous(void) const
+bool NFmiTimeList::Previous() const
 {
   if (itsIsReset)
     return false;
@@ -150,10 +150,10 @@ bool NFmiTimeList::Previous(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiMetTime *NFmiTimeList::Current(void) const
+NFmiMetTime *NFmiTimeList::Current() const
 {
   if (IndexOk(itsIndex)) return itsVectorList[itsIndex];
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -162,7 +162,7 @@ NFmiMetTime *NFmiTimeList::Current(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiTimeList::Reset(void) const
+bool NFmiTimeList::Reset() const
 {
   itsIsReset = true;
   itsIndex = -1;
@@ -175,7 +175,7 @@ bool NFmiTimeList::Reset(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiTimeList::First(void) const
+bool NFmiTimeList::First() const
 {
   if (itsVectorList.empty())
   {
@@ -210,7 +210,7 @@ void NFmiTimeList::Add(NFmiMetTime *theItem, bool fAllowDuplicates, bool fAddEnd
 {
   // etsitään ensimmäinen kohta, jossa vanha aika >= uusi aika
 
-  checkedVector<NFmiMetTime *>::iterator it(itsVectorList.begin());
+  auto it(itsVectorList.begin());
 
   if (fAddEnd)  // pakko optimoida, koska salamadatassa on jumalattomasti aikoja ja ne ovat jo
                 // järjestyksessä!!!
@@ -363,7 +363,7 @@ bool NFmiTimeList::Index(int theIndex) const
  */
 // ----------------------------------------------------------------------
 
-int NFmiTimeList::Index(void) const
+int NFmiTimeList::Index() const
 {
   return itsIndex;
   //  return itsIter?itsIter->Index():false;		// index = -1 out of list
@@ -440,7 +440,7 @@ bool NFmiTimeList::Find(const NFmiMetTime &theTime)
 {
   itsIndex = -1;
   if (itsVectorList.empty()) return false;
-  checkedVector<NFmiMetTime *>::iterator pos = std::lower_bound(
+  auto pos = std::lower_bound(
       itsVectorList.begin(), itsVectorList.end(), &theTime, ComparePtrs<NFmiMetTime>());
   if (pos != itsVectorList.end())
   {
@@ -485,7 +485,7 @@ bool NFmiTimeList::FindNearestTime(const NFmiMetTime &theTime,
 {
   if (itsVectorList.empty()) return false;
 
-  checkedVector<NFmiMetTime *>::iterator firstNotLess = std::lower_bound(
+  auto firstNotLess = std::lower_bound(
       itsVectorList.begin(), itsVectorList.end(), &theTime, ComparePtrs<NFmiMetTime>());
   if (firstNotLess != itsVectorList.end() && *(*firstNotLess) == theTime)
   {
@@ -549,10 +549,10 @@ bool NFmiTimeList::FindNearestTime(checkedVector<NFmiMetTime *>::iterator &first
   else
   {
     // Must check the first not-less time and the previous time
-    checkedVector<NFmiMetTime *>::iterator timeIter2 = firstNotLess;
+    auto timeIter2 = firstNotLess;
     double diff2 = std::fabs(theTime.DifferenceInMinutes(*(*timeIter2)));
     firstNotLess--;
-    checkedVector<NFmiMetTime *>::iterator timeIter1 = firstNotLess;
+    auto timeIter1 = firstNotLess;
     double diff1 = std::fabs(theTime.DifferenceInMinutes(*(*timeIter1)));
     // first time in the list has precedence if difference is equal
     if (diff1 <= diff2)
@@ -632,7 +632,7 @@ const NFmiTimeList NFmiTimeList::Combine(NFmiTimeList &theList,
   NFmiTimeList combinedList(*this);
   for (theList.Reset(); theList.Next();)
   {
-    NFmiMetTime *tempTime = new NFmiMetTime(*theList.Current());
+    auto *tempTime = new NFmiMetTime(*theList.Current());
     combinedList.Add(tempTime, false, false);  // 1. false ei salli duplikaatteja, 2. false etsii
                                                // ajan paikan olemassa olevasta listasta
   }
@@ -660,14 +660,14 @@ const NFmiTimeList NFmiTimeList::Combine(NFmiTimeList &theList,
 
 // ======================================================================
 
-const NFmiMetTime &NFmiTimeList::FirstTime(void) const
+const NFmiMetTime &NFmiTimeList::FirstTime() const
 {
   static NFmiMetTime dummy;
   if (IndexOk(0)) return *itsVectorList[0];
   return dummy;
 }
 
-const NFmiMetTime &NFmiTimeList::LastTime(void) const
+const NFmiMetTime &NFmiTimeList::LastTime() const
 {
   static NFmiMetTime dummy;
   int index = NumberOfItems() - 1;
@@ -675,7 +675,7 @@ const NFmiMetTime &NFmiTimeList::LastTime(void) const
   return dummy;
 }
 
-int NFmiTimeList::CurrentResolution(void) const
+int NFmiTimeList::CurrentResolution() const
 {
   if (itsIndex > 0 && itsIndex < static_cast<int>(itsVectorList.size()))
     return itsVectorList[itsIndex]->DifferenceInMinutes(*itsVectorList[itsIndex - 1]);
@@ -720,7 +720,7 @@ int NFmiTimeList::FindNearestTimes(const NFmiMetTime &theTime,
 const NFmiMetTime *NFmiTimeList::Time(int theIndex) const
 {
   if (IndexOk(theIndex)) return itsVectorList[theIndex];
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------

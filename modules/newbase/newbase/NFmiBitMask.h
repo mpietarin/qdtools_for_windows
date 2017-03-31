@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIBITMASK_H
-#define NFMIBITMASK_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiGridBase.h"
@@ -131,6 +130,5 @@ inline NFmiBitMask::~NFmiBitMask(void)
 // ----------------------------------------------------------------------
 
 inline long NFmiBitMask::Size(void) const { return itsSize; }
-#endif  // NFMIBITMASK_H
 
 // ======================================================================

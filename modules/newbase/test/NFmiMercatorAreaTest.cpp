@@ -9,8 +9,8 @@
 
 #include <regression/tframe.h>
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
 std::string tostr(const NFmiPoint& p)
 {

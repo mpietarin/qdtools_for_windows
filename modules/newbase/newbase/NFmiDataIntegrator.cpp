@@ -146,9 +146,9 @@ float Integrate(NFmiFastQueryInfo& theQI,
 {
   if (theIndexMask.empty()) return kFloatMissing;
 
-  for (NFmiIndexMask::const_iterator it = theIndexMask.begin(); it != theIndexMask.end(); ++it)
+  for (unsigned long it : theIndexMask)
   {
-    theQI.LocationIndex(*it);
+    theQI.LocationIndex(it);
     const float tmp = theQI.FloatValue();
     theSpaceModifier.Calculate(tmp);
   }
@@ -232,7 +232,7 @@ float Integrate(NFmiFastQueryInfo& theQI,
 
   if (theIndexMask.empty()) return kFloatMissing;
 
-  for (NFmiIndexMask::const_iterator it = theIndexMask.begin(); it != theIndexMask.end(); ++it)
+  for (unsigned long it : theIndexMask)
   {
     theTimeModifier.Clear();
 
@@ -240,7 +240,7 @@ float Integrate(NFmiFastQueryInfo& theQI,
 
     do
     {
-      theQI.LocationIndex(*it);
+      theQI.LocationIndex(it);
 
       const float tmp = theQI.FloatValue();
 
@@ -349,7 +349,7 @@ float Integrate(NFmiFastQueryInfo& theQI,
 
   if (theIndexMask.empty()) return kFloatMissing;
 
-  for (NFmiIndexMask::const_iterator it = theIndexMask.begin(); it != theIndexMask.end(); ++it)
+  for (unsigned long it : theIndexMask)
   {
     theMainTimeModifier.Clear();
 
@@ -366,7 +366,7 @@ float Integrate(NFmiFastQueryInfo& theQI,
 
       do
       {
-        theQI.LocationIndex(*it);
+        theQI.LocationIndex(it);
         const float tmp = theQI.FloatValue();
 
         theSubTimeModifier.Calculate(tmp);

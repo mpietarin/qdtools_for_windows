@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDataModifierList::~NFmiParamDataModifierList(void) { Clear(true); }
+NFmiParamDataModifierList::~NFmiParamDataModifierList() { Clear(true); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDataModifierList::NFmiParamDataModifierList(void) : itsList(), itsIter() {}
+NFmiParamDataModifierList::NFmiParamDataModifierList() : itsList(), itsIter() {}
 // ----------------------------------------------------------------------
 /*!
  * \param theModifier Undocumented
@@ -47,7 +47,7 @@ bool NFmiParamDataModifierList::Add(NFmiParamDataModifier* theModifier)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamDataModifierList::Reset(void)
+bool NFmiParamDataModifierList::Reset()
 {
   itsIter = itsList.Start();
   return true;
@@ -59,14 +59,14 @@ bool NFmiParamDataModifierList::Reset(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamDataModifierList::Next(void) { return itsIter.Next() == true; }
+bool NFmiParamDataModifierList::Next() { return itsIter.Next() == true; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDataModifier* NFmiParamDataModifierList::Current(void) { return itsIter.CurrentPtr(); }
+NFmiParamDataModifier* NFmiParamDataModifierList::Current() { return itsIter.CurrentPtr(); }
 // ----------------------------------------------------------------------
 /*!
  * \param fDeleteData Undocumented
@@ -110,7 +110,7 @@ bool NFmiParamDataModifierList::Index(unsigned long theIndex)
 
 bool NFmiParamDataModifierList::Find(const NFmiDataIdent& theParam)
 {
-  NFmiDataIdent* paramPtr = 0;
+  NFmiDataIdent* paramPtr = nullptr;
   for (Reset(); Next();)
   {
     paramPtr = Current()->Param();

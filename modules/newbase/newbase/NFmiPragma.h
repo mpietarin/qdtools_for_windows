@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPRAGMA_H
-#define NFMIPRAGMA_H
+#pragma once
 
 #ifdef _MSC_VER
 
@@ -21,5 +20,3 @@
 #define PRAGMA_WARNING_POP()
 
 #endif
-
-#endif  // NFMIPRAGMA_H

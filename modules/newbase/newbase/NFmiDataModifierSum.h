@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERSUM_H
-#define NFMIDATAMODIFIERSUM_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -30,7 +29,5 @@ class _FMI_DLL NFmiDataModifierSum : public NFmiDataModifier
   float itsSum;
 
 };  // class NFmiDataModifierSum
-
-#endif  // NFMIDATAMODIFIERSUM_H
 
 // ======================================================================

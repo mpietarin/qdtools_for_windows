@@ -5,16 +5,15 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAPOOL_H
-#define NFMIDATAPOOL_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiVoid.h"
 
 #include <cstdlib>
 #include <memory>
-#include <vector>
 #include <ostream>
+#include <vector>
 
 class NFmiTransformList;
 
@@ -315,6 +314,5 @@ inline std::ostream& operator<<(std::ostream& file, const NFmiDataPool& ob)
 // ----------------------------------------------------------------------
 
 inline std::istream& operator>>(std::istream& file, NFmiDataPool& ob) { return ob.Read(file); }
-#endif  // NFMIDATAPOOL_H
 
 // ======================================================================

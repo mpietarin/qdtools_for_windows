@@ -56,7 +56,7 @@ void NFmiDataModifierCombinedParam::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierCombinedParam::CalculationResult(void)
+float NFmiDataModifierCombinedParam::CalculationResult()
 {
   itsCombinedParam->EndIntegration();
   return itsCombinedParam->TransformedFloatValue();
@@ -68,7 +68,7 @@ float NFmiDataModifierCombinedParam::CalculationResult(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiCombinedParam* NFmiDataModifierCombinedParam::CombinedCalculationResult(void)
+NFmiCombinedParam* NFmiDataModifierCombinedParam::CombinedCalculationResult()
 {
   itsCombinedParam->EndIntegration();
   return itsCombinedParam;
@@ -80,5 +80,5 @@ NFmiCombinedParam* NFmiDataModifierCombinedParam::CombinedCalculationResult(void
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierCombinedParam::Clear(void) { itsCombinedParam->ClearIntegration(); }
+void NFmiDataModifierCombinedParam::Clear() { itsCombinedParam->ClearIntegration(); }
 // ======================================================================

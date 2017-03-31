@@ -13,13 +13,13 @@
 // ======================================================================
 
 #include "NFmiDataModifierVariance.h"
-#include "NFmiRegressionItem.h"
 #include "NFmiQueryInfo.h"
+#include "NFmiRegressionItem.h"
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
-#include <cmath>
 
-typedef boost::unique_lock<MutexType> WriteLock;
+using WriteLock = boost::unique_lock<MutexType>;
 
 using namespace std;
 
@@ -29,7 +29,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierVariance::~NFmiDataModifierVariance(void) {}
+NFmiDataModifierVariance::~NFmiDataModifierVariance() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -51,7 +51,7 @@ NFmiDataModifierVariance::NFmiDataModifierVariance(NFmiDataIdent* theDataIdent,
       fVarianceOnly(onlyVariance),
       itsVarianceLevel(theVarianceLevel)
 {
-  srand(static_cast<unsigned int>(time(NULL)));
+  srand(static_cast<unsigned int>(time(nullptr)));
   // AddSubModifier(&NFmiRegressionItem);//Vain testiä varten
 }
 
@@ -61,7 +61,7 @@ NFmiDataModifierVariance::NFmiDataModifierVariance(NFmiDataIdent* theDataIdent,
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataModifierVariance::FloatValue(void)
+double NFmiDataModifierVariance::FloatValue()
 {
   double variance = NFmiRegressionModifier::FloatValue();
   if (variance == kFloatMissing) return variance;
@@ -83,7 +83,7 @@ double NFmiDataModifierVariance::FloatValue(void)
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataModifierVariance::GaussianRandom(void)
+double NFmiDataModifierVariance::GaussianRandom()
 {
   // Using static local variables like this is not
   // thread safe - we need to lock. Note also that

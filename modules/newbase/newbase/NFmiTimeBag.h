@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMITIMEBAG_H
-#define NFMITIMEBAG_H
+#pragma once
 
-#include "NFmiSize.h"
 #include "NFmiMetTime.h"
+#include "NFmiSize.h"
 
 //! Undocumented
 class _FMI_DLL NFmiTimeBag : public NFmiSize
@@ -189,6 +188,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiTimeBag &ob)
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiTimeBag &ob) { return ob.Read(file); }
-#endif  // NFMITIMEBAG_H
 
 // ======================================================================

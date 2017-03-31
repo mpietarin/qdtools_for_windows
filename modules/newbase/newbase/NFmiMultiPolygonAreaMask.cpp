@@ -27,10 +27,10 @@
 
 #include "NFmiMultiPolygonAreaMask.h"
 #include "NFmiBitmapAreaMask.h"
+#include "NFmiGrid.h"
+#include "NFmiPoint.h"
 #include "NFmiSvgPath.h"
 #include "NFmiSvgTools.h"
-#include "NFmiPoint.h"
-#include "NFmiGrid.h"
 
 // ----------------------------------------------------------------------
 /*!
@@ -38,14 +38,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiMultiPolygonAreaMask::~NFmiMultiPolygonAreaMask(void) { Clear(); }
+NFmiMultiPolygonAreaMask::~NFmiMultiPolygonAreaMask() { Clear(); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiMultiPolygonAreaMask::NFmiMultiPolygonAreaMask(void)
+NFmiMultiPolygonAreaMask::NFmiMultiPolygonAreaMask()
     : NFmiAreaMaskImpl(), itsAreaPolygons(), itsAreaPolygonValues(), fInitialized(false)
 {
 }
@@ -97,7 +97,7 @@ double NFmiMultiPolygonAreaMask::CalcValueFromLocation(const NFmiPoint& theLatLo
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiMultiPolygonAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiMultiPolygonAreaMask::MakeSubMaskString() const
 {
   NFmiString str;
   return str;
@@ -109,7 +109,7 @@ const NFmiString NFmiMultiPolygonAreaMask::MakeSubMaskString(void) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiMultiPolygonAreaMask::Clear(void)
+void NFmiMultiPolygonAreaMask::Clear()
 {
   int size = itsAreaPolygons.size();
   for (int i = 0; i < size; i++)
@@ -159,7 +159,7 @@ std::ostream& NFmiMultiPolygonAreaMask::Write(std::ostream& file) const
 
 std::istream& NFmiMultiPolygonAreaMask::Read(std::istream& file)
 {
-  NFmiSvgPath* tmp = 0;
+  NFmiSvgPath* tmp = nullptr;
   double value;
   Clear();
   do
@@ -197,7 +197,7 @@ std::istream& NFmiMultiPolygonAreaMask::Read(std::istream& file)
 
 NFmiBitmapAreaMask* NFmiMultiPolygonAreaMask::CreateBitmapAreaMask(const NFmiGrid& theGrid)
 {
-  NFmiBitmapAreaMask* mask = new NFmiBitmapAreaMask(theGrid, 0, 0);
+  auto* mask = new NFmiBitmapAreaMask(theGrid, nullptr, nullptr);
   if (mask)
   {
     NFmiGrid grid(theGrid);  // tehdään hilasta kopio, että voidaan käydä hila läpi

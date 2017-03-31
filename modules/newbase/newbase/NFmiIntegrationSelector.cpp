@@ -23,13 +23,8 @@
 // ----------------------------------------------------------------------
 
 NFmiIntegrationSelector::NFmiIntegrationSelector(const NFmiIntegrationSelector& theSelector)
-    : itsType(theSelector.itsType),
-      itsProbabilityCondition(theSelector.itsProbabilityCondition),
-      itsProbabilityLowerLimit(theSelector.itsProbabilityLowerLimit),
-      itsProbabilityUpperLimit(theSelector.itsProbabilityUpperLimit),
-      itsProbabilityScale(theSelector.itsProbabilityScale)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -62,5 +57,5 @@ NFmiIntegrationSelector::NFmiIntegrationSelector(FmiIntegrationSelector theSelec
  */
 // ----------------------------------------------------------------------
 
-NFmiIntegrationSelector::~NFmiIntegrationSelector() {}
+NFmiIntegrationSelector::~NFmiIntegrationSelector() = default;
 // ======================================================================

@@ -12,8 +12,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPRODUCER_H
-#define NFMIPRODUCER_H
+#pragma once
 
 #include "NFmiIndividual.h"
 
@@ -99,6 +98,5 @@ inline NFmiProducer& NFmiProducer::operator=(const NFmiProducer& theProducer)
 // ----------------------------------------------------------------------
 
 inline const char* NFmiProducer::ClassName(void) const { return "NFmiProducer"; }
-#endif  // NFMIPRODUCER_H
 
 // ======================================================================

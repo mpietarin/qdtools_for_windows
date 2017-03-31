@@ -87,8 +87,8 @@
 // ======================================================================
 
 #include "NFmiAzimuthalArea.h"
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 
 using namespace std;
@@ -101,7 +101,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiAzimuthalArea::NFmiAzimuthalArea(void)
+NFmiAzimuthalArea::NFmiAzimuthalArea()
     : itsTopRightLatLon(),
       itsBottomLeftLatLon(),
       itsBottomLeftWorldXY(),
@@ -125,20 +125,8 @@ NFmiAzimuthalArea::NFmiAzimuthalArea(void)
 // ----------------------------------------------------------------------
 
 NFmiAzimuthalArea::NFmiAzimuthalArea(const NFmiAzimuthalArea &theAzimuthalArea)
-    : NFmiArea(theAzimuthalArea),
-      itsTopRightLatLon(theAzimuthalArea.itsTopRightLatLon),
-      itsBottomLeftLatLon(theAzimuthalArea.itsBottomLeftLatLon),
-      itsBottomLeftWorldXY(theAzimuthalArea.itsBottomLeftWorldXY),
-      itsXScaleFactor(theAzimuthalArea.itsXScaleFactor),
-      itsYScaleFactor(theAzimuthalArea.itsYScaleFactor),
-      itsWorldRect(theAzimuthalArea.itsWorldRect),
-      itsRadialRange(theAzimuthalArea.itsRadialRange),
-      itsCentralLongitude(theAzimuthalArea.itsCentralLongitude),
-      itsCentralLatitude(theAzimuthalArea.itsCentralLatitude),
-      itsTrueLatitude(theAzimuthalArea.itsTrueLatitude),
-      itsTrueLatScaleFactor(theAzimuthalArea.itsTrueLatScaleFactor)
-{
-}
+
+    = default;
 
 /*!
 * Constructor
@@ -729,7 +717,7 @@ const NFmiPoint NFmiAzimuthalArea::ToLatLon(double theAzimuth, double theRadius)
  */
 // ----------------------------------------------------------------------
 
-const NFmiPoint NFmiAzimuthalArea::CurrentCenter(void) const
+const NFmiPoint NFmiAzimuthalArea::CurrentCenter() const
 {
   return NFmiPoint(itsCentralLongitude, itsCentralLatitude.Value());
 }

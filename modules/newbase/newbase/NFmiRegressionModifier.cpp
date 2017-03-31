@@ -13,14 +13,13 @@
 // ======================================================================
 
 #include "NFmiRegressionModifier.h"
+#include "NFmiDataIdent.h"
+#include "NFmiDataModifierConstant.h"
 #include "NFmiDataModifierList.h"
 #include "NFmiDataModifierLogical.h"
-#include "NFmiDataModifierList.h"
 #include "NFmiRegressionItem.h"
-#include "NFmiDataModifierConstant.h"
-#include "NFmiDataIdent.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 // ----------------------------------------------------------------------
 /*!
@@ -28,7 +27,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiRegressionModifier::~NFmiRegressionModifier(void) { delete itsRegressionItems; }
+NFmiRegressionModifier::~NFmiRegressionModifier() { delete itsRegressionItems; }
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -46,14 +45,14 @@ NFmiRegressionModifier::NFmiRegressionModifier(NFmiDataIdent *theParam,
 {
   if (*itsParam == NFmiDataIdent(NFmiParam(kFmiTemperature)))
   {
-    NFmiDataModifierList *firstAlternative = new NFmiDataModifierList;
+    auto *firstAlternative = new NFmiDataModifierList;
     firstAlternative->Add(new NFmiDataModifierConstant(3.0, kFmiAdd));
     firstAlternative->Add(new NFmiRegressionItem(
         -0.02, new NFmiDataIdent(NFmiParam(kFmiTotalCloudCover)), itsLevel, itsData));
     firstAlternative->Add(new NFmiRegressionItem(
         -0.8, new NFmiDataIdent(NFmiParam(kFmiWindSpeedMS)), itsLevel, itsData));
 
-    NFmiDataModifierList *secondAlternative = new NFmiDataModifierList;
+    auto *secondAlternative = new NFmiDataModifierList;
     secondAlternative->Add(new NFmiRegressionItem(5.0));
     secondAlternative->Add(new NFmiRegressionItem(
         -0.03, new NFmiDataIdent(NFmiParam(kFmiTotalCloudCover)), itsLevel, itsData));
@@ -62,9 +61,9 @@ NFmiRegressionModifier::NFmiRegressionModifier(NFmiDataIdent *theParam,
 
     NFmiInfoModifier *conditionData =
         new NFmiInfoModifier(new NFmiDataIdent(NFmiParam(kFmiTemperature)), itsLevel, itsData);
-    NFmiDataModifierBoolean *condition = new NFmiDataModifierBoolean(
+    auto *condition = new NFmiDataModifierBoolean(
         kFmiModifierValueGreaterThan, conditionData, new NFmiRegressionItem(14.0));
-    NFmiDataModifierLogical *alternatives =
+    auto *alternatives =
         new NFmiDataModifierLogical(condition, firstAlternative, secondAlternative);
     itsRegressionItems->Add(alternatives);
   }
@@ -76,7 +75,7 @@ NFmiRegressionModifier::NFmiRegressionModifier(NFmiDataIdent *theParam,
  */
 // ----------------------------------------------------------------------
 
-double NFmiRegressionModifier::FloatValue(void)
+double NFmiRegressionModifier::FloatValue()
 {
   if (!itsData) return kFloatMissing;
 

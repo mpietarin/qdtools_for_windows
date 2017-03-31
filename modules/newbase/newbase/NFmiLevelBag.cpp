@@ -20,7 +20,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiLevelBag::~NFmiLevelBag(void)
+NFmiLevelBag::~NFmiLevelBag()
 {
   if (itsLevels) delete[] static_cast<NFmiLevel *>(itsLevels);
 }
@@ -31,7 +31,7 @@ NFmiLevelBag::~NFmiLevelBag(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiLevelBag::NFmiLevelBag(void) : itsLevels(0), itsStep(0) {}
+NFmiLevelBag::NFmiLevelBag() : itsLevels(nullptr), itsStep(0) {}
 // ----------------------------------------------------------------------
 /*!
  * \param theLevelType Undocumented
@@ -47,7 +47,7 @@ NFmiLevelBag::NFmiLevelBag(FmiLevelType theLevelType,
                            float theStep)
     : NFmiSize(theStep ? static_cast<unsigned long>(((theMaxValue - theMinValue) / theStep) + 1)
                        : 1),
-      itsLevels(0),
+      itsLevels(nullptr),
       itsStep(theStep)
 {
   itsLevels = new NFmiLevel[itsSize];
@@ -65,7 +65,9 @@ NFmiLevelBag::NFmiLevelBag(FmiLevelType theLevelType,
 // ----------------------------------------------------------------------
 
 NFmiLevelBag::NFmiLevelBag(NFmiLevel *theLevelArray, unsigned long numOfLevels)
-    : NFmiSize(numOfLevels), itsLevels(theLevelArray ? new NFmiLevel[GetSize()] : 0), itsStep(0ul)
+    : NFmiSize(numOfLevels),
+      itsLevels(theLevelArray ? new NFmiLevel[GetSize()] : nullptr),
+      itsStep(0ul)
 {
   for (unsigned int i = 0; i < GetSize(); i++)
     itsLevels[i] = theLevelArray[i];
@@ -81,7 +83,7 @@ NFmiLevelBag::NFmiLevelBag(NFmiLevel *theLevelArray, unsigned long numOfLevels)
 
 NFmiLevelBag::NFmiLevelBag(const NFmiLevelBag &theBag)
     : NFmiSize(theBag.itsIndex, theBag.itsSize),
-      itsLevels(theBag.itsLevels ? new NFmiLevel[itsSize] : 0),
+      itsLevels(theBag.itsLevels ? new NFmiLevel[itsSize] : nullptr),
       itsStep(theBag.itsStep)
 {
   for (unsigned int i = 0; i < itsSize; i++)

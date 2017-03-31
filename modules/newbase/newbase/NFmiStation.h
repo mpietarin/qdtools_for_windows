@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISTATION_H
-#define NFMISTATION_H
+#pragma once
 
 #include "NFmiLocation.h"
 
@@ -82,6 +81,5 @@ inline std::ostream& operator<<(std::ostream& os, const NFmiStation& item)
 // ----------------------------------------------------------------------
 
 inline std::istream& operator>>(std::istream& is, NFmiStation& item) { return item.Read(is); }
-#endif  // NFMISTATION_H
 
 // ======================================================================

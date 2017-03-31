@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMICALCULATIONCONDITION_H
-#define NFMICALCULATIONCONDITION_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiString.h"
@@ -112,7 +111,5 @@ inline bool NFmiCalculationCondition::IsRampMask(void) const
   return (itsCondition == kFmiMaskRisingRamp || itsCondition == kFmiMaskLoweringRamp ||
           itsCondition == kFmiMaskDoubleRamp);
 }
-
-#endif  // NFMICALCULATIONCONDITION_H
 
 // ======================================================================

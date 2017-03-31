@@ -13,14 +13,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMaxPlace::~NFmiDataModifierMaxPlace(void) {}
+NFmiDataModifierMaxPlace::~NFmiDataModifierMaxPlace() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMaxPlace::NFmiDataModifierMaxPlace(void) { itsExtremeValue = -3.4E+38f; }
+NFmiDataModifierMaxPlace::NFmiDataModifierMaxPlace() { itsExtremeValue = -3.4E+38f; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -40,14 +40,14 @@ void NFmiDataModifierMaxPlace::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierMaxPlace::Clear(void) { itsExtremeValue = -3.4E+38f; }
+void NFmiDataModifierMaxPlace::Clear() { itsExtremeValue = -3.4E+38f; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierMaxPlace::CalculationResult(void)
+float NFmiDataModifierMaxPlace::CalculationResult()
 {
   return itsExtremeValue != -3.4E+38f && !(!fMissingValuesAllowed && itsNumberOfMissingValues > 0)
              ? itsExtremeValue

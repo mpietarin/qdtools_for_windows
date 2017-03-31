@@ -12,8 +12,8 @@
  */
 // ======================================================================
 
-#include "NFmiQueryData.h"
 #include "NFmiQueryInfoSatel.h"
+#include "NFmiQueryData.h"
 #include "NFmiSaveBaseFactory.h"
 
 // ----------------------------------------------------------------------
@@ -22,14 +22,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryInfoSatel::~NFmiQueryInfoSatel(void) { Destroy(); }
+NFmiQueryInfoSatel::~NFmiQueryInfoSatel() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryInfoSatel::NFmiQueryInfoSatel(void) : NFmiQueryInfo(), itsSatelName(0) {}
+NFmiQueryInfoSatel::NFmiQueryInfoSatel() : NFmiQueryInfo(), itsSatelName(nullptr) {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -70,7 +70,7 @@ NFmiQueryInfoSatel::NFmiQueryInfoSatel(NFmiQueryData *theInfo,
                                        NFmiVPlaceDescriptor *theVPlaceDescriptor)
     : NFmiQueryInfo(
           theInfo, theParamDescriptor, theTimeDescriptor, theHPlaceDescriptor, theVPlaceDescriptor),
-      itsSatelName(0)
+      itsSatelName(nullptr)
 {
 }
 
@@ -93,10 +93,10 @@ NFmiQueryInfoSatel::NFmiQueryInfoSatel(const NFmiQueryInfoSatel &theInfo)
  */
 // ----------------------------------------------------------------------
 
-void NFmiQueryInfoSatel::Destroy(void)
+void NFmiQueryInfoSatel::Destroy()
 {
   delete itsSatelName;
-  itsSatelName = 0;
+  itsSatelName = nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -105,7 +105,7 @@ void NFmiQueryInfoSatel::Destroy(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryInfo *NFmiQueryInfoSatel::Clone(void) const { return new NFmiQueryInfoSatel(*this); }
+NFmiQueryInfo *NFmiQueryInfoSatel::Clone() const { return new NFmiQueryInfoSatel(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator

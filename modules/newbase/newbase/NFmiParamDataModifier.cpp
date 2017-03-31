@@ -13,8 +13,8 @@
 // ======================================================================
 
 #include "NFmiParamDataModifier.h"
-#include "NFmiQueryInfo.h"
 #include "NFmiDataModifierList.h"
+#include "NFmiQueryInfo.h"
 #include <stdexcept>
 
 // ----------------------------------------------------------------------
@@ -23,7 +23,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDataModifier::~NFmiParamDataModifier(void)
+NFmiParamDataModifier::~NFmiParamDataModifier()
 {
   delete itsParam;
   delete itsLevel;
@@ -44,9 +44,9 @@ NFmiParamDataModifier::NFmiParamDataModifier(NFmiDataIdent* theParam,
                                              NFmiLevel* theLevel,
                                              FmiJoinOperator theJoinOperator)
     : NFmiDataModifier(theJoinOperator),
-      itsParam(theParam ? new NFmiDataIdent(*theParam) : 0),
-      itsLevel(theLevel ? new NFmiLevel(*theLevel) : 0),
-      itsSubList(0)
+      itsParam(theParam ? new NFmiDataIdent(*theParam) : nullptr),
+      itsLevel(theLevel ? new NFmiLevel(*theLevel) : nullptr),
+      itsSubList(nullptr)
 {
   itsSubList = new NFmiDataModifierList;
 }
@@ -92,7 +92,7 @@ bool NFmiParamDataModifier::AddSubModifier(NFmiDataModifier* /* theModifier */)
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierList* NFmiParamDataModifier::SubModifiers(void) { return itsSubList; }
+NFmiDataModifierList* NFmiParamDataModifier::SubModifiers() { return itsSubList; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented, unused
@@ -115,7 +115,7 @@ float NFmiParamDataModifier::FloatOperation(float theValue) { return theValue; }
  */
 // ----------------------------------------------------------------------
 
-float NFmiParamDataModifier::CalculationResult(void) { return kFloatMissing; }
+float NFmiParamDataModifier::CalculationResult() { return kFloatMissing; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented, unused
@@ -129,7 +129,7 @@ void NFmiParamDataModifier::Calculate(float /* theValue */) {}
  */
 // ----------------------------------------------------------------------
 
-void NFmiParamDataModifier::Clear(void) {}
+void NFmiParamDataModifier::Clear() {}
 // ----------------------------------------------------------------------
 /*!
  * \param file The output stream to write to

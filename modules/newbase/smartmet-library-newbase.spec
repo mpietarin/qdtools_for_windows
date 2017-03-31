@@ -3,7 +3,7 @@
 %define SPECNAME smartmet-library-%{DIRNAME}
 Summary: newbase library
 Name: %{SPECNAME}
-Version: 17.3.9
+Version: 17.3.28
 Release: 1%{?dist}.fmi
 License: MIT
 Group: Development/Libraries
@@ -73,6 +73,16 @@ FMI newbase static library
 %{_libdir}/libsmartmet-%{DIRNAME}.a
 
 %changelog
+* Tue Mar 28 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.28-1.fmi
+- Modified info masks to enable operating on climatology data at any given time in history
+
+* Wed Mar 22 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.22-1.fmi
+- Added Opera ODIM parameter ZDR with name DifferentialReflectivity
+- Added Opera ODIM parameter KDP with name SpecificDifferentialPhase
+- Added Opera ODIM parameter PHIDP with name DifferentialPhase
+- Added Opera ODIM parameter SQI with name SignalQualityIndex
+- Added Opera ODIM parameter RHORV with name ReflectivityCorrelation
+
 * Thu Mar  9 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.9-1.fmi
 - Added sounding tools for SmartMet Editor
 

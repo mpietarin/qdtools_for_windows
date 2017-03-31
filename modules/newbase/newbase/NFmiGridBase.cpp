@@ -15,8 +15,8 @@
 #include "NFmiGridBase.h"
 #include <boost/functional/hash.hpp>
 #include <algorithm>
-#include <iostream>
 #include <cstring>
+#include <iostream>
 // memcpy()
 
 using namespace std;
@@ -30,8 +30,8 @@ const double kFmiEps = 0.0001;
 // ----------------------------------------------------------------------
 
 NFmiGridBase::NFmiGridBase(const NFmiGridBase &theGridBase)
-    : itsData(theGridBase.itsData ? new NFmiDataPool(*(theGridBase.itsData)) : 0),
-      itsFloatData(0),
+    : itsData(theGridBase.itsData ? new NFmiDataPool(*(theGridBase.itsData)) : nullptr),
+      itsFloatData(nullptr),
       itsStartingCorner(theGridBase.itsStartingCorner),
       itsInterpolationMethod(theGridBase.itsInterpolationMethod),
       itsXNumber(theGridBase.itsXNumber),
@@ -187,7 +187,7 @@ bool NFmiGridBase::Init(NFmiGridBase *theData)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::First(void)
+bool NFmiGridBase::First()
 {
   Setf(false);
   return GridPoint(itsFirstX, itsFirstY);
@@ -199,7 +199,7 @@ bool NFmiGridBase::First(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::Reset(void)
+bool NFmiGridBase::Reset()
 {
   First();
   Setf(true);
@@ -212,7 +212,7 @@ bool NFmiGridBase::Reset(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::Last(void)
+bool NFmiGridBase::Last()
 {
   Setf(false);
   return GridPoint(itsLastX, itsLastY);
@@ -224,7 +224,7 @@ bool NFmiGridBase::Last(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::ResetLast(void)
+bool NFmiGridBase::ResetLast()
 {
   Last();
   Setf(true);
@@ -488,7 +488,7 @@ bool NFmiGridBase::Crop(const NFmiPoint &theBottomLeft,
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::ResetCrop(void)
+bool NFmiGridBase::ResetCrop()
 {
   //  const NFmiPoint bl(itsBase,itsBase);
   const NFmiPoint bl(0, 0);
@@ -786,8 +786,8 @@ bool NFmiGridBase::FastBiVariateInterpolation(double x, double y, double &theVal
   double dx = modf(x, &X);
   double dy = modf(y, &Y);
 
-  int x0 = static_cast<int>(X);
-  int y0 = static_cast<int>(Y);
+  auto x0 = static_cast<int>(X);
+  auto y0 = static_cast<int>(Y);
 
   if ((dx != 0.) && (dx < kFmiEps))
   {
@@ -819,7 +819,7 @@ bool NFmiGridBase::FastBiVariateInterpolation(double x, double y, double &theVal
 
   long numberOfFloats = XNumber() * YNumber();
 
-  if (itsFloatData == 0)
+  if (itsFloatData == nullptr)
   {
     // In fact, this initialization is a "once in a life time" operation and should be in
     // constructor or Init(), instead.
@@ -925,13 +925,13 @@ double NFmiGridBase::DataValue(int x, int y)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiGridBase::Swap(void)
+bool NFmiGridBase::Swap()
 {
   if (itsStartingCorner == kBottomLeft) return true;
 
   NFmiDataPool datapool(*itsData);
 
-  if (datapool.Data() == 0) return false;
+  if (datapool.Data() == nullptr) return false;
 
   if (itsData) delete itsData;
   itsData = new NFmiDataPool();
@@ -1048,7 +1048,7 @@ void NFmiGridBase::MeanFilter(unsigned long numOfSteps)
  */
 // ----------------------------------------------------------------------
 
-void NFmiGridBase::Center(void)
+void NFmiGridBase::Center()
 {
   GridPoint(FirstGridPoint().X() + (LastGridPoint().X() - FirstGridPoint().X()) / 2.,
             FirstGridPoint().Y() + (LastGridPoint().Y() - FirstGridPoint().Y()) / 2.);
@@ -1232,7 +1232,7 @@ bool NFmiGridBase::Index(unsigned long theIndex)
 
 bool NFmiGridBase::Init(unsigned long theXNumber, unsigned long theYNumber)
 {
-  itsFloatData = 0;
+  itsFloatData = nullptr;
   itsStartingCorner = kBottomLeft;
   itsInterpolationMethod = kLinearly;
   itsXNumber = theXNumber;
@@ -1291,8 +1291,8 @@ bool NFmiGridBase::Swap(FmiDirection theCurrentDirection)
 
 NFmiGridBase &NFmiGridBase::operator=(const NFmiGridBase &theBase)
 {
-  theBase.itsData ? itsData = new NFmiDataPool(*(theBase.itsData)) : itsData = 0;
-  itsFloatData = 0;
+  theBase.itsData ? itsData = new NFmiDataPool(*(theBase.itsData)) : itsData = nullptr;
+  itsFloatData = nullptr;
   itsStartingCorner = theBase.itsStartingCorner;
   itsInterpolationMethod = theBase.itsInterpolationMethod;
   itsXNumber = theBase.itsXNumber;

@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAvgAbs::~NFmiDataModifierAvgAbs(void) {}
+NFmiDataModifierAvgAbs::~NFmiDataModifierAvgAbs() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAvgAbs::NFmiDataModifierAvgAbs(void) : NFmiDataModifier(), itsCounter(0), itsSum(0)
+NFmiDataModifierAvgAbs::NFmiDataModifierAvgAbs() : NFmiDataModifier(), itsCounter(0), itsSum(0)
 {
   fCalculationResultOk = false;
 }
@@ -61,7 +61,7 @@ void NFmiDataModifierAvgAbs::Calculate(NFmiQueryInfo* theQI) { Calculate(theQI->
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierAvgAbs::Clear(void)
+void NFmiDataModifierAvgAbs::Clear()
 {
   itsCounter = 0;
   itsSum = 0;
@@ -74,7 +74,7 @@ void NFmiDataModifierAvgAbs::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierAvgAbs::CalculationResult(void)
+float NFmiDataModifierAvgAbs::CalculationResult()
 {
   if (fCalculationResultOk && itsCounter > 0)
     return itsSum / itsCounter;
@@ -88,5 +88,5 @@ float NFmiDataModifierAvgAbs::CalculationResult(void)
  */
 // ----------------------------------------------------------------------
 
-long NFmiDataModifierAvgAbs::Counter(void) { return itsCounter; }
+long NFmiDataModifierAvgAbs::Counter() { return itsCounter; }
 // ======================================================================

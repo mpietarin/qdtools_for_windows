@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierPrecFormUnion::~NFmiDataModifierPrecFormUnion(void) {}
+NFmiDataModifierPrecFormUnion::~NFmiDataModifierPrecFormUnion() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -47,7 +47,7 @@ NFmiDataModifierPrecFormUnion::NFmiDataModifierPrecFormUnion(FmiJoinOperator the
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierPrecFormUnion::Result(void)
+float NFmiDataModifierPrecFormUnion::Result()
 {
   return static_cast<float>(fIsRain * 1 + fIsSleet * 2 + fIsSnow * 4 + fIsFreezing * 8);
 }
@@ -69,7 +69,7 @@ void NFmiDataModifierPrecFormUnion::Calculate(NFmiQueryInfo* theQI)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierPrecFormUnion::Clear(void)
+void NFmiDataModifierPrecFormUnion::Clear()
 {
   NFmiDataModifier::Clear();
   fIsRain = false;
@@ -85,7 +85,7 @@ void NFmiDataModifierPrecFormUnion::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierPrecFormUnion::CalculationResult(void)
+float NFmiDataModifierPrecFormUnion::CalculationResult()
 {
   if (fCalculationResultOk)
     return Result();

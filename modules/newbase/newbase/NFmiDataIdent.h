@@ -5,12 +5,11 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAIDENT_H
-#define NFMIDATAIDENT_H
+#pragma once
 
 #include "NFmiParam.h"
-#include "NFmiProducer.h"
 #include "NFmiParameterName.h"
+#include "NFmiProducer.h"
 
 class NFmiVoidPtrList;
 class NFmiVoidPtrIterator;
@@ -356,6 +355,5 @@ inline void NFmiDataIdent::SetActive(bool isActive) { fIsActive = isActive; }
 // ----------------------------------------------------------------------
 
 inline const char *NFmiDataIdent::ClassName(void) const { return "NFmiDataIdent"; }
-#endif  // NFMIDATAIDENT_H
 
 // ======================================================================

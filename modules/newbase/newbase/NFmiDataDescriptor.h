@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATADESCRIPTOR_H
-#define NFMIDATADESCRIPTOR_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include <iostream>
@@ -28,7 +27,5 @@ class _FMI_DLL NFmiDataDescriptor
   virtual std::istream& Read(std::istream& file) = 0;
 
 };  // class NFmiDataDescriptor
-
-#endif  // NFMIDATADESCRIPTOR_H
 
 // ======================================================================

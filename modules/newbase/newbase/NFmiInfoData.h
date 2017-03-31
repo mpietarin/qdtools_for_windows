@@ -9,8 +9,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIINFODATA_H
-#define NFMIINFODATA_H
+#pragma once
 
 namespace NFmiInfoData
 {
@@ -92,5 +91,3 @@ enum SpecialParameters
 };
 
 }  // end of namespace NFmiInfoData
-
-#endif  // NFMIINFODATA_H

@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMISTEREOGRAPHICAREA_H
-#define NFMISTEREOGRAPHICAREA_H
+#pragma once
 
-#include "NFmiAzimuthalArea.h"
 #include "NFmiAngle.h"
+#include "NFmiAzimuthalArea.h"
 
 //! Undocumened
 class _FMI_DLL NFmiStereographicArea : public NFmiAzimuthalArea
@@ -118,6 +117,5 @@ inline unsigned long NFmiStereographicArea::ClassId(void) const { return kNFmiSt
 // ----------------------------------------------------------------------
 
 inline const char* NFmiStereographicArea::ClassName(void) const { return "kNFmiStereographicArea"; }
-#endif  // NFMISTEREOGRAPHICAREA_H
 
 // ======================================================================

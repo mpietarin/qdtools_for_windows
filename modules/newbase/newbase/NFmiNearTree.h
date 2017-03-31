@@ -97,8 +97,7 @@
  */
 // ======================================================================
 
-#ifndef NFMINEARTREE_H
-#define NFMINEARTREE_H
+#pragma once
 
 #include "NFmiDef.h"
 #include "NFmiNearTreeImpl.h"
@@ -182,8 +181,7 @@ NFmiNearTree<T, F>::~NFmiNearTree(void)
 // ----------------------------------------------------------------------
 
 template <typename T, typename F>
-NFmiNearTree<T, F>::NFmiNearTree(void)
-    : itsImpl(), itsInputBuffer()
+NFmiNearTree<T, F>::NFmiNearTree(void) : itsImpl(), itsInputBuffer()
 {
 }
 
@@ -327,7 +325,5 @@ void NFmiNearTree<T, F>::Flush(void) const
     itsInputBuffer.clear();
   }
 }
-
-#endif  // NFMINEARTREE_H
 
 // ======================================================================

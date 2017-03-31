@@ -41,12 +41,12 @@
 // ======================================================================
 
 #include "NFmiCalculatedAreaMask.h"
-#include "NFmiDataIdent.h"
-#include "NFmiPoint.h"
-#include "NFmiLocation.h"
-#include "NFmiFastQueryInfo.h"
 #include "NFmiArea.h"
+#include "NFmiDataIdent.h"
+#include "NFmiFastQueryInfo.h"
 #include "NFmiGrid.h"
+#include "NFmiLocation.h"
+#include "NFmiPoint.h"
 
 // ----------------------------------------------------------------------
 /*!
@@ -54,14 +54,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiCalculatedAreaMask::~NFmiCalculatedAreaMask(void) { delete itsDataIdent; }
+NFmiCalculatedAreaMask::~NFmiCalculatedAreaMask() { delete itsDataIdent; }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiCalculatedAreaMask::NFmiCalculatedAreaMask(void) : NFmiAreaMaskImpl(), itsDataIdent(0) {}
+NFmiCalculatedAreaMask::NFmiCalculatedAreaMask() : NFmiAreaMaskImpl(), itsDataIdent(nullptr) {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -88,14 +88,11 @@ NFmiCalculatedAreaMask::NFmiCalculatedAreaMask(const NFmiDataIdent& theParam,
 
 NFmiCalculatedAreaMask::NFmiCalculatedAreaMask(const NFmiCalculatedAreaMask& theMask)
     : NFmiAreaMaskImpl(theMask),
-      itsDataIdent(theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : 0)
+      itsDataIdent(theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : nullptr)
 {
 }
 
-NFmiAreaMask* NFmiCalculatedAreaMask::Clone(void) const
-{
-  return new NFmiCalculatedAreaMask(*this);
-}
+NFmiAreaMask* NFmiCalculatedAreaMask::Clone() const { return new NFmiCalculatedAreaMask(*this); }
 
 // ----------------------------------------------------------------------
 /*!
@@ -110,7 +107,7 @@ NFmiCalculatedAreaMask& NFmiCalculatedAreaMask::operator=(const NFmiCalculatedAr
   if (this != &theMask)
   {
     NFmiAreaMaskImpl::operator=(theMask);
-    itsDataIdent = theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : 0;
+    itsDataIdent = theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : nullptr;
   }
   return *this;
 }
@@ -136,17 +133,17 @@ bool NFmiCalculatedAreaMask::IsWantedParam(const NFmiDataIdent& theParam,
  */
 // ----------------------------------------------------------------------
 
-const NFmiDataIdent* NFmiCalculatedAreaMask::DataIdent(void) const { return itsDataIdent; }
+const NFmiDataIdent* NFmiCalculatedAreaMask::DataIdent() const { return itsDataIdent; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiParam* NFmiCalculatedAreaMask::Param(void) const
+const NFmiParam* NFmiCalculatedAreaMask::Param() const
 {
   if (itsDataIdent) return itsDataIdent->GetParam();
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -155,7 +152,7 @@ const NFmiParam* NFmiCalculatedAreaMask::Param(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiLatLonAreaMask::NFmiLatLonAreaMask(void) : NFmiCalculatedAreaMask() {}
+NFmiLatLonAreaMask::NFmiLatLonAreaMask() : NFmiCalculatedAreaMask() {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -180,9 +177,8 @@ NFmiLatLonAreaMask::NFmiLatLonAreaMask(const NFmiDataIdent& theParam,
 // ----------------------------------------------------------------------
 
 NFmiLatLonAreaMask::NFmiLatLonAreaMask(const NFmiLatLonAreaMask& theMask)
-    : NFmiCalculatedAreaMask(theMask)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -190,7 +186,7 @@ NFmiLatLonAreaMask::NFmiLatLonAreaMask(const NFmiLatLonAreaMask& theMask)
  */
 // ----------------------------------------------------------------------
 
-NFmiLatLonAreaMask::~NFmiLatLonAreaMask(void) {}
+NFmiLatLonAreaMask::~NFmiLatLonAreaMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
@@ -198,7 +194,7 @@ NFmiLatLonAreaMask::~NFmiLatLonAreaMask(void) {}
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiLatLonAreaMask::Clone(void) const { return new NFmiLatLonAreaMask(*this); }
+NFmiAreaMask* NFmiLatLonAreaMask::Clone() const { return new NFmiLatLonAreaMask(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param theLatLon Undocumented
@@ -220,7 +216,7 @@ double NFmiLatLonAreaMask::CalcValueFromLocation(const NFmiPoint& theLatLon) con
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiLatLonAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiLatLonAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiLatLonAreaMask::MakeSubMaskString");
 }
@@ -231,7 +227,7 @@ const NFmiString NFmiLatLonAreaMask::MakeSubMaskString(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiElevationAngleAreaMask::NFmiElevationAngleAreaMask(void) : NFmiLatLonAreaMask(), itsTime() {}
+NFmiElevationAngleAreaMask::NFmiElevationAngleAreaMask() : NFmiLatLonAreaMask(), itsTime() {}
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -241,9 +237,8 @@ NFmiElevationAngleAreaMask::NFmiElevationAngleAreaMask(void) : NFmiLatLonAreaMas
 // ----------------------------------------------------------------------
 
 NFmiElevationAngleAreaMask::NFmiElevationAngleAreaMask(const NFmiElevationAngleAreaMask& theMask)
-    : NFmiLatLonAreaMask(theMask), itsTime(theMask.itsTime)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -266,7 +261,7 @@ NFmiElevationAngleAreaMask::NFmiElevationAngleAreaMask(const NFmiDataIdent& theP
  */
 // ----------------------------------------------------------------------
 
-NFmiElevationAngleAreaMask::~NFmiElevationAngleAreaMask(void) {}
+NFmiElevationAngleAreaMask::~NFmiElevationAngleAreaMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * \param theTime Undocumented
@@ -287,7 +282,7 @@ bool NFmiElevationAngleAreaMask::Time(const NFmiMetTime& theTime)
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiElevationAngleAreaMask::Clone(void) const
+NFmiAreaMask* NFmiElevationAngleAreaMask::Clone() const
 {
   return new NFmiElevationAngleAreaMask(*this);
 }
@@ -322,7 +317,7 @@ double NFmiElevationAngleAreaMask::CalcValueFromLocation(const NFmiPoint& theLat
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiElevationAngleAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiElevationAngleAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiElevationAngleAreaMask::MakeSubMaskString");
 }
@@ -333,9 +328,7 @@ const NFmiString NFmiElevationAngleAreaMask::MakeSubMaskString(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiJulianDayAreaMask::NFmiJulianDayAreaMask(void) : NFmiElevationAngleAreaMask(), itsJulianDay(0)
-{
-}
+NFmiJulianDayAreaMask::NFmiJulianDayAreaMask() : NFmiElevationAngleAreaMask(), itsJulianDay(0) {}
 
 // ----------------------------------------------------------------------
 /*!
@@ -361,9 +354,8 @@ NFmiJulianDayAreaMask::NFmiJulianDayAreaMask(const NFmiDataIdent& theParam,
 // ----------------------------------------------------------------------
 
 NFmiJulianDayAreaMask::NFmiJulianDayAreaMask(const NFmiJulianDayAreaMask& theMask)
-    : NFmiElevationAngleAreaMask(theMask), itsJulianDay(theMask.itsJulianDay)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -371,7 +363,7 @@ NFmiJulianDayAreaMask::NFmiJulianDayAreaMask(const NFmiJulianDayAreaMask& theMas
  */
 // ----------------------------------------------------------------------
 
-NFmiJulianDayAreaMask::~NFmiJulianDayAreaMask(void) {}
+NFmiJulianDayAreaMask::~NFmiJulianDayAreaMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * \param theTime Undocumented
@@ -393,7 +385,7 @@ bool NFmiJulianDayAreaMask::Time(const NFmiMetTime& theTime)
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiJulianDayAreaMask::Clone(void) const { return new NFmiJulianDayAreaMask(*this); }
+NFmiAreaMask* NFmiJulianDayAreaMask::Clone() const { return new NFmiJulianDayAreaMask(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param theLatLon Undocumented, unused
@@ -412,7 +404,7 @@ double NFmiJulianDayAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLatLo
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiJulianDayAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiJulianDayAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiJulianDayAreaMask::MakeSubMaskString");
 }
@@ -423,7 +415,7 @@ const NFmiString NFmiJulianDayAreaMask::MakeSubMaskString(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiLocalHourAreaMask::NFmiLocalHourAreaMask(void) : NFmiElevationAngleAreaMask() {}
+NFmiLocalHourAreaMask::NFmiLocalHourAreaMask() : NFmiElevationAngleAreaMask() {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -448,9 +440,8 @@ NFmiLocalHourAreaMask::NFmiLocalHourAreaMask(const NFmiDataIdent& theParam,
 // ----------------------------------------------------------------------
 
 NFmiLocalHourAreaMask::NFmiLocalHourAreaMask(const NFmiLocalHourAreaMask& theMask)
-    : NFmiElevationAngleAreaMask(theMask)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -458,7 +449,7 @@ NFmiLocalHourAreaMask::NFmiLocalHourAreaMask(const NFmiLocalHourAreaMask& theMas
  */
 // ----------------------------------------------------------------------
 
-NFmiLocalHourAreaMask::~NFmiLocalHourAreaMask(void) {}
+NFmiLocalHourAreaMask::~NFmiLocalHourAreaMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
@@ -466,7 +457,7 @@ NFmiLocalHourAreaMask::~NFmiLocalHourAreaMask(void) {}
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiLocalHourAreaMask::Clone(void) const { return new NFmiLocalHourAreaMask(*this); }
+NFmiAreaMask* NFmiLocalHourAreaMask::Clone() const { return new NFmiLocalHourAreaMask(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param theLatLon Undocumented
@@ -486,53 +477,51 @@ double NFmiLocalHourAreaMask::CalcValueFromLocation(const NFmiPoint& theLatLon) 
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiLocalHourAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiLocalHourAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiLocalHourAreaMask::MakeSubMaskString");
 }
 
 // ======================================================================
 
-NFmiUtcHourAreaMask::~NFmiUtcHourAreaMask(void) {}
-NFmiUtcHourAreaMask::NFmiUtcHourAreaMask(void) : NFmiElevationAngleAreaMask() {}
+NFmiUtcHourAreaMask::~NFmiUtcHourAreaMask() = default;
+NFmiUtcHourAreaMask::NFmiUtcHourAreaMask() : NFmiElevationAngleAreaMask() {}
 NFmiUtcHourAreaMask::NFmiUtcHourAreaMask(const NFmiUtcHourAreaMask& theMask)
-    : NFmiElevationAngleAreaMask(theMask)
-{
-}
+
+    = default;
 NFmiUtcHourAreaMask::NFmiUtcHourAreaMask(const NFmiDataIdent& theParam,
                                          const NFmiCalculationCondition& theOperation)
     : NFmiElevationAngleAreaMask(theParam, theOperation)
 {
 }
-NFmiAreaMask* NFmiUtcHourAreaMask::Clone(void) const { return new NFmiUtcHourAreaMask(*this); }
+NFmiAreaMask* NFmiUtcHourAreaMask::Clone() const { return new NFmiUtcHourAreaMask(*this); }
 double NFmiUtcHourAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLatLon */) const
 {
   return itsTime.GetHour();
 }
-const NFmiString NFmiUtcHourAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiUtcHourAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiUtcHourAreaMask::MakeSubMaskString");
 }
 
 // ======================================================================
 
-NFmiMinuteAreaMask::~NFmiMinuteAreaMask(void) {}
-NFmiMinuteAreaMask::NFmiMinuteAreaMask(void) : NFmiElevationAngleAreaMask() {}
+NFmiMinuteAreaMask::~NFmiMinuteAreaMask() = default;
+NFmiMinuteAreaMask::NFmiMinuteAreaMask() : NFmiElevationAngleAreaMask() {}
 NFmiMinuteAreaMask::NFmiMinuteAreaMask(const NFmiMinuteAreaMask& theMask)
-    : NFmiElevationAngleAreaMask(theMask)
-{
-}
+
+    = default;
 NFmiMinuteAreaMask::NFmiMinuteAreaMask(const NFmiDataIdent& theParam,
                                        const NFmiCalculationCondition& theOperation)
     : NFmiElevationAngleAreaMask(theParam, theOperation)
 {
 }
-NFmiAreaMask* NFmiMinuteAreaMask::Clone(void) const { return new NFmiMinuteAreaMask(*this); }
+NFmiAreaMask* NFmiMinuteAreaMask::Clone() const { return new NFmiMinuteAreaMask(*this); }
 double NFmiMinuteAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLatLon */) const
 {
   return itsTime.GetMin();
 }
-const NFmiString NFmiMinuteAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiMinuteAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiMinuteAreaMask::MakeSubMaskString");
 }
@@ -607,7 +596,7 @@ NFmiForecastHourAreaMask& NFmiForecastHourAreaMask::operator=(
  */
 // ----------------------------------------------------------------------
 
-NFmiForecastHourAreaMask::~NFmiForecastHourAreaMask(void) {}
+NFmiForecastHourAreaMask::~NFmiForecastHourAreaMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
@@ -615,7 +604,7 @@ NFmiForecastHourAreaMask::~NFmiForecastHourAreaMask(void) {}
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiForecastHourAreaMask::Clone(void) const
+NFmiAreaMask* NFmiForecastHourAreaMask::Clone() const
 {
   return new NFmiForecastHourAreaMask(*this);
 }
@@ -638,12 +627,12 @@ double NFmiForecastHourAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLa
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiForecastHourAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiForecastHourAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiForecastHourAreaMask::MakeSubMaskString");
 }
 
-NFmiTimeStepAreaMask::~NFmiTimeStepAreaMask(void) {}
+NFmiTimeStepAreaMask::~NFmiTimeStepAreaMask() = default;
 NFmiTimeStepAreaMask::NFmiTimeStepAreaMask(const boost::shared_ptr<NFmiFastQueryInfo>& theInfo)
     : NFmiElevationAngleAreaMask(), itsInfo(theInfo)
 {
@@ -671,14 +660,14 @@ NFmiTimeStepAreaMask::NFmiTimeStepAreaMask(const boost::shared_ptr<NFmiFastQuery
 {
 }
 
-NFmiAreaMask* NFmiTimeStepAreaMask::Clone(void) const { return new NFmiTimeStepAreaMask(*this); }
+NFmiAreaMask* NFmiTimeStepAreaMask::Clone() const { return new NFmiTimeStepAreaMask(*this); }
 double NFmiTimeStepAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLatLon */) const
 {
   return (itsInfo->TimeResolution() /
           60.);  // palauttaa datan currentin ajan aikaresoluution tunneissa
 }
 
-const NFmiString NFmiTimeStepAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiTimeStepAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiTimeStepAreaMask::MakeSubMaskString");
 }
@@ -701,7 +690,7 @@ double NFmiTimeStepAreaMask::Value(const NFmiCalculationParams& theCalculationPa
 // *****    NFmiGridSizeAreaMask    *************************
 // **********************************************************
 
-NFmiGridSizeAreaMask::~NFmiGridSizeAreaMask(void) {}
+NFmiGridSizeAreaMask::~NFmiGridSizeAreaMask() = default;
 NFmiGridSizeAreaMask::NFmiGridSizeAreaMask(const boost::shared_ptr<NFmiFastQueryInfo>& theInfo,
                                            bool calcXValue)
     : NFmiElevationAngleAreaMask(), itsInfo(theInfo), fCalcXValue(calcXValue)
@@ -723,7 +712,7 @@ NFmiGridSizeAreaMask::NFmiGridSizeAreaMask(const NFmiGridSizeAreaMask& theMask)
 {
 }
 
-NFmiAreaMask* NFmiGridSizeAreaMask::Clone(void) const { return new NFmiGridSizeAreaMask(*this); }
+NFmiAreaMask* NFmiGridSizeAreaMask::Clone() const { return new NFmiGridSizeAreaMask(*this); }
 double NFmiGridSizeAreaMask::Value(const NFmiCalculationParams& theCalculationParams,
                                    bool /* fUseTimeInterpolationAlways */)
 {
@@ -763,7 +752,7 @@ double NFmiGridSizeAreaMask::CalcValueFromLocation(const NFmiPoint& /* theLatLon
   */
 }
 
-const NFmiString NFmiGridSizeAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiGridSizeAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiTimeStepAreaMask::MakeSubMaskString");
 }

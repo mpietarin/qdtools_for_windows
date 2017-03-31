@@ -3,6 +3,8 @@
 //   soveltuu esim sadesumman llskemiseen kun lähdetään hetkellisistä intensiteeteistä
 // AllValid= vaatii että kaikki arvot ovat käypiä
 
+#pragma once
+
 #include "NFmiDataModifierAllValidSum.h"
 
 class _FMI_DLL NFmiDataModifierAllValidClipSum : public NFmiDataModifierAllValidSum

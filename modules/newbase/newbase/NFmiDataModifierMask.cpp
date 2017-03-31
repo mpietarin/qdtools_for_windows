@@ -14,7 +14,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMask::~NFmiDataModifierMask(void) {}
+NFmiDataModifierMask::~NFmiDataModifierMask() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor

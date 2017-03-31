@@ -25,14 +25,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMaxMean::~NFmiDataModifierMaxMean(void) {}
+NFmiDataModifierMaxMean::~NFmiDataModifierMaxMean() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMaxMean::NFmiDataModifierMaxMean(void)
+NFmiDataModifierMaxMean::NFmiDataModifierMaxMean()
     : NFmiDataModifier(),
       itsCounter(0),
       itsAverage(0.),
@@ -78,7 +78,7 @@ void NFmiDataModifierMaxMean::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierMaxMean::Clear(void)
+void NFmiDataModifierMaxMean::Clear()
 {
   NFmiDataModifier::Clear();
   itsMaxValue = -3.4E+38f;
@@ -93,7 +93,7 @@ void NFmiDataModifierMaxMean::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierMaxMean::CalculationResult(void)
+float NFmiDataModifierMaxMean::CalculationResult()
 {
   float avg = kFloatMissing, max = kFloatMissing;
   if (fCalculationResultOk == true)

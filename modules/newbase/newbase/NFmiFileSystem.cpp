@@ -6,18 +6,18 @@
 // ======================================================================
 
 #include "NFmiFileSystem.h"
-#include "NFmiStringTools.h"
 #include "NFmiFileString.h"
+#include "NFmiStringTools.h"
 
 #include <boost/filesystem.hpp>
 
+#include <cctype>  // for isalpha
 #include <cstdio>
 #include <ctime>    // for time()
 #include <fstream>  // for time()
-#include <vector>   // for time()
 #include <sstream>
 #include <stdexcept>
-#include <cctype>  // for isalpha
+#include <vector>  // for time()
 
 #include <boost/filesystem/operations.hpp>  // uusi FileSize toteutus tarvitsee tätä
 
@@ -42,28 +42,28 @@
 #endif
 #endif
 
-#include <assert.h>
+#include <cassert>
 
 #ifdef BOOST
 // Finding files is implemented in Linux using boost filesystem & regex
 #include <boost/algorithm/string/predicate.hpp>  //Lasse
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/convenience.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/regex.hpp>
 #endif
 
 extern "C" {
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #ifndef UNIX
-#include <io.h>
 #include <direct.h>
+#include <io.h>
 #else
 #include <sys/dir.h>  // opendir() etc
 #include <sys/types.h>
+#include <cerrno>
 #include <unistd.h>
-#include <errno.h>
 #endif
 }
 
@@ -125,14 +125,14 @@ string extend_plain_regex(const string &thePattern)
   string ret;
   ret.reserve(thePattern.size());
 
-  for (string::size_type i = 0; i < thePattern.size(); i++)
+  for (char i : thePattern)
   {
-    if (thePattern[i] == '*')
+    if (i == '*')
       ret += ".*";
-    else if (thePattern[i] == '?')
+    else if (i == '?')
       ret += '.';
     else
-      ret += thePattern[i];
+      ret += i;
   }
   return ret;
 }
@@ -248,7 +248,7 @@ const string FileComplete(const string &theFile, const string &theSearchPath)
 
   // Split the search path into individual paths
 
-  typedef std::list<std::string> PathList;
+  using PathList = std::list<std::string>;
   PathList paths;
   string::size_type pos1 = 0;
   while (pos1 < theSearchPath.size())
@@ -495,7 +495,7 @@ long FileAge(const string &theFile)
   if (FMI_stat_func(theFile.c_str(), &st) != 0) return -1;
   time_t modtime = st.st_mtime;
 
-  time_t nowtime = time(NULL);
+  time_t nowtime = time(nullptr);
 
   return static_cast<long>(nowtime - modtime);
 }
@@ -684,9 +684,9 @@ std::time_t NewestFileTime(const std::list<std::string> &theFileList, const std:
   if (theFileList.empty()) return 0;
 
   time_t newesttime = 0;
-  for (list<string>::const_iterator f = theFileList.begin(); f != theFileList.end(); ++f)
+  for (const auto &f : theFileList)
   {
-    string filename = thePath + '/' + *f;
+    string filename = thePath + '/' + f;
     if (FileReadable(filename))
     {
       time_t modtime = FileModificationTime(filename);
@@ -702,9 +702,9 @@ std::string NewestFileName(const std::list<std::string> &theFileList, const std:
 
   std::string newestFileName;
   time_t newesttime = 0;
-  for (list<string>::const_iterator f = theFileList.begin(); f != theFileList.end(); ++f)
+  for (const auto &f : theFileList)
   {
-    string filename = thePath + *f;
+    string filename = thePath + f;
     if (FileReadable(filename))
     {
       time_t modtime = FileModificationTime(filename);
@@ -841,7 +841,7 @@ const std::list<std::string> PatternFiles(const std::string &thePattern)
     if (boost::regex_match(it->path().filename().string().c_str(), reg))
       if (!fs::is_directory(*it))
       {
-        out.push_back(it->path().filename().string().c_str());
+        out.emplace_back(it->path().filename().string().c_str());
       }
   }
 
@@ -966,7 +966,7 @@ const std::list<std::string> Directories(const std::string &thePath)
   {
     if (fs::is_directory(*it))
     {
-      out.push_back(it->path().filename().string().c_str());
+      out.emplace_back(it->path().filename().string().c_str());
     }
   }
 
@@ -1056,7 +1056,7 @@ time_t FindFile(const string &theFileFilter,
   else
   {
     Matches::const_iterator it = (fSearchNewest ? --matches.end() : matches.begin());
-    if (theFoundFileName != 0) *theFoundFileName = it->second;
+    if (theFoundFileName != nullptr) *theFoundFileName = it->second;
     return it->first;
   }
 #else
@@ -1456,7 +1456,7 @@ void CleanFilePattern(const std::string &theFilePattern,
     fileMap.insert(std::make_pair(modtime, filename));
   }
 
-  std::map<time_t, std::string>::iterator mapIt = fileMap.begin();
+  auto mapIt = fileMap.begin();
   for (int i = 0; mapIt != fileMap.end(); ++mapIt, i++)
   {
     if (static_cast<int>(fileMap.size()) - i <= theKeepFileCount)
@@ -1489,7 +1489,7 @@ string FindQueryData(const string &thePath)
     return thePath;
   }
 
-  typedef list<string> Files;
+  using Files = list<string>;
   Files files = DirectoryFiles(thePath);
 
   string newestfile;

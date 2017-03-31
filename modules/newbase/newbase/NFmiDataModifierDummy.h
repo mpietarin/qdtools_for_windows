@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERDUMMY_H
-#define NFMIDATAMODIFIERDUMMY_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -34,7 +33,5 @@ class _FMI_DLL NFmiDataModifierDummy : public NFmiDataModifier
   float itsValue;
 
 };  // class NFmiDataModifierDummy
-
-#endif  // NFMIDATAMODIFIERDUMMY_H
 
 // ======================================================================

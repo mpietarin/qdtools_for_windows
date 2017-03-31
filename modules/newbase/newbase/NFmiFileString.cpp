@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiFileString::~NFmiFileString(void) {}
+NFmiFileString::~NFmiFileString() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiFileString::NFmiFileString(void) {}
+NFmiFileString::NFmiFileString() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -37,9 +37,9 @@ NFmiFileString::NFmiFileString(void) {}
  */
 // ----------------------------------------------------------------------
 
-NFmiFileString::NFmiFileString(const NFmiString &theStr) : NFmiString(theStr) 
+NFmiFileString::NFmiFileString(const NFmiString &theStr) : NFmiString(theStr)
 {
-    NormalizeDelimiter();
+  NormalizeDelimiter();
 }
 // ----------------------------------------------------------------------
 /*!
@@ -47,9 +47,9 @@ NFmiFileString::NFmiFileString(const NFmiString &theStr) : NFmiString(theStr)
  */
 // ----------------------------------------------------------------------
 
-NFmiFileString::NFmiFileString(const NFmiFileString &theFileStr) : NFmiString(theFileStr) 
+NFmiFileString::NFmiFileString(const NFmiFileString &theFileStr) : NFmiString(theFileStr)
 {
-    NormalizeDelimiter();
+  NormalizeDelimiter();
 }
 // ----------------------------------------------------------------------
 /*!
@@ -57,7 +57,7 @@ NFmiFileString::NFmiFileString(const NFmiFileString &theFileStr) : NFmiString(th
  */
 // ----------------------------------------------------------------------
 
-bool NFmiFileString::HasExtension(void) const
+bool NFmiFileString::HasExtension() const
 {
   unsigned char find[2] = ".";
 #ifndef UNIX
@@ -70,7 +70,7 @@ bool NFmiFileString::HasExtension(void) const
   return Search(find, std::max(lastSlash, 1ul)) > 0 ? true : false;
 }
 
-bool NFmiFileString::IsAbsolutePath(void) const
+bool NFmiFileString::IsAbsolutePath() const
 {
   if (fChar[0] == '/' || fChar[0] == '\\' || Device() != NFmiString("")) return true;
   return false;
@@ -82,7 +82,7 @@ bool NFmiFileString::IsAbsolutePath(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::Extension(void) const
+const NFmiString NFmiFileString::Extension() const
 {
   unsigned long last;
   unsigned char find[2] = ".";
@@ -100,7 +100,7 @@ const NFmiString NFmiFileString::Extension(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::FileName(void) const
+const NFmiString NFmiFileString::FileName() const
 {
   unsigned long last;
   unsigned char find[2] = {kFmiDirectorySeparator, '\0'};
@@ -116,7 +116,7 @@ const NFmiString NFmiFileString::FileName(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::Header(void) const
+const NFmiString NFmiFileString::Header() const
 {
   unsigned long first, last;
   unsigned char find1[2] = {kFmiDirectorySeparator, '\0'};
@@ -140,10 +140,10 @@ const NFmiString NFmiFileString::Header(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::Path(void) const
+const NFmiString NFmiFileString::Path() const
 {
   unsigned long first, last;
-  unsigned char find[2] = "\\";
+  unsigned char find[2] = R"(\)";
   unsigned char find2[2] = "/";
 
   first = Search(find);
@@ -174,7 +174,7 @@ const NFmiString NFmiFileString::Path(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::Device(void) const
+const NFmiString NFmiFileString::Device() const
 {
 #ifdef UNIX
   return NFmiString();  // linux/unix/mac ei ole devicea, joten palautetaan tyhjä
@@ -196,7 +196,7 @@ const NFmiString NFmiFileString::Device(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::PathWithoutLastDirectory(void)
+const NFmiString NFmiFileString::PathWithoutLastDirectory()
 {
   unsigned long first, last, nextLast, pos;
   unsigned char find[2] = {kFmiDirectorySeparator, '\0'};
@@ -229,7 +229,7 @@ const NFmiString NFmiFileString::PathWithoutLastDirectory(void)
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFileString::Directory(void) const
+const NFmiString NFmiFileString::Directory() const
 {
   unsigned long first, last;
   unsigned char backSlash[2] = {kFmiDirectorySeparator, '\0'};
@@ -257,7 +257,7 @@ const NFmiString NFmiFileString::Directory(void) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiFileString::NormalizeDelimiter(void)
+void NFmiFileString::NormalizeDelimiter()
 {
 // 31.8.98 Lehtiohjelmassa on ainakin tarvetta/LW
 #ifndef UNIX
@@ -296,7 +296,7 @@ void NFmiFileString::AddDirectory(const NFmiString &theDirectory)
  */
 // ----------------------------------------------------------------------
 
-void NFmiFileString::DeleteDirectory(void)
+void NFmiFileString::DeleteDirectory()
 {
   NFmiString newStr(40);
 
@@ -442,7 +442,7 @@ void NFmiFileString::Device(const NFmiString &theExtension) { Device(theExtensio
  */
 // ----------------------------------------------------------------------
 
-void NFmiFileString::ChangeScandinavian(void)
+void NFmiFileString::ChangeScandinavian()
 {
   NFmiString skand("äöåÄÖÅ");
   NFmiString notSkand("aoaAOA");

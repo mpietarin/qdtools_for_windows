@@ -14,9 +14,9 @@
 #include "NFmiStringTools.h"
 #include <iostream>
 
-#include <locale>
 #include <cctype>
 #include <cstdlib>
+#include <locale>
 
 using namespace std;
 
@@ -614,8 +614,8 @@ std::string &FirstCharToUpper(std::string &theString)
 
 std::string &LowerCase(std::string &theString)
 {
-  for (unsigned int i = 0; i < theString.size(); i++)
-    theString[i] = tolowerfi(theString[i]);
+  for (char &i : theString)
+    i = tolowerfi(i);
   return theString;
 }
 
@@ -630,8 +630,8 @@ std::string &LowerCase(std::string &theString)
 
 std::string &UpperCase(std::string &theString)
 {
-  for (unsigned int i = 0; i < theString.size(); i++)
-    theString[i] = toupperfi(theString[i]);
+  for (char &i : theString)
+    i = toupperfi(i);
   return theString;
 }
 
@@ -644,8 +644,8 @@ std::string &UpperCase(std::string &theString)
 
 std::string &ReplaceChars(std::string &theString, char fromChar, char toChar)
 {
-  for (unsigned int i = 0; i < theString.size(); i++)
-    if (theString[i] == fromChar) theString[i] = toChar;
+  for (char &i : theString)
+    if (i == fromChar) i = toChar;
   return theString;
 }
 
@@ -773,11 +773,10 @@ std::string TrimAll(std::string &theString, bool replaceInsideNewlinesWithSpace)
   NFmiStringTools::Trim(tmp, '\n');
   std::string result;
   bool wordBreak = false;
-  for (unsigned int i = 0; i < tmp.size(); i++)
+  for (char i : tmp)
   {
-    if (replaceInsideNewlinesWithSpace
-            ? (tmp[i] == ' ' || tmp[i] == '\t' || tmp[i] == '\r' || tmp[i] == '\n')
-            : (tmp[i] == ' ' || tmp[i] == '\t'))
+    if (replaceInsideNewlinesWithSpace ? (i == ' ' || i == '\t' || i == '\r' || i == '\n')
+                                       : (i == ' ' || i == '\t'))
     {
       if (wordBreak == false)
       {
@@ -788,7 +787,7 @@ std::string TrimAll(std::string &theString, bool replaceInsideNewlinesWithSpace)
     else
     {
       wordBreak = false;
-      result.push_back(tmp[i]);
+      result.push_back(i);
     }
   }
   theString.swap(result);
@@ -835,9 +834,8 @@ const std::string UrlEncode(const std::string &theString)
 {
   static const char *decimals = "0123456789ABCDEF";
   string ret;
-  for (string::size_type i = 0; i < theString.size(); i++)
+  for (char ch : theString)
   {
-    const char ch = theString[i];
     if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ||
         (ch == '_'))
     {
@@ -907,7 +905,7 @@ const std::string UrlDecode(const std::string &theString)
 const std::map<std::string, std::string> ParseQueryString()
 {
   const char *env = getenv("QUERY_STRING");
-  if (env == NULL)
+  if (env == nullptr)
     throw runtime_error("ParseQueryString:: Environment variable QUERY_STRING is not set");
   return ParseQueryString(env);
 }
@@ -945,9 +943,9 @@ const std::map<std::string, std::string> ParseQueryString(const std::string &the
 
   map<string, string> ret;
 
-  for (vector<string>::const_iterator it = vars.begin(); it != vars.end(); ++it)
+  for (const auto &var : vars)
   {
-    const vector<string> parts = Split<vector<string> >(*it, "=");
+    const vector<string> parts = Split<vector<string> >(var, "=");
     if (parts.size() == 1)
       ret.insert(make_pair(UrlDecode(parts.front()), string("")));
     else if (parts.size() == 2)

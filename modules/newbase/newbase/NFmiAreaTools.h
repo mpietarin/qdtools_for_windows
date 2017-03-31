@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIAREATOOLS_H
-#define NFMIAREATOOLS_H
+#pragma once
 
 class NFmiArea;
 
@@ -18,7 +17,5 @@ void LatLonBoundingBox(const NFmiArea& theArea,
                        double& theMaxLon,
                        double& theMaxLat);
 }
-
-#endif  // NFMIAREATOOLS_H
 
 // ======================================================================

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERCOMBINEDPARAM_H
-#define NFMIDATAMODIFIERCOMBINEDPARAM_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -37,7 +36,5 @@ class _FMI_DLL NFmiDataModifierCombinedParam : public NFmiDataModifier
   NFmiDataModifierCombinedParam &operator=(const NFmiDataModifierCombinedParam &theParam);
 
 };  // class NFmiDataModifierCombinedParam
-
-#endif  // NFMIDATAMODIFIERCOMBINEDPARAM_H
 
 // ======================================================================

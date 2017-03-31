@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIORTHOGRAPHICAREA_H
-#define NFMIORTHOGRAPHICAREA_H
+#pragma once
 
 #define MunFmiMax(x, y) ((x) > (y) ? (x) : (y))
 #define MunFmiMin(x, y) ((x) < (y) ? (x) : (y))
@@ -111,6 +110,5 @@ inline double NFmiOrthographicArea::GlobeRadius(void) const { return itsGlobeRad
 // ----------------------------------------------------------------------
 
 inline const char *NFmiOrthographicArea::ClassName(void) const { return "kNFmiOrthographicArea"; }
-#endif  // NFMIORTHOGRAPHICAREA_H
 
 // ======================================================================

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIGEOTOOLS_H
-#define NFMIGEOTOOLS_H
+#pragma once
 
 #include <utility>
 
@@ -28,7 +27,5 @@ double DistanceFromLineSegment(
     double theX, double theY, double theX1, double theY1, double theX2, double theY2);
 
 }  // namespace NFmiGeoTools
-
-#endif  // NFMIGEOTOOLS_H
 
 // ======================================================================

@@ -125,7 +125,7 @@ const NFmiDataMatrix<float> NFmiSmoother::SmoothenKernel(
 
   const int nsectors = 4;
   const float pi = 3.14159265358979323f;
-  const float factor = static_cast<float>(nsectors / (2.0 * pi));
+  const auto factor = static_cast<float>(nsectors / (2.0 * pi));
 
   // Bitmask indicating full set of sectors:
 
@@ -136,8 +136,8 @@ const NFmiDataMatrix<float> NFmiSmoother::SmoothenKernel(
     {
       // The coordinates to which we're interpolating
 
-      float x = static_cast<float>(thePts[i][j].X());
-      float y = static_cast<float>(thePts[i][j].Y());
+      auto x = static_cast<float>(thePts[i][j].X());
+      auto y = static_cast<float>(thePts[i][j].Y());
 
       float zsum = 0.0;  // weighted sum of function values
       float wsum = 0.0;  // sum of the weights
@@ -173,8 +173,8 @@ const NFmiDataMatrix<float> NFmiSmoother::SmoothenKernel(
 
           // See if within search radius
 
-          float dx = static_cast<float>(thePts[i + di][j + dj].X() - x);
-          float dy = static_cast<float>(thePts[i + di][j + dj].Y() - y);
+          auto dx = static_cast<float>(thePts[i + di][j + dj].X() - x);
+          auto dy = static_cast<float>(thePts[i + di][j + dj].Y() - y);
 
           float dist = sqrt(dx * dx + dy * dy);
 

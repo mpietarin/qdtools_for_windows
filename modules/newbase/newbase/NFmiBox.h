@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIBOX_H
-#define NFMIBOX_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiParameterName.h"
@@ -67,6 +66,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiBox &ob) { return 
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiBox &ob) { return ob.Read(file); }
-#endif  // NFMIBOX_H
 
 // ======================================================================

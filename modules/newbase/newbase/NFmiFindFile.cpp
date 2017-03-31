@@ -24,7 +24,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiFindFile::~NFmiFindFile(void)
+NFmiFindFile::~NFmiFindFile()
 {
 #ifdef UNIX
   if (itsGlobBuffer) globfree(itsGlobBuffer);
@@ -39,14 +39,14 @@ NFmiFindFile::~NFmiFindFile(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiFindFile::NFmiFindFile(void)
+NFmiFindFile::NFmiFindFile()
     : itsFileName(),
       itsFilePath(),
       itsFileFile(0)
 #ifdef UNIX
       ,
       itsGlobIndex(0),
-      itsGlobBuffer(0)
+      itsGlobBuffer(nullptr)
 #endif
 {
 }
@@ -64,21 +64,21 @@ void NFmiFindFile::Path(const NFmiString& thePathName) { itsFilePath = thePathNa
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFindFile::FileName(void) { return itsFileName; }
+const NFmiString NFmiFindFile::FileName() { return itsFileName; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFindFile::PathName(void) { return itsFilePath; }
+const NFmiString NFmiFindFile::PathName() { return itsFilePath; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiFindFile::PathAndFileName(void)
+const NFmiString NFmiFindFile::PathAndFileName()
 {
   std::string thePathAndFileName(itsFilePath);
 
@@ -111,11 +111,11 @@ bool NFmiFindFile::Find(const NFmiString& theFileMask)
   itsGlobIndex = 0;
   if (itsGlobBuffer) globfree(itsGlobBuffer);
   itsGlobBuffer = new glob_t;
-  glob(theFindFileName, 0, NULL, itsGlobBuffer);
+  glob(theFindFileName, 0, nullptr, itsGlobBuffer);
   if (itsGlobBuffer->gl_pathc == 0)
   {
     globfree(itsGlobBuffer);
-    itsGlobBuffer = 0;
+    itsGlobBuffer = nullptr;
     return false;
   }
   if (std::string(".") == std::string(itsGlobBuffer->gl_pathv[itsGlobIndex]))
@@ -156,7 +156,7 @@ bool NFmiFindFile::Find(const NFmiString& theFileMask)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiFindFile::Next(void)
+bool NFmiFindFile::Next()
 {
 #ifdef UNIX
   if (!itsGlobBuffer) return false;
@@ -168,7 +168,7 @@ bool NFmiFindFile::Next(void)
   else
   {
     globfree(itsGlobBuffer);
-    itsGlobBuffer = 0;
+    itsGlobBuffer = nullptr;
     return false;
   }
 

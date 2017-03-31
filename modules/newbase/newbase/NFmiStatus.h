@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISTATUS_H
-#define NFMISTATUS_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include "NFmiString.h"
@@ -57,6 +56,5 @@ class _FMI_DLL NFmiStatus
 // ----------------------------------------------------------------------
 
 inline NFmiStatus::operator bool(void) const { return !itsErrorLog.IsValue(); }
-#endif  // NFMISTATUS_H
 
 // ======================================================================

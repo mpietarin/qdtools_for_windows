@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIMULTIPOLYGONAREAMASK_H
-#define NFMIMULTIPOLYGONAREAMASK_H
+#pragma once
 
 #include "NFmiAreaMaskImpl.h"
 #include <vector>
@@ -77,7 +76,5 @@ inline std::istream &operator>>(std::istream &is, NFmiMultiPolygonAreaMask &item
 {
   return item.Read(is);
 }
-
-#endif  // NFMIMULTIPOLYGONAREAMASK_H
 
 // ======================================================================

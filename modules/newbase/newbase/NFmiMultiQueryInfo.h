@@ -62,8 +62,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIMULTIQUERYINFO_H
-#define NFMIMULTIQUERYINFO_H
+#pragma once
 
 // Ilman seuraavaa define:ä Visual C++ 2012 kääntäjällä tulee käännösvirhe boostin
 // detail/container_fwd.hpp -headerissa
@@ -76,11 +75,11 @@
 // Miksi ongelma ei esiinny Linux + gcc yhdistelmän kanssa, ei ole tietoa.
 #define BOOST_DETAIL_NO_CONTAINER_FWD
 
-#include "NFmiFastQueryInfo.h"
 #include "NFmiDataMatrix.h"
+#include "NFmiFastQueryInfo.h"
 
-#include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/utility.hpp>
 
 //! Undocumented
@@ -171,5 +170,3 @@ class _FMI_DLL NFmiMultiQueryInfo : public NFmiFastQueryInfo, private boost::non
 };  // class NFmiMultiQueryInfo
 
 // ======================================================================
-
-#endif  // NFMIMULTIQUERYINFO_H

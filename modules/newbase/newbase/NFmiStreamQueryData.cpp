@@ -75,7 +75,7 @@ const string find_newest_querydata(const string &thePath)
  */
 // ----------------------------------------------------------------------
 
-NFmiStreamQueryData::~NFmiStreamQueryData(void)
+NFmiStreamQueryData::~NFmiStreamQueryData()
 {
   if (!itsOwnerData && itsQueryData) delete itsQueryData;
   if (itsQueryDataIter) delete itsQueryDataIter;
@@ -87,8 +87,8 @@ NFmiStreamQueryData::~NFmiStreamQueryData(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiStreamQueryData::NFmiStreamQueryData(void)
-    : itsQueryData(0), itsQueryDataIter(0), itsOwnerData(false)
+NFmiStreamQueryData::NFmiStreamQueryData()
+    : itsQueryData(nullptr), itsQueryDataIter(nullptr), itsOwnerData(false)
 {
 }
 
@@ -101,7 +101,7 @@ NFmiStreamQueryData::NFmiStreamQueryData(void)
 // ----------------------------------------------------------------------
 
 NFmiStreamQueryData::NFmiStreamQueryData(NFmiQueryData *theQueryData, bool isOwnerData)
-    : itsQueryData(theQueryData), itsQueryDataIter(0), itsOwnerData(isOwnerData)
+    : itsQueryData(theQueryData), itsQueryDataIter(nullptr), itsOwnerData(isOwnerData)
 {
 }
 
@@ -111,7 +111,7 @@ NFmiStreamQueryData::NFmiStreamQueryData(NFmiQueryData *theQueryData, bool isOwn
  */
 // ----------------------------------------------------------------------
 
-NFmiFastQueryInfo *NFmiStreamQueryData::QueryInfoIter(void)
+NFmiFastQueryInfo *NFmiStreamQueryData::QueryInfoIter()
 {
   if (itsQueryData)
   {
@@ -137,8 +137,8 @@ NFmiQueryData *NFmiStreamQueryData::QueryData(bool theOwnerData)
                                       // omistajuus vaihtuu ja itsQueryData nollataan
   itsOwnerData = theOwnerData;
   if (itsOwnerData)
-    itsQueryData =
-        0;  // pitää nollata pointteri, muuten voi tapahtua kauheita jos luetaan uusi data sisään
+    itsQueryData = nullptr;  // pitää nollata pointteri, muuten voi tapahtua kauheita jos luetaan
+                             // uusi data sisään
   return tmp;
 }
 
@@ -148,7 +148,7 @@ NFmiQueryData *NFmiStreamQueryData::QueryData(bool theOwnerData)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStreamQueryData::IsData(void)
+bool NFmiStreamQueryData::IsData()
 {
   if (itsQueryData) return true;
 
@@ -288,7 +288,7 @@ bool NFmiStreamQueryData::ReadData(const NFmiString &theFileName, NFmiQueryData 
            << endl;
       dataFile.close();
       delete theTempData;  // siivotaan jäljet kun ongelmia tuli
-      theTempData = 0;
+      theTempData = nullptr;
       return false;
     }
 #ifdef FMI_MET_EDITOR_CONTINUOIS_MEMORY_ALLOC_FAILED
@@ -308,7 +308,7 @@ bool NFmiStreamQueryData::ReadData(const NFmiString &theFileName, NFmiQueryData 
     {
       dataFile.close();
       delete theTempData;  // siivotaan jäljet kun ongelmia tuli
-      theTempData = 0;
+      theTempData = nullptr;
       throw;
     }
 
@@ -325,8 +325,8 @@ bool NFmiStreamQueryData::ReadData(const NFmiString &theFileName, NFmiQueryData 
   delete itsQueryData;
   delete itsQueryDataIter;
 
-  itsQueryData = 0;
-  itsQueryDataIter = 0;
+  itsQueryData = nullptr;
+  itsQueryDataIter = nullptr;
 
   if (theQueryData)
   {
@@ -408,8 +408,8 @@ bool NFmiStreamQueryData::ReadIn(NFmiQueryData *theQueryData)
 
   delete itsQueryData;
   delete itsQueryDataIter;
-  itsQueryData = 0;
-  itsQueryDataIter = 0;
+  itsQueryData = nullptr;
+  itsQueryDataIter = nullptr;
 
   if (theQueryData)
   {

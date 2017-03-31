@@ -27,8 +27,8 @@
 // ======================================================================
 
 #include "NFmiBitMask.h"
-#include "NFmiQueryInfo.h"
 #include "NFmiDataModifier.h"
+#include "NFmiQueryInfo.h"
 
 using namespace std;
 
@@ -45,7 +45,7 @@ long NFmiBitMask::itsNumberOfBitsInLong = sizeof(long) * 8;
 NFmiBitMask::NFmiBitMask(long theSize)
     : itsSize(), itsNumberOfBytesInMask(), itsNumberOfLongsInMask(), itsMaskData()
 {
-  itsMaskData = 0;
+  itsMaskData = nullptr;
   Init(theSize);
 }
 
@@ -61,7 +61,7 @@ NFmiBitMask::NFmiBitMask(const NFmiBitMask& theBitMask)
     : itsSize(theBitMask.itsSize),
       itsNumberOfBytesInMask(theBitMask.itsNumberOfBytesInMask),
       itsNumberOfLongsInMask(theBitMask.itsNumberOfLongsInMask),
-      itsMaskData(0)
+      itsMaskData(nullptr)
 {
   if (theBitMask.itsMaskData)
   {
@@ -324,7 +324,7 @@ bool NFmiBitMask::operator!=(const NFmiBitMask& theBitMask) const { return !(*th
  */
 // ----------------------------------------------------------------------
 
-long NFmiBitMask::MaskedCount(void) const
+long NFmiBitMask::MaskedCount() const
 {
   long returnValue = 0;
   for (long i = 0; i < itsSize; i++)
@@ -351,7 +351,7 @@ void NFmiBitMask::Init(NFmiQueryInfo* theData, NFmiDataModifier* theMaskMethod)
 }
 
 // Kaikki maskin bitit käännetään vastakkaisiksi.
-void NFmiBitMask::InverseMask(void)
+void NFmiBitMask::InverseMask()
 {
   for (int i = 0; i < itsNumberOfLongsInMask; i++)
     itsMaskData[i] = ~itsMaskData[i];  // bitwise not kääntää bitit vastakkain

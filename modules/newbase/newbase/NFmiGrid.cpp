@@ -16,18 +16,18 @@
 #include "NFmiLocationBag.h"
 #include "NFmiSaveBaseFactory.h"
 #include <boost/functional/hash.hpp>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 
 using namespace std;
 
-NFmiLocationCache::NFmiLocationCache(void)
+NFmiLocationCache::NFmiLocationCache()
     : itsGridPoint(), itsLocationIndex(static_cast<unsigned long>(-1)), fNoInterpolation(false)
 {
 }
 
-NFmiLocationCache::~NFmiLocationCache(void) {}
+NFmiLocationCache::~NFmiLocationCache() = default;
 static const double gGridPointEpsilon =
     0.0000001;  // kuinka paljon interpolointi hila-piste saa poiketa maksimissaan tasaluvuista,
 // että erotus tulkitaan interpolaatiossa turhaksi ja indeksi pyöristetään vain lähintä
@@ -110,15 +110,15 @@ void NFmiLocationCache::SetToNearestGridPoint(bool fDoX,
   if (fDoX || fDoY) CalcIsInterpolationNeeded(theGridSizeX, theGridSizeY);
 }
 
-NFmiTimeCache::NFmiTimeCache(void)
+NFmiTimeCache::NFmiTimeCache()
     : itsTimeIndex1(static_cast<unsigned long>(-1)),
       itsTimeIndex2(static_cast<unsigned long>(-1)),
       itsOffset(1)
 {
 }
 
-NFmiTimeCache::~NFmiTimeCache(void) {}
-void NFmiTimeCache::CalcIsInterpolationNeeded(void)
+NFmiTimeCache::~NFmiTimeCache() = default;
+void NFmiTimeCache::CalcIsInterpolationNeeded()
 {
   double diff = ::fabs(itsOffset - ::round(itsOffset));
 
@@ -142,7 +142,7 @@ void NFmiTimeCache::CalcIsInterpolationNeeded(void)
 // ----------------------------------------------------------------------
 
 NFmiGrid::NFmiGrid(const NFmiGrid &theGrid, FmiDirection theStartingCorner)
-    : NFmiGridBase(theGrid), itsArea(theGrid.itsArea ? theGrid.itsArea->Clone() : 0)
+    : NFmiGridBase(theGrid), itsArea(theGrid.itsArea ? theGrid.itsArea->Clone() : nullptr)
 {
   if (theStartingCorner != kBase)
   {
@@ -157,7 +157,7 @@ NFmiGrid &NFmiGrid::operator=(const NFmiGrid &theGrid)
   if (this != &theGrid)
   {
     NFmiGridBase::operator=(theGrid);
-    itsArea = theGrid.itsArea ? theGrid.itsArea->Clone() : 0;
+    itsArea = theGrid.itsArea ? theGrid.itsArea->Clone() : nullptr;
   }
   return *this;
 }
@@ -175,7 +175,7 @@ bool NFmiGrid::Init(NFmiGrid &theGrid, FmiInterpolationMethod howToInterpolate)
 {
   unsigned long counter = 0;
   double theValue;
-  float *values = new float[Size()];
+  auto *values = new float[Size()];
 
   Reset();
   while (Next())
@@ -215,7 +215,7 @@ bool NFmiGrid::Init(NFmiGrid &theGrid,
 
   unsigned long counter = 0;
   double theValue;
-  float *values = new float[Size()];
+  auto *values = new float[Size()];
 
   Reset();
   while (Next())
@@ -329,7 +329,7 @@ NFmiGrid *NFmiGrid::CreateNewGrid(NFmiArea *newArea,
                                   FmiDirection theStartingCorner,
                                   FmiInterpolationMethod theInterpolationMethod)
 {
-  NFmiGrid *newGrid =
+  auto *newGrid =
       new NFmiGrid(newArea, theXNumber, theYNumber, theStartingCorner, theInterpolationMethod);
   ResetCrop();
   newGrid->Init(*this, theInterpolationMethod);
@@ -430,7 +430,7 @@ bool NFmiGrid::AreGridsIdentical(const NFmiGrid &theOtherGrid) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiPoint NFmiGrid::RelativePoint(void) const
+const NFmiPoint NFmiGrid::RelativePoint() const
 {
   double relativeX = itsCurrentX / (itsXNumber - 1);
   double relativeY = itsCurrentY / (itsYNumber - 1);
@@ -646,7 +646,7 @@ bool NFmiGrid::Init(const std::string &theFileName,
             floatData[elem] = kFloatMissing;
           else
           {
-            float value = static_cast<float>(dvalue * theConversionScale + theConversionBase);
+            auto value = static_cast<float>(dvalue * theConversionScale + theConversionBase);
             if (value == theAfterConversionMissingValue)
               floatData[elem] = kFloatMissing;
             else
@@ -851,6 +851,6 @@ bool NFmiGrid::IsStrechableGlobalGrid(const NFmiGrid &theGrid)
 std::size_t NFmiGrid::HashValue() const
 {
   std::size_t hash = NFmiGridBase::HashValue();
-  if (itsArea != 0) boost::hash_combine(hash, itsArea->HashValue());
+  if (itsArea != nullptr) boost::hash_combine(hash, itsArea->HashValue());
   return hash;
 }

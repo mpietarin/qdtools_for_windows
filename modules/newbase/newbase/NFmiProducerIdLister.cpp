@@ -30,7 +30,7 @@ using namespace std;
 //--------------------------------------------------------
 // Constructor/Destructor
 //--------------------------------------------------------
-NFmiProducerIdLister::NFmiProducerIdLister(void)
+NFmiProducerIdLister::NFmiProducerIdLister()
     : itsTimes(),
       itsProducerString(),
       itsProducerIds(itsTimes.Size(), -1),
@@ -61,13 +61,8 @@ NFmiProducerIdLister::NFmiProducerIdLister(const std::string &theProducersString
 }
 
 NFmiProducerIdLister::NFmiProducerIdLister(const NFmiProducerIdLister &theOther)
-    : itsTimes(theOther.itsTimes),
-      itsProducerString(theOther.itsProducerString),
-      itsProducerIds(theOther.itsProducerIds),
-      itsModelOriginTimes(theOther.itsModelOriginTimes),
-      itsDefaultProducerId(theOther.itsDefaultProducerId)
-{
-}
+
+    = default;
 
 // Huom! pitäisi olla const info, mutta pari metodia pitää muuttaa ensin
 NFmiProducerIdLister::NFmiProducerIdLister(NFmiQueryInfo &theInfo)
@@ -88,7 +83,7 @@ NFmiProducerIdLister::NFmiProducerIdLister(NFmiQueryInfo &theInfo)
  * tallettaa sen dataosaksi ja palauttaa kopion siihen. Jos ei voinut
  * rakentaa stringiä jostain syystä, palauttaa tyhjän stringin.
  */
-const std::string NFmiProducerIdLister::MakeProducerIdString(void)
+const std::string NFmiProducerIdLister::MakeProducerIdString()
 {
   if (itsProducerIds.size() != itsTimes.Size()) return "";
   ostringstream out;
@@ -317,4 +312,4 @@ void NFmiProducerIdLister::ModelOriginTime(int theIndex, const NFmiMetTime &theO
     itsModelOriginTimes[theIndex] = theOriginTime;
 }
 
-bool NFmiProducerIdLister::IsEmpty(void) const { return itsProducerIds.empty(); }
+bool NFmiProducerIdLister::IsEmpty() const { return itsProducerIds.empty(); }

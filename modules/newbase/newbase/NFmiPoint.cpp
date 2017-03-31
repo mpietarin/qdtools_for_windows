@@ -127,7 +127,7 @@ NFmiPoint& NFmiPoint::operator/=(const NFmiPoint& thePoint)
 
 FmiDirection NFmiPoint::DirectionOfDifference(const NFmiPoint& thePoint) const
 {
-  int quarterOfOrigin = static_cast<int>(itsY < thePoint.itsY ? kUp : kDown);
+  auto quarterOfOrigin = static_cast<int>(itsY < thePoint.itsY ? kUp : kDown);
   return FmiDirection(itsX < thePoint.itsX ? quarterOfOrigin | static_cast<int>(kLeft)
                                            : quarterOfOrigin | static_cast<int>(kRight));
 }

@@ -20,7 +20,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiBox::~NFmiBox(void) { delete[] itsValues; }
+NFmiBox::~NFmiBox() { delete[] itsValues; }
 // ----------------------------------------------------------------------
 /*!
  * \param newSize Undocumented
@@ -34,7 +34,7 @@ bool NFmiBox::Initialize(unsigned long newSize)
   if (itsValues)
   {
     delete itsValues;
-    itsValues = 0;
+    itsValues = nullptr;
   }
   if (itsSize > 0) itsValues = new float[itsSize];
   return itsValues ? true : false;
@@ -100,7 +100,7 @@ NFmiBox::NFmiBox(NFmiBox& theBox) : itsValues(new float[theBox.itsSize]), itsSiz
  */
 // ----------------------------------------------------------------------
 
-NFmiBox::NFmiBox(long theSize) : itsValues(0), itsSize(theSize)
+NFmiBox::NFmiBox(long theSize) : itsValues(nullptr), itsSize(theSize)
 {
   if (itsSize) itsValues = new float[itsSize];
 }
@@ -111,7 +111,7 @@ NFmiBox::NFmiBox(long theSize) : itsValues(0), itsSize(theSize)
  */
 // ----------------------------------------------------------------------
 
-long NFmiBox::GetSize(void) const { return itsSize; }
+long NFmiBox::GetSize() const { return itsSize; }
 // ----------------------------------------------------------------------
 /*!
  * \param theIndex Undocumented
@@ -126,7 +126,7 @@ float& NFmiBox::operator[](long theIndex) { return itsValues[theIndex]; }
  */
 // ----------------------------------------------------------------------
 
-long NFmiBox::CalcSize(void) { return 0; }
+long NFmiBox::CalcSize() { return 0; }
 // ----------------------------------------------------------------------
 /*!
  * \param theIndex Undocumented

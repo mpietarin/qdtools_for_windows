@@ -5,13 +5,12 @@
  */
 // ======================================================================
 
-#ifndef NFMICOMBINEDPARAM_H
-#define NFMICOMBINEDPARAM_H
+#pragma once
 
 #include "NFmiGlobals.h"
+#include "NFmiMetTime.h"
 #include "NFmiParameterName.h"
 #include "NFmiProducer.h"
-#include "NFmiMetTime.h"
 
 //! Undocumented
 enum FmiWeatherParamType
@@ -200,6 +199,5 @@ inline double NFmiCombinedParam::InfoVersion(void) const { return itsInfoVersion
 // ----------------------------------------------------------------------
 
 inline void NFmiCombinedParam::InfoVersion(double newValue) { itsInfoVersion = newValue; }
-#endif  // NFMICOMBINEDPARAM_H
 
 // ======================================================================

@@ -19,8 +19,7 @@ using namespace std;
 
 // See also NFmiLatLonArea::WKT()
 std::string fmiwkt =
-    "GEOGCS[\"FMI_Sphere\",DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],PRIMEM["
-    "\"Greenwich\",0],UNIT[\"Degree\",0.0174532925199433]]";
+    R"(GEOGCS["FMI_Sphere",DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],PRIMEM["Greenwich",0],UNIT["Degree",0.0174532925199433]])";
 
 // ----------------------------------------------------------------------
 /*!
@@ -28,7 +27,7 @@ std::string fmiwkt =
  */
 // ----------------------------------------------------------------------
 
-NFmiGdalArea::~NFmiGdalArea() {}
+NFmiGdalArea::~NFmiGdalArea() = default;
 // ----------------------------------------------------------------------
 /*!
  * \brief Default constructor
@@ -56,19 +55,8 @@ NFmiGdalArea::NFmiGdalArea()
 // ----------------------------------------------------------------------
 
 NFmiGdalArea::NFmiGdalArea(const NFmiGdalArea &theArea)
-    : NFmiArea(theArea),
-      itsDatum(theArea.itsDatum),
-      itsDescription(theArea.itsDescription),
-      itsWKT(theArea.itsWKT),
-      itsBottomLeftLatLon(theArea.itsBottomLeftLatLon),
-      itsTopRightLatLon(theArea.itsTopRightLatLon),
-      itsWorldRect(theArea.itsWorldRect),
-      itsSpatialReference(theArea.itsSpatialReference),
-      itsLatLonToWorldXYTransformation(theArea.itsLatLonToWorldXYTransformation),
-      itsWorldXYToLatLonTransformation(theArea.itsWorldXYToLatLonTransformation)
 
-{
-}
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -76,20 +64,7 @@ NFmiGdalArea::NFmiGdalArea(const NFmiGdalArea &theArea)
  */
 // ----------------------------------------------------------------------
 
-NFmiGdalArea &NFmiGdalArea::operator=(const NFmiGdalArea &theArea)
-{
-  NFmiArea::operator=(theArea);
-  itsBottomLeftLatLon = theArea.itsBottomLeftLatLon;
-  itsTopRightLatLon = theArea.itsTopRightLatLon;
-  itsWorldRect = theArea.itsWorldRect;
-  itsDatum = theArea.itsDatum;
-  itsDescription = theArea.itsDescription;
-  itsWKT = theArea.itsWKT;
-  itsSpatialReference = theArea.itsSpatialReference;
-  itsLatLonToWorldXYTransformation = theArea.itsLatLonToWorldXYTransformation;
-  itsWorldXYToLatLonTransformation = theArea.itsWorldXYToLatLonTransformation;
-  return *this;
-}
+NFmiGdalArea &NFmiGdalArea::operator=(const NFmiGdalArea &theArea) = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -137,12 +112,12 @@ NFmiGdalArea::NFmiGdalArea(const std::string &theDatum,
 {
   // Guess a good value for itsDescription
 
-  const char *auth = theCRS.GetAuthorityName(NULL);
-  if (auth != NULL)
+  const char *auth = theCRS.GetAuthorityName(nullptr);
+  if (auth != nullptr)
   {
     itsDescription = std::string(auth);
-    const char *code = theCRS.GetAuthorityCode(NULL);
-    if (code != NULL) itsDescription += ":" + std::string(code);
+    const char *code = theCRS.GetAuthorityCode(nullptr);
+    if (code != nullptr) itsDescription += ":" + std::string(code);
   }
   else
   {
@@ -180,12 +155,12 @@ NFmiGdalArea::NFmiGdalArea(const std::string &theDatum,
 {
   // Guess a good value for itsDescription
 
-  const char *auth = theCRS.GetAuthorityName(NULL);
-  if (auth != NULL)
+  const char *auth = theCRS.GetAuthorityName(nullptr);
+  if (auth != nullptr)
   {
     itsDescription = std::string(auth);
-    const char *code = theCRS.GetAuthorityCode(NULL);
-    if (code != NULL) itsDescription += ":" + std::string(code);
+    const char *code = theCRS.GetAuthorityCode(nullptr);
+    if (code != nullptr) itsDescription += ":" + std::string(code);
   }
   else
   {

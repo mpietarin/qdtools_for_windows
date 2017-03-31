@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPOINT_H
-#define NFMIPOINT_H
+#pragma once
 
 #include "NFmiGlobals.h"
 
@@ -273,6 +272,5 @@ inline std::ostream &operator<<(std::ostream &os, const NFmiPoint &item)
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &is, NFmiPoint &item) { return item.Read(is); }
-#endif  // NFMIPOINT_H
 
 // ======================================================================

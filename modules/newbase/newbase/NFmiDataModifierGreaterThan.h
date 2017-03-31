@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERGREATERTHAN_H
-#define NFMIDATAMODIFIERGREATERTHAN_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -20,7 +19,5 @@ class _FMI_DLL NFmiDataModifierGreaterThan : public NFmiDataModifier
   double itsLimit;
 
 };  // class NFmiDataModifierGreaterThan
-
-#endif  // NFMIDATAMODIFIER_H
 
 // ======================================================================

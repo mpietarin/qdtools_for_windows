@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERPROB_H
-#define NFMIDATAMODIFIERPROB_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 #include "NFmiGlobals.h"  // Added by ClassView
@@ -45,7 +44,5 @@ class _FMI_DLL NFmiDataModifierProb : public NFmiDataModifier
   FmiProbabilityCondition itsCondition;
 
 };  // class NFmiDataModifierProb
-
-#endif  // NFMIDATAMODIFIERPROB_H
 
 // ======================================================================

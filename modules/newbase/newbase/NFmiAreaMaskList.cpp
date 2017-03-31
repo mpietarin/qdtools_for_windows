@@ -20,23 +20,18 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMaskList::~NFmiAreaMaskList(void) {}
+NFmiAreaMaskList::~NFmiAreaMaskList() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMaskList::NFmiAreaMaskList(void) : itsMaskVector(), itsCurrentIndex(-1), fMaskInUse(false)
-{
-}
+NFmiAreaMaskList::NFmiAreaMaskList() : itsMaskVector(), itsCurrentIndex(-1), fMaskInUse(false) {}
 
 NFmiAreaMaskList::NFmiAreaMaskList(const NFmiAreaMaskList &theOther)
-    : itsMaskVector(theOther.itsMaskVector),
-      itsCurrentIndex(theOther.itsCurrentIndex),
-      fMaskInUse(theOther.fMaskInUse)
-{
-}
+
+    = default;
 
 boost::shared_ptr<NFmiAreaMaskList> NFmiAreaMaskList::CreateShallowCopy(
     const boost::shared_ptr<NFmiAreaMaskList> &theOther)
@@ -56,7 +51,7 @@ boost::shared_ptr<NFmiAreaMaskList> NFmiAreaMaskList::CreateShallowCopy(
     return boost::shared_ptr<NFmiAreaMaskList>();
 }
 
-unsigned long NFmiAreaMaskList::NumberOfItems(void)
+unsigned long NFmiAreaMaskList::NumberOfItems()
 {
   return static_cast<unsigned long>(itsMaskVector.size());
 }
@@ -82,7 +77,7 @@ void NFmiAreaMaskList::Add(boost::shared_ptr<NFmiAreaMask> &theMask)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiAreaMaskList::Reset(void)
+bool NFmiAreaMaskList::Reset()
 {
   itsCurrentIndex = -1;
   return true;
@@ -95,7 +90,7 @@ bool NFmiAreaMaskList::Reset(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiAreaMaskList::Next(void)
+bool NFmiAreaMaskList::Next()
 {
   itsCurrentIndex++;
   if (static_cast<std::size_t>(itsCurrentIndex) < itsMaskVector.size())
@@ -120,7 +115,7 @@ bool NFmiAreaMaskList::IsValidIndex(int theIndex)
  */
 // ----------------------------------------------------------------------
 
-boost::shared_ptr<NFmiAreaMask> NFmiAreaMaskList::Current(void)
+boost::shared_ptr<NFmiAreaMask> NFmiAreaMaskList::Current()
 {
   if (IsValidIndex(itsCurrentIndex))
     return itsMaskVector[itsCurrentIndex];
@@ -140,7 +135,7 @@ boost::shared_ptr<NFmiAreaMask> NFmiAreaMaskList::Current(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiAreaMaskList::Remove(void)
+bool NFmiAreaMaskList::Remove()
 {
   if (IsValidIndex(itsCurrentIndex))
   {
@@ -166,11 +161,11 @@ bool NFmiAreaMaskList::IsMasked(const NFmiPoint &theLatLon)
   if (fMaskInUse)  // 1999.09.24/Marko Muutin tämän katsomaan ensin onko maski käytössä
   {                // jos on, katsotaan onko maskattu, muuten on aina maskattu
                    // näin pääsee eroon muutamasta ikävästä if-lause testeistä
-    for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+    for (auto &index : itsMaskVector)
     {
-      if (itsMaskVector[index]->IsEnabled())
+      if (index->IsEnabled())
       {
-        if (!(itsMaskVector[index]->IsMasked(theLatLon)))
+        if (!(index->IsMasked(theLatLon)))
         {
           return false;
         }
@@ -201,18 +196,18 @@ double NFmiAreaMaskList::MaskValue(const NFmiPoint &theLatLon)
                    // näin pääsee eroon muutamasta ikävästä if-lause testeistä
     double sum = 0, tempValue = 0;
     int count = 0;
-    for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+    for (auto &index : itsMaskVector)
     {
-      if (itsMaskVector[index]->IsEnabled())
+      if (index->IsEnabled())
       {
-        tempValue = itsMaskVector[index]->MaskValue(theLatLon);
+        tempValue = index->MaskValue(theLatLon);
         if (!tempValue)
         {
           return 0.;
         }
         else
         {
-          if (itsMaskVector[index]->IsRampMask())
+          if (index->IsRampMask())
           {
             sum += tempValue;
             count++;
@@ -258,7 +253,7 @@ bool NFmiAreaMaskList::Find(unsigned long theIndex)
  */
 // ----------------------------------------------------------------------
 
-void NFmiAreaMaskList::Clear(void) { itsMaskVector.clear(); }
+void NFmiAreaMaskList::Clear() { itsMaskVector.clear(); }
 // ----------------------------------------------------------------------
 /*!
  *  Tarkistaa listassa olevilta maskeilta, onko
@@ -273,12 +268,12 @@ void NFmiAreaMaskList::Clear(void) { itsMaskVector.clear(); }
  */
 // ----------------------------------------------------------------------
 
-bool NFmiAreaMaskList::CheckIfMaskUsed(void)
+bool NFmiAreaMaskList::CheckIfMaskUsed()
 {
   fMaskInUse = false;
-  for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+  for (auto &index : itsMaskVector)
   {
-    if (itsMaskVector[index]->IsEnabled())
+    if (index->IsEnabled())
     {
       fMaskInUse = true;
     }
@@ -298,9 +293,9 @@ bool NFmiAreaMaskList::CheckIfMaskUsed(void)
 
 bool NFmiAreaMaskList::SyncronizeMaskTime(const NFmiMetTime &theTime)
 {
-  for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+  for (auto &index : itsMaskVector)
   {
-    if (itsMaskVector[index]->IsEnabled()) itsMaskVector[index]->Time(theTime);
+    if (index->IsEnabled()) index->Time(theTime);
   }
   return true;
 }
@@ -324,9 +319,9 @@ bool NFmiAreaMaskList::Index(unsigned long theIndex) { return Find(theIndex); }
 
 bool NFmiAreaMaskList::Find(const NFmiDataIdent &theParam)
 {
-  for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+  for (auto &index : itsMaskVector)
   {
-    if (itsMaskVector[index]->IsWantedParam(theParam)) return true;
+    if (index->IsWantedParam(theParam)) return true;
   }
   return false;
 }
@@ -342,9 +337,9 @@ bool NFmiAreaMaskList::Find(const NFmiDataIdent &theParam)
 
 bool NFmiAreaMaskList::Find(const NFmiDataIdent &theParam, const NFmiLevel *theLevel)
 {
-  for (int index = 0; index < static_cast<int>(itsMaskVector.size()); index++)
+  for (auto &index : itsMaskVector)
   {
-    if (itsMaskVector[index]->IsWantedParam(theParam, theLevel)) return true;
+    if (index->IsWantedParam(theParam, theLevel)) return true;
   }
   return false;
 }

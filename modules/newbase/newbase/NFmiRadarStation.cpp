@@ -23,14 +23,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiRadarStation::~NFmiRadarStation(void) {}
+NFmiRadarStation::~NFmiRadarStation() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiRadarStation::NFmiRadarStation(void)
+NFmiRadarStation::NFmiRadarStation()
     : NFmiStation(),
       itsResolution(static_cast<unsigned long>(kFloatMissing)),
       itsXNumber(static_cast<unsigned long>(kFloatMissing)),
@@ -47,12 +47,8 @@ NFmiRadarStation::NFmiRadarStation(void)
 // ----------------------------------------------------------------------
 
 NFmiRadarStation::NFmiRadarStation(const NFmiRadarStation &theStation)
-    : NFmiStation(theStation),
-      itsResolution(theStation.itsResolution),
-      itsXNumber(theStation.itsXNumber),
-      itsYNumber(theStation.itsYNumber)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!

@@ -18,11 +18,11 @@
 
 #include "NFmiTime.h"
 #include "NFmiLocation.h"
-#include "NFmiValueString.h"
 #include "NFmiSettings.h"
-#include <iostream>
-#include <ctime>
+#include "NFmiValueString.h"
 #include <sys/timeb.h>
+#include <ctime>
+#include <iostream>
 
 using namespace std;
 
@@ -501,7 +501,7 @@ void NFmiTime::ChangeBySeconds(long seconds)
  */
 // ----------------------------------------------------------------------
 
-short NFmiTime::GetWeekday(void) const
+short NFmiTime::GetWeekday() const
 {
   NFmiTime Sunday(
       static_cast<short>(1830), static_cast<short>(1), static_cast<short>(4));  // toimiikohan?????
@@ -540,7 +540,7 @@ const NFmiString NFmiTime::Weekday(const FmiLanguage theLanguage) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiTime::PrintWeekday(void) const { std::cout << weekdays[GetWeekday() - 1]; }
+void NFmiTime::PrintWeekday() const { std::cout << weekdays[GetWeekday() - 1]; }
 // ----------------------------------------------------------------------
 /*!
  * Returns time in minutes since 01.01.2001 00:00
@@ -556,7 +556,7 @@ void NFmiTime::PrintWeekday(void) const { std::cout << weekdays[GetWeekday() - 1
  */
 // ----------------------------------------------------------------------
 
-long NFmiTime::GetCompareValue(void) const
+long NFmiTime::GetCompareValue() const
 {
   long a = (14 - GetMonth()) / 12;
   long y = GetYear() + 4800 - a;
@@ -736,12 +736,12 @@ const NFmiTime NFmiTime::LocalTime(const NFmiLocation &theLocation) const
 
 // Suomessa talvella -2, kesÃ¤llÃ¤ -3
 
-void NFmiTime::SetZoneDifferenceHour(void)
+void NFmiTime::SetZoneDifferenceHour()
 {
   // time  returns the time since the Epoch (00:00:00 UTC, JanÂ­
   // uary 1, 1970), measured in seconds.
 
-  const time_t now = time(NULL);
+  const time_t now = time(nullptr);
 
   // The localtime() function converts the calendar time  timep
   // to  broken-time  representation, expressed relative to the
@@ -822,7 +822,7 @@ short NFmiTime::CalcZoneDifferenceHour(float theLongitude) const
   ::localtime_r(&aclock, &newtime);
 #endif
 
-  short theWinterTimeDiff = short(newtime.tm_isdst);
+  auto theWinterTimeDiff = short(newtime.tm_isdst);
 
   if (theLongitude < 0)
     return static_cast<short>((((-1 * theLongitude) + 7.5) / 15) + theWinterTimeDiff);

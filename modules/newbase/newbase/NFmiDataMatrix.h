@@ -41,8 +41,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMATRIX_H
-#define NFMIDATAMATRIX_H
+#pragma once
 
 // Jos tämä on määritelty, checkedVector tarkistaa aina rajat ja heittää aina poikkeuksen
 // virhetilanteessa
@@ -60,16 +59,16 @@
 #endif  // _MSC_VER
 #endif  // FMI_USE_SECURE_CHECKED_VECTOR
 
-#include "NFmiGlobals.h"      // kFloatMissing
-#include "NFmiStringTools.h"  // kFloatMissing
-#include "NFmiPoint.h"        // kFloatMissing
+#include "NFmiGlobals.h"  // kFloatMissing
 #include "NFmiInterpolation.h"
-#include "NFmiRect.h"
 #include "NFmiParameterName.h"
+#include "NFmiPoint.h"  // kFloatMissing
+#include "NFmiRect.h"
+#include "NFmiStringTools.h"  // kFloatMissing
 
 #include <iostream>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 // Laitoin checkedvectorin tähän debuggaus avuksi, koska ei ollu
 // boundcheckeriä asennettuna. Koodi on pöllitty muistaakseni
@@ -91,8 +90,7 @@ class checkedVector : public std::vector<T>  // inherit from std::vector<T>
   checkedVector() {}
   checkedVector(size_type n, const T& value = T()) : std::vector<T>(n, value) {}
   template <class Iterator>
-  checkedVector(Iterator i, Iterator j)
-      : std::vector<T>(i, j)
+  checkedVector(Iterator i, Iterator j) : std::vector<T>(i, j)
   {
   }
 
@@ -677,7 +675,5 @@ inline std::istream& operator>>(std::istream& s, NFmiDataMatrix<T>& m)
   }
   return s;
 }
-
-#endif  // NFMIDATAMATRIX_H
 
 // ======================================================================

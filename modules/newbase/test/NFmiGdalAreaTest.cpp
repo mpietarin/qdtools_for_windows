@@ -7,10 +7,10 @@
 
 #include "NFmiGdalArea.h"
 
-#include <regression/tframe.h>
 #include <boost/lexical_cast.hpp>
-#include <string>
+#include <regression/tframe.h>
 #include <stdexcept>
+#include <string>
 
 std::string tostr(const NFmiPoint& p)
 {

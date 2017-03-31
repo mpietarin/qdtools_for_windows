@@ -12,8 +12,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISORTABLE_H
-#define NFMISORTABLE_H
+#pragma once
 
 #include "NFmiGlobals.h"
 
@@ -111,7 +110,5 @@ inline bool NFmiSortable::operator<=(const NFmiSortable& aObjTest) const
 // Marko trying to get rid of fmibase library
 //! Undocumented, should be removed.
 typedef NFmiSortable TSortable;
-
-#endif  // NFMISORTABLE_H
 
 // ======================================================================

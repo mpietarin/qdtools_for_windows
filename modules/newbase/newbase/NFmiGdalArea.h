@@ -7,8 +7,7 @@
 
 #ifdef UNIX
 
-#ifndef NFMIGDALAREA_H
-#define NFMIGDALAREA_H
+#pragma once
 
 #include "NFmiArea.h"
 #include <boost/shared_ptr.hpp>
@@ -101,7 +100,5 @@ class _FMI_DLL NFmiGdalArea : public NFmiArea
 };  // class NFmiGdalArea
 
 #endif  // NFMIGDALAREA_H
-
-#endif  // UNIX
 
 // ======================================================================

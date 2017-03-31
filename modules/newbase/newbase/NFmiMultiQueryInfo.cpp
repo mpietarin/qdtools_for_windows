@@ -26,10 +26,10 @@
 #include "NFmiQueryData.h"
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/foreach.hpp>
 
 #include <cassert>
 #include <utility>
@@ -342,7 +342,7 @@ bool NFmiMultiQueryInfo::FirstTime() { return TimeIndex(0); }
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMultiQueryInfo::PreviousTime(void)
+bool NFmiMultiQueryInfo::PreviousTime()
 {
   if (itsMultiTimeIndex == kUnsignedLongMissing || itsMultiTimeIndex == 0)
   {

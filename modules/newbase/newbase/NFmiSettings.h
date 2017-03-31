@@ -5,15 +5,14 @@
  */
 // ----------------------------------------------------------------------
 
-#ifndef NFMISETTINGS_H
-#define NFMISETTINGS_H
+#pragma once
 
 #include "NFmiSettingsImpl.h"
 #include "NFmiStringTools.h"
 
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
 
 namespace NFmiSettings
 {
@@ -202,7 +201,5 @@ inline T OptionalRange(const std::string& theName,
     return RequireRange<T>(theName, theLowerLimit, theUpperLimit);
 }
 }
-
-#endif  // NFMISETTINGS_H
 
 // ======================================================================

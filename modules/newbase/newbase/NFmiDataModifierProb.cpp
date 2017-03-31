@@ -20,7 +20,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierProb::~NFmiDataModifierProb(void) {}
+NFmiDataModifierProb::~NFmiDataModifierProb() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -79,7 +79,7 @@ NFmiDataModifierProb::NFmiDataModifierProb(FmiProbabilityCondition theCondition,
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierProb::Clear(void)
+void NFmiDataModifierProb::Clear()
 {
   itsCounter = 0;
   itsTotalCounter = 0;
@@ -118,7 +118,7 @@ void NFmiDataModifierProb::AddCounter(bool theCondition)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierProb::CalculationResult(void)
+float NFmiDataModifierProb::CalculationResult()
 {
   return itsTotalCounter
              ? 100.0f * (static_cast<float>(itsCounter) / static_cast<float>(itsTotalCounter))

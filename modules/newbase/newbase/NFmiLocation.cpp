@@ -21,14 +21,14 @@
 // ======================================================================
 
 #include "NFmiLocation.h"
+#include "NFmiAngle.h"
 #include "NFmiGeoTools.h"
 #include "NFmiMetTime.h"
-#include "NFmiAngle.h"
 
 #include <boost/functional/hash.hpp>
 
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 
 using namespace std;
 
@@ -614,7 +614,7 @@ void NFmiLocation::CalcSunriseOrSunsetTime(NFmiTime &theSolarTime)
  */
 // ----------------------------------------------------------------------
 
-NFmiLocation *NFmiLocation::Clone(void) const { return new NFmiLocation(*this); }
+NFmiLocation *NFmiLocation::Clone() const { return new NFmiLocation(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Write the object to the given output stream

@@ -20,20 +20,19 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMin::~NFmiDataModifierMin(void) {}
+NFmiDataModifierMin::~NFmiDataModifierMin() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierMin::NFmiDataModifierMin(void) { itsExtremeValue = 3.4E+38f; }
+NFmiDataModifierMin::NFmiDataModifierMin() { itsExtremeValue = 3.4E+38f; }
 NFmiDataModifierMin::NFmiDataModifierMin(const NFmiDataModifierMin& theOther)
-    : NFmiDataModifierExtreme(theOther)
-{
-}
 
-NFmiDataModifier* NFmiDataModifierMin::Clone(void) const { return new NFmiDataModifierMin(*this); }
+    = default;
+
+NFmiDataModifier* NFmiDataModifierMin::Clone() const { return new NFmiDataModifierMin(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -53,14 +52,14 @@ void NFmiDataModifierMin::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierMin::Clear(void) { itsExtremeValue = 3.4E+38f; }
+void NFmiDataModifierMin::Clear() { itsExtremeValue = 3.4E+38f; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierMin::CalculationResult(void)
+float NFmiDataModifierMin::CalculationResult()
 {
   return itsExtremeValue != 3.4E+38f && !(!fMissingValuesAllowed && itsNumberOfMissingValues > 0)
              ? itsExtremeValue

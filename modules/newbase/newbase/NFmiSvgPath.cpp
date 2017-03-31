@@ -20,10 +20,10 @@
 #include "NFmiSvgPath.h"
 #include "NFmiPoint.h"
 
-#include <iterator>
 #include <algorithm>
-#include <string>
+#include <iterator>
 #include <sstream>
+#include <string>
 
 using namespace std;
 
@@ -304,7 +304,7 @@ NFmiSvgPath::NFmiSvgPath()
  */
 // ----------------------------------------------------------------------
 
-NFmiSvgPath::size_type NFmiSvgPath::size(void) const { return itsData.size(); }
+NFmiSvgPath::size_type NFmiSvgPath::size() const { return itsData.size(); }
 // ----------------------------------------------------------------------
 /*!
  * \brief Testaa onko polku tyhjä
@@ -313,14 +313,14 @@ NFmiSvgPath::size_type NFmiSvgPath::size(void) const { return itsData.size(); }
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSvgPath::empty(void) const { return itsData.empty(); }
+bool NFmiSvgPath::empty() const { return itsData.empty(); }
 // ----------------------------------------------------------------------
 /*!
  * \brief Tyhjennä polku
  */
 // ----------------------------------------------------------------------
 
-void NFmiSvgPath::clear(void)
+void NFmiSvgPath::clear()
 {
   itsBBoxValid = false;
   itsData.clear();
@@ -357,7 +357,7 @@ std::ostream& NFmiSvgPath::Write(std::ostream& file) const
   if (itsData.size() > 0)
   {
     file << '"';
-    for (const_iterator it = begin(); it != end(); ++it)
+    for (auto it = begin(); it != end(); ++it)
     {
       if (it != begin()) file << ' ';
 
@@ -421,9 +421,9 @@ bool NFmiSvgPath::IsInside(const NFmiPoint& thePoint) const
 
   if (!itsBBoxValid)
   {
-    for (const_iterator it = itsData.begin(); it != itsData.end(); ++it)
+    for (const auto& it : itsData)
     {
-      switch (it->itsType)
+      switch (it.itsType)
       {
         case kElementNotValid:
         case kElementClosePath:
@@ -433,16 +433,16 @@ bool NFmiSvgPath::IsInside(const NFmiPoint& thePoint) const
         {
           if (!itsBBoxValid)
           {
-            itsMinX = itsMaxX = it->itsX;
-            itsMinY = itsMaxY = it->itsY;
+            itsMinX = itsMaxX = it.itsX;
+            itsMinY = itsMaxY = it.itsY;
             itsBBoxValid = true;
           }
           else
           {
-            itsMinX = FmiMin(itsMinX, it->itsX);
-            itsMinY = FmiMin(itsMinY, it->itsY);
-            itsMaxX = FmiMax(itsMaxX, it->itsX);
-            itsMaxY = FmiMax(itsMaxY, it->itsY);
+            itsMinX = FmiMin(itsMinX, it.itsX);
+            itsMinY = FmiMin(itsMinY, it.itsY);
+            itsMaxX = FmiMax(itsMaxX, it.itsX);
+            itsMaxY = FmiMax(itsMaxY, it.itsY);
           }
         }
       }
@@ -458,14 +458,14 @@ bool NFmiSvgPath::IsInside(const NFmiPoint& thePoint) const
 
   // Joudutaan laskemaan suoraan
 
-  NFmiSvgPath::const_iterator firstPoint = begin();
-  NFmiSvgPath::const_iterator p1 = begin();
-  NFmiSvgPath::const_iterator p2 = begin();
+  auto firstPoint = begin();
+  auto p1 = begin();
+  auto p2 = begin();
 
   int counter = 0;
 
   // hypätään ensimmäisen käskyn yli, se on aina moveto
-  NFmiSvgPath::const_iterator it = begin();
+  auto it = begin();
   for (++it; it != end(); ++it)
   {
     p2 = it;

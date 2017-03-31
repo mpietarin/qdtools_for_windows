@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIVALUESTRING_H
-#define NFMIVALUESTRING_H
+#pragma once
 
 #include "NFmiDef.h"
 #include "NFmiString.h"
@@ -80,7 +79,5 @@ class _FMI_DLL NFmiValueString : public NFmiString
   FmiValues itsValueType;
 
 };  // NFmiValueString
-
-#endif  // NFMIVALUESTRING_H
 
 // ======================================================================

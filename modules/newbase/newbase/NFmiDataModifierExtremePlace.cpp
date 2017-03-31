@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierExtremePlace::~NFmiDataModifierExtremePlace(void) {}
+NFmiDataModifierExtremePlace::~NFmiDataModifierExtremePlace() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierExtremePlace::NFmiDataModifierExtremePlace(void)
+NFmiDataModifierExtremePlace::NFmiDataModifierExtremePlace()
     : itsExtremeValue(), itsExtremeLocation()
 {
 }
@@ -51,7 +51,7 @@ void NFmiDataModifierExtremePlace::SetLocation(NFmiQueryInfo* theQI)
  */
 // ----------------------------------------------------------------------
 
-const NFmiLocation NFmiDataModifierExtremePlace::GetLocation(void) { return itsExtremeLocation; }
+const NFmiLocation NFmiDataModifierExtremePlace::GetLocation() { return itsExtremeLocation; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented

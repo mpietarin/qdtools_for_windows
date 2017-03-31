@@ -15,10 +15,10 @@
 // ======================================================================
 
 #include "NFmiLocationBag.h"
-#include "NFmiValueString.h"
-#include "NFmiStation.h"
 #include "NFmiArea.h"
 #include "NFmiRadarStation.h"
+#include "NFmiStation.h"
+#include "NFmiValueString.h"
 #include "NFmiVersion.h"
 
 #include <boost/foreach.hpp>
@@ -34,15 +34,14 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiLocationBag::~NFmiLocationBag(void) { Destroy(); }
+NFmiLocationBag::~NFmiLocationBag() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiLocationBag::NFmiLocationBag(void)
-    : NFmiSize(), itsLocations(), itsSortedLocations(), itsNearTree()
+NFmiLocationBag::NFmiLocationBag() : NFmiSize(), itsLocations(), itsSortedLocations(), itsNearTree()
 {
 }
 
@@ -151,7 +150,7 @@ NFmiLocationBag::NFmiLocationBag(const NFmiLocationBag &theLocationBag)
  */
 // ----------------------------------------------------------------------
 
-void NFmiLocationBag::Destroy(void)
+void NFmiLocationBag::Destroy()
 {
   for (unsigned long i = 0; i < itsLocations.size(); i++)
     delete itsLocations[i];
@@ -199,9 +198,9 @@ const NFmiLocationBag NFmiLocationBag::Combine(const NFmiLocationBag &theBag)
  */
 // ----------------------------------------------------------------------
 
-const NFmiLocation *NFmiLocationBag::Location(void) const
+const NFmiLocation *NFmiLocationBag::Location() const
 {
-  if (CurrentIndex() == -1) return 0;
+  if (CurrentIndex() == -1) return nullptr;
   return itsLocations[CurrentIndex()];
 }
 
@@ -552,7 +551,7 @@ struct LocationIndexDistanceGreater
 const checkedVector<pair<int, double> > NFmiLocationBag::NearestLocations(
     const NFmiLocation &theLocation, int theMaxWantedLocations, double theMaxDistance) const
 {
-  int size = static_cast<int>(this->GetSize());
+  auto size = static_cast<int>(this->GetSize());
   checkedVector<IndDistPari> tempValues(size, make_pair(-1, kFloatMissing));
   for (int i = 0; i < size; i++)
     tempValues[i] = make_pair(i, theLocation.Distance(*this->itsLocations[i]));
@@ -588,14 +587,13 @@ const checkedVector<pair<int, double> > NFmiLocationBag::NearestLocations(
 
   // haetaan kaikki annetun säteen sisällä olevat paikat
   std::sort(tempValues.begin(), tempValues.end(), LocationIndexDistanceLess<IndDistPari>());
-  checkedVector<IndDistPari>::iterator pos =
-      std::find_if(tempValues.begin(),
-                   tempValues.end(),
-                   LocationIndexDistanceGreater<IndDistPari>(theMaxDistance));
+  auto pos = std::find_if(tempValues.begin(),
+                          tempValues.end(),
+                          LocationIndexDistanceGreater<IndDistPari>(theMaxDistance));
 
   if (theMaxWantedLocations != -1)
   {
-    checkedVector<IndDistPari>::iterator maxWantedPos = tempValues.begin() + theMaxWantedLocations;
+    auto maxWantedPos = tempValues.begin() + theMaxWantedLocations;
     if (pos > maxWantedPos) pos = maxWantedPos;
   }
 
@@ -641,7 +639,7 @@ std::size_t NFmiLocationBag::HashValue() const
 
   BOOST_FOREACH (NFmiLocation *location, itsLocations)
   {
-    if (location != 0) boost::hash_combine(hash, location->HashValue());
+    if (location != nullptr) boost::hash_combine(hash, location->HashValue());
   }
 
   return hash;

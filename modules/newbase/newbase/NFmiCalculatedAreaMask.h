@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMICALCULATEDAREAMASK_H
-#define NFMICALCULATEDAREAMASK_H
+#pragma once
 
 #include "NFmiAreaMaskImpl.h"
 #include "NFmiMetTime.h"
@@ -212,7 +211,5 @@ class _FMI_DLL NFmiGridSizeAreaMask : public NFmiElevationAngleAreaMask
 
   NFmiGridSizeAreaMask& operator=(const NFmiGridSizeAreaMask& theMask);
 };  // class NFmiGridSizeAreaMask
-
-#endif  // NFMICALCUlATEDAREAMASK_H
 
 // ======================================================================

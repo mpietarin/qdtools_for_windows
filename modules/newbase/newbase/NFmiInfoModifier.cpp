@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiInfoModifier::~NFmiInfoModifier(void) {}
+NFmiInfoModifier::~NFmiInfoModifier() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -47,7 +47,7 @@ NFmiInfoModifier::NFmiInfoModifier(NFmiDataIdent* theParam,
  */
 // ----------------------------------------------------------------------
 
-double NFmiInfoModifier::FloatValue(void) { return itsData->FloatValue(); }
+double NFmiInfoModifier::FloatValue() { return itsData->FloatValue(); }
 // ----------------------------------------------------------------------
 /*!
  * \param dx Undocumented
@@ -68,5 +68,5 @@ double NFmiInfoModifier::PeekValue(long dx, long dy, long dt)
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryInfo* NFmiInfoModifier::Info(void) { return itsData; }
+NFmiQueryInfo* NFmiInfoModifier::Info() { return itsData; }
 // ======================================================================

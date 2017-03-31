@@ -12,8 +12,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERMAXPLACE_H
-#define NFMIDATAMODIFIERMAXPLACE_H
+#pragma once
 
 #include "NFmiDataModifierExtremePlace.h"
 
@@ -36,7 +35,5 @@ class _FMI_DLL NFmiDataModifierMaxPlace : public NFmiDataModifierExtremePlace
   NFmiDataModifierMaxPlace& operator=(const NFmiDataModifierMaxPlace& theOther);
 
 };  // class NFmiDataModifierMaxPlace
-
-#endif  // NFMIDATAMODIFIERMAXPLACE_H
 
 // ======================================================================

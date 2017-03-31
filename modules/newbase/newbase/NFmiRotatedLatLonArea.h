@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIROTATEDLATLONAREA_H
-#define NFMIROTATEDLATLONAREA_H
+#pragma once
 
 #include "NFmiLatLonArea.h"
 
@@ -82,6 +81,5 @@ inline unsigned long NFmiRotatedLatLonArea::ClassId(void) const { return kNFmiRo
 // ----------------------------------------------------------------------
 
 inline const char *NFmiRotatedLatLonArea::ClassName(void) const { return "NFmiRotatedLatLonArea"; }
-#endif  // NFMIROTATEDLATLONAREA_H
 
 // ======================================================================

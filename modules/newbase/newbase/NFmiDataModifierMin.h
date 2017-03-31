@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERMIN_H
-#define NFMIDATAMODIFIERMIN_H
+#pragma once
 
 #include "NFmiDataModifierExtreme.h"
 
@@ -31,7 +30,5 @@ class _FMI_DLL NFmiDataModifierMin : public NFmiDataModifierExtreme
   NFmiDataModifierMin& operator=(const NFmiDataModifierMin& theOther);
 
 };  // class NFmiDataModifierMin
-
-#endif  // NFMIDATAMODIFIERMIN_H
 
 // ======================================================================

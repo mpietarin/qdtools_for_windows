@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERCONSTANT_H
-#define NFMIDATAMODIFIERCONSTANT_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -23,7 +22,5 @@ class _FMI_DLL NFmiDataModifierConstant : public NFmiDataModifier
   double itsConstant;
 
 };  // class NFmiDataModifierConstant
-
-#endif  // NFMIDATAMODIFIERCONSTANT_H
 
 // ======================================================================

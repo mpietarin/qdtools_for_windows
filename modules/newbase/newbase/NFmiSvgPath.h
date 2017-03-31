@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMISVGPATH_H
-#define NFMISVGPATH_H
+#pragma once
 
-#include "NFmiDef.h"
 #include "NFmiDataMatrix.h"
+#include "NFmiDef.h"
 #include <iosfwd>
 
 class NFmiPoint;
@@ -72,6 +71,7 @@ class _FMI_DLL NFmiSvgPath
 
   bool IsInside(const NFmiPoint& thePoint) const;
   storage_type& GetData(void) { return itsData; }
+
  private:
   storage_type itsData;
 
@@ -162,6 +162,5 @@ inline std::ostream& operator<<(std::ostream& os, const NFmiSvgPath& item)
 // ----------------------------------------------------------------------
 
 inline std::istream& operator>>(std::istream& is, NFmiSvgPath& item) { return item.Read(is); }
-#endif  // NFMISVGPATH_H
 
 // ======================================================================

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMITOTALWIND_H
-#define NFMITOTALWIND_H
+#pragma once
 
 #include "NFmiCombinedParam.h"
 
@@ -154,8 +153,7 @@ class _FMI_DLL NFmiTotalWind : public NFmiCombinedParam
   void SetWindGustV7(unsigned long theValue);
 
   //! Undocumented
-  union FmiWindUnion
-  {
+  union FmiWindUnion {
     uint32_t longType;
     float floatType;
 #ifndef UNIX
@@ -427,7 +425,5 @@ inline void NFmiTotalWind::SetWindGust(unsigned long theValue)
   else
     SetWindGustV6(theValue);
 }
-
-#endif  // NFMITOTALWIND_H
 
 // ======================================================================

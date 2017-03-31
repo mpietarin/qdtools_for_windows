@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIQUERYINFOSATEL_H
-#define NFMIQUERYINFOSATEL_H
+#pragma once
 
 #include "NFmiQueryInfo.h"
 
@@ -64,6 +63,5 @@ inline unsigned long NFmiQueryInfoSatel::ClassId(void) const { return kNFmiSatel
 // ----------------------------------------------------------------------
 
 inline const char* NFmiQueryInfoSatel::ClassName(void) const { return "NFmiQueryInfoSatel"; }
-#endif  // NFMIQUERYINFOSATEL_H
 
 // ======================================================================

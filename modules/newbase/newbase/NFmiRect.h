@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIRECT_H
-#define NFMIRECT_H
+#pragma once
 
 #include "NFmiPoint.h"
 
@@ -424,4 +423,3 @@ inline std::ostream &operator<<(std::ostream &os, const NFmiRect &item) { return
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &is, NFmiRect &item) { return item.Read(is); }
-#endif  //__NRECT_H__

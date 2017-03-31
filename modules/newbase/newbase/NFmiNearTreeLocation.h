@@ -1,5 +1,4 @@
-#ifndef NFMINEARTREELOCATION_H
-#define NFMINEARTREELOCATION_H
+#pragma once
 
 #include "NFmiDef.h"
 #include <cmath>
@@ -30,6 +29,7 @@ class _FMI_DLL NFmiNearTreeLocation
   double GetY() const { return itsY; }
   double GetZ() const { return itsZ; }
   std::size_t GetIndex() const { return itsIndex; }
+
  private:
   double itsX;
   double itsY;
@@ -48,5 +48,3 @@ class _FMI_DLL NFmiNearTreeLocationDistance
     return std::sqrt(dx * dx + dy * dy + dz * dz);
   }
 };
-
-#endif  // NFMINEARTREELOCATION_H

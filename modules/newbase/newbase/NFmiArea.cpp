@@ -77,7 +77,7 @@ const NFmiRect NFmiArea::XYArea(const NFmiArea *theArea) const
   }
   else if (PacificView() == false && theArea->PacificView())
   {
-    std::auto_ptr<NFmiArea> pacificAreaFromThis(DoForcePacificFix());
+    std::unique_ptr<NFmiArea> pacificAreaFromThis(DoForcePacificFix());
 
     NFmiPoint topLeft(pacificAreaFromThis->ToXY(theArea->ToLatLon(theArea->TopLeft())));
     NFmiPoint bottomRight(pacificAreaFromThis->ToXY(theArea->ToLatLon(theArea->BottomRight())));
@@ -252,7 +252,8 @@ NFmiArea *NFmiArea::CreateNewArea(double theNewAspectRatioXperY,
   // REDIMENSIONING OF THE WORLD RECTANGLE
   //----------------------------------------
 
-  if (!newWorldRect.AdjustAspectRatio(theNewAspectRatioXperY, keepWidth, theFixedPoint)) return 0;
+  if (!newWorldRect.AdjustAspectRatio(theNewAspectRatioXperY, keepWidth, theFixedPoint))
+    return nullptr;
 
   // Create a new area with the new aspect ratio
   NFmiArea *newArea =
@@ -286,11 +287,11 @@ NFmiArea *NFmiArea::CreateNewAreaByWorldRect(const NFmiRect &theWorldRect)
   NFmiPoint newBottomLeftLatLon = WorldXYToLatLon(newBottomLeftXY);
   NFmiPoint newTopRightLatLon = WorldXYToLatLon(newTopRightXY);
 
-  if (!IsInside(newBottomLeftLatLon) || !IsInside(newTopRightLatLon)) return 0;
+  if (!IsInside(newBottomLeftLatLon) || !IsInside(newTopRightLatLon)) return nullptr;
 
-  NFmiArea *newArea = static_cast<NFmiArea *>(NewArea(newBottomLeftLatLon, newTopRightLatLon));
+  auto *newArea = static_cast<NFmiArea *>(NewArea(newBottomLeftLatLon, newTopRightLatLon));
 
-  if (!IsInside(*newArea)) return 0;
+  if (!IsInside(*newArea)) return nullptr;
 
   return newArea;
 }
@@ -354,7 +355,7 @@ bool NFmiArea::IsPacificLongitude(double theLongitude)
     return false;
 }
 
-void NFmiArea::CheckForPacificView(void)
+void NFmiArea::CheckForPacificView()
 {
   fPacificView = NFmiArea::IsPacificView(BottomLeftLatLon(), TopRightLatLon());
 }
@@ -406,7 +407,7 @@ double NFmiArea::FixLongitude(double theLon) const
     return theLon;
 }
 
-NFmiArea *NFmiArea::DoPossiblePacificFix(void) const
+NFmiArea *NFmiArea::DoPossiblePacificFix() const
 {
   // On olemassa pari erikoistapausta, mitkä halutaan eri areoissa korjata, että alueet toimisivat
   // paremmin newbase:ssa.
@@ -428,10 +429,10 @@ NFmiArea *NFmiArea::DoPossiblePacificFix(void) const
       }
     }
   }
-  return 0;
+  return nullptr;
 }
 
-NFmiArea *NFmiArea::DoForcePacificFix(void) const
+NFmiArea *NFmiArea::DoForcePacificFix() const
 {
   // Joskus on pakko muuttaa atlantic-area pacific tyyppiseksi vaikka väkisin
   if (!fPacificView)
@@ -448,7 +449,7 @@ NFmiArea *NFmiArea::DoForcePacificFix(void) const
       return newArea;
     }
   }
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------

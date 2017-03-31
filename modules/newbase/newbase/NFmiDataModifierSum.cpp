@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierSum::~NFmiDataModifierSum(void) {}
+NFmiDataModifierSum::~NFmiDataModifierSum() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -37,18 +37,17 @@ NFmiDataModifierSum::NFmiDataModifierSum(FmiJoinOperator theJoinOperator, bool m
 }
 
 NFmiDataModifierSum::NFmiDataModifierSum(const NFmiDataModifierSum& theOther)
-    : NFmiDataModifier(theOther), itsSum(theOther.itsSum)
-{
-}
 
-NFmiDataModifier* NFmiDataModifierSum::Clone(void) const { return new NFmiDataModifierSum(*this); }
+    = default;
+
+NFmiDataModifier* NFmiDataModifierSum::Clone() const { return new NFmiDataModifierSum(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierSum::Sum(void) { return itsSum; }
+float NFmiDataModifierSum::Sum() { return itsSum; }
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -77,7 +76,7 @@ void NFmiDataModifierSum::Calculate(NFmiQueryInfo* theQI) { Calculate(theQI->Flo
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierSum::Clear(void)
+void NFmiDataModifierSum::Clear()
 {
   NFmiDataModifier::Clear();
   itsSum = 0;
@@ -90,7 +89,7 @@ void NFmiDataModifierSum::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierSum::CalculationResult(void)
+float NFmiDataModifierSum::CalculationResult()
 {
   if (!fCalculationResultOk || (!fMissingValuesAllowed && itsNumberOfMissingValues > 0))
     return kFloatMissing;

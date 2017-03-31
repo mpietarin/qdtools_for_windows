@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIMAP_H
-#define NFMIMAP_H
+#pragma once
 
 #include "NFmiRect.h"
 
@@ -107,7 +106,5 @@ inline const NFmiPoint NFmiMap::Reverse(const NFmiPoint &thePoint) const
   newPoint /= itsOffset;
   return newPoint;
 }
-
-#endif  // NFMIMAP_H
 
 // ======================================================================

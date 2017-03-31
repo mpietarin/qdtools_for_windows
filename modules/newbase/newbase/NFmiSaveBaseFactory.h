@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISAVEBASEFACTORY_H
-#define NFMISAVEBASEFACTORY_H
+#pragma once
 
 const unsigned long kNFmiSaveBase = 0;
 const unsigned int kNFmiArea = 1;
@@ -76,7 +75,5 @@ const unsigned int kNFmiGrib = 82;
 const unsigned int KNFmiMaxClass = 99;
 
 void* CreateSaveBase(unsigned int classId);
-
-#endif
 
 // ======================================================================

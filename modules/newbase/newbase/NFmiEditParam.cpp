@@ -22,5 +22,5 @@
 //! Constructor
 NFmiEditParam::NFmiEditParam() : itsMaskMethod(kFmiIsLessThan), itsMaskValue() {}
 //! Destructor
-NFmiEditParam::~NFmiEditParam() {}
+NFmiEditParam::~NFmiEditParam() = default;
 // ======================================================================

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPKJAREA_H
-#define NFMIPKJAREA_H
+#pragma once
 
 #include "NFmiKKJArea.h"
 
@@ -94,6 +93,5 @@ inline unsigned long NFmiPKJArea::ClassId(void) const { return kNFmiPKJArea; }
 // ----------------------------------------------------------------------
 
 inline const char* NFmiPKJArea::ClassName(void) const { return "NFmiPKJArea"; }
-#endif  // NFMIPKJAREA_H
 
 // ======================================================================

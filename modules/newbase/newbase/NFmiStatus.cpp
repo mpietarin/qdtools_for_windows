@@ -13,7 +13,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiStatus::NFmiStatus(void) : itsErrorLog(), itsWarningLog(), itsMessageLog() {}
+NFmiStatus::NFmiStatus() : itsErrorLog(), itsWarningLog(), itsMessageLog() {}
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -23,11 +23,8 @@ NFmiStatus::NFmiStatus(void) : itsErrorLog(), itsWarningLog(), itsMessageLog() {
 // ----------------------------------------------------------------------
 
 NFmiStatus::NFmiStatus(const NFmiStatus& theStatus)
-    : itsErrorLog(theStatus.itsErrorLog),
-      itsWarningLog(theStatus.itsWarningLog),
-      itsMessageLog(theStatus.itsMessageLog)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -35,21 +32,21 @@ NFmiStatus::NFmiStatus(const NFmiStatus& theStatus)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStatus::IsWarning(void) const { return itsWarningLog.IsValue(); }
+bool NFmiStatus::IsWarning() const { return itsWarningLog.IsValue(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStatus::IsError(void) const { return itsErrorLog.IsValue(); }
+bool NFmiStatus::IsError() const { return itsErrorLog.IsValue(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStatus::IsMessage(void) const { return itsMessageLog.IsValue(); }
+bool NFmiStatus::IsMessage() const { return itsMessageLog.IsValue(); }
 // ----------------------------------------------------------------------
 /*!
  * \param theErrorLog Undocumented
@@ -98,21 +95,21 @@ void NFmiStatus::MessageLog(const char* theMessageLog) { itsMessageLog = theMess
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiStatus::ErrorLog(void) const { return itsErrorLog; }
+const NFmiString NFmiStatus::ErrorLog() const { return itsErrorLog; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiStatus::WarningLog(void) const { return itsWarningLog; }
+const NFmiString NFmiStatus::WarningLog() const { return itsWarningLog; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiStatus::MessageLog(void) const { return itsMessageLog; }
+const NFmiString NFmiStatus::MessageLog() const { return itsMessageLog; }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -122,14 +119,7 @@ const NFmiString NFmiStatus::MessageLog(void) const { return itsMessageLog; }
  */
 // ----------------------------------------------------------------------
 
-NFmiStatus& NFmiStatus::operator=(const NFmiStatus& theStatus)
-{
-  itsMessageLog = theStatus.itsMessageLog;
-  itsWarningLog = theStatus.itsWarningLog;
-  itsErrorLog = theStatus.itsErrorLog;
-
-  return *this;
-}
+NFmiStatus& NFmiStatus::operator=(const NFmiStatus& theStatus) = default;
 
 // ----------------------------------------------------------------------
 /*!

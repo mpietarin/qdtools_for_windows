@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIEQUIDISTAREA_H
-#define NFMIEQUIDISTAREA_H
+#pragma once
 
-#include "NFmiAzimuthalArea.h"
 #include "NFmiAngle.h"
+#include "NFmiAzimuthalArea.h"
 
 //! Undocumented
 
@@ -107,6 +106,5 @@ inline unsigned long NFmiEquidistArea::ClassId(void) const { return kNFmiEquiDis
 // ----------------------------------------------------------------------
 
 inline const char* NFmiEquidistArea::ClassName(void) const { return "NFmiEquiDistArea"; }
-#endif  // NFMIEQUIDISTAREA_H
 
 // ======================================================================

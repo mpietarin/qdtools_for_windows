@@ -20,7 +20,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiCalculator::~NFmiCalculator(void) {}
+NFmiCalculator::~NFmiCalculator() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -31,7 +31,7 @@ NFmiCalculator::~NFmiCalculator(void) {}
 // ----------------------------------------------------------------------
 
 NFmiCalculator::NFmiCalculator(NFmiDataIterator* theDataIterator, NFmiDataModifier* theDataModifier)
-    : itsDataModifier(theDataModifier), itsDataIterator(theDataIterator), itsData(0)
+    : itsDataModifier(theDataModifier), itsDataIterator(theDataIterator), itsData(nullptr)
 {
 }
 
@@ -45,7 +45,7 @@ NFmiCalculator::NFmiCalculator(NFmiDataIterator* theDataIterator, NFmiDataModifi
 // ----------------------------------------------------------------------
 
 NFmiCalculator::NFmiCalculator(NFmiQueryInfo* theData, NFmiDataModifier* theDataModifier)
-    : itsDataModifier(theDataModifier), itsDataIterator(0), itsData(theData)
+    : itsDataModifier(theDataModifier), itsDataIterator(nullptr), itsData(theData)
 {
 }
 
@@ -55,7 +55,7 @@ NFmiCalculator::NFmiCalculator(NFmiQueryInfo* theData, NFmiDataModifier* theData
  */
 // ----------------------------------------------------------------------
 
-double NFmiCalculator::FloatValue(void)
+double NFmiCalculator::FloatValue()
 {
   if (itsDataIterator && itsDataModifier)
   {
@@ -75,14 +75,14 @@ double NFmiCalculator::FloatValue(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiCombinedParam* NFmiCalculator::CombinedValue(void)
+NFmiCombinedParam* NFmiCalculator::CombinedValue()
 {
   if (itsDataIterator && itsDataModifier)
   {
     itsDataIterator->DoForEach(itsDataModifier);
     return itsDataModifier->CombinedCalculationResult();
   }
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -91,14 +91,14 @@ NFmiCombinedParam* NFmiCalculator::CombinedValue(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifier* NFmiCalculator::CalculatedModifier(void)
+NFmiDataModifier* NFmiCalculator::CalculatedModifier()
 {
   if (itsDataIterator && itsDataModifier)
   {
     itsDataIterator->DoForEach(itsDataModifier);
     return itsDataModifier;
   }
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -110,5 +110,5 @@ NFmiDataModifier* NFmiCalculator::CalculatedModifier(void)
 // Tämä on kuten FloatValue, paitsi että juoksutus tehdään täällä loopissa
 // ja laskut tehdään täällä eikä iteratorin DoForEach-metodissa.
 
-float NFmiCalculator::CalculatedValue(void) { return kFloatMissing; }
+float NFmiCalculator::CalculatedValue() { return kFloatMissing; }
 // ======================================================================

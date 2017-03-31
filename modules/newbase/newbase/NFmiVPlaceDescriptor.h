@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIVPLACEDESCRIPTOR_H
-#define NFMIVPLACEDESCRIPTOR_H
+#pragma once
 
 #include "NFmiDataDescriptor.h"
 #include "NFmiLevelBag.h"
@@ -129,7 +128,5 @@ inline std::istream &operator>>(std::istream &file, NFmiVPlaceDescriptor &ob)
 {
   return ob.Read(file);
 }
-
-#endif  // NFMIVPLACEDESCRIPTOR_H
 
 // ======================================================================

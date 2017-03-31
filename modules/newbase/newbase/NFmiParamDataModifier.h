@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPARAMDATAMODIFIER_H
-#define NFMIPARAMDATAMODIFIER_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -70,6 +69,5 @@ inline NFmiDataIdent* NFmiParamDataModifier::Param(void) { return itsParam; }
 // ----------------------------------------------------------------------
 
 inline NFmiLevel* NFmiParamDataModifier::Level(void) { return itsLevel; }
-#endif  // NFMIPARAMDATAMODIFIER_H
 
 // ======================================================================

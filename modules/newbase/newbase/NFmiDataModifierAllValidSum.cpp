@@ -24,15 +24,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAllValidSum::~NFmiDataModifierAllValidSum(void) {}
+NFmiDataModifierAllValidSum::~NFmiDataModifierAllValidSum() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAllValidSum::NFmiDataModifierAllValidSum(void)
-    : NFmiDataModifierSum(), itsCounter(0)
+NFmiDataModifierAllValidSum::NFmiDataModifierAllValidSum() : NFmiDataModifierSum(), itsCounter(0)
 {
   fMissingValuesAllowed = false;
 }
@@ -88,7 +87,7 @@ void NFmiDataModifierAllValidSum::Calculate(NFmiQueryInfo* theQI)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierAllValidSum::Clear(void)
+void NFmiDataModifierAllValidSum::Clear()
 {
   NFmiDataModifier::Clear();
   itsSum = 0;

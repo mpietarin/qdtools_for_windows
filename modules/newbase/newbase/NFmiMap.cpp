@@ -20,7 +20,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiMap::NFmiMap(void) : itsOffset(0.F, 0.F), itsScale(1.F, 1.F) {}
+NFmiMap::NFmiMap() : itsOffset(0.F, 0.F), itsScale(1.F, 1.F) {}
 // ----------------------------------------------------------------------
 /*!
  * \param theOffset Undocumented
@@ -42,5 +42,5 @@ NFmiMap::NFmiMap(const NFmiPoint &theOffset, const NFmiPoint &theScale)
  */
 // ----------------------------------------------------------------------
 
-NFmiMap::NFmiMap(const NFmiMap &theMap) : itsOffset(theMap.itsOffset), itsScale(theMap.itsScale) {}
+NFmiMap::NFmiMap(const NFmiMap &theMap) = default;
 // ======================================================================

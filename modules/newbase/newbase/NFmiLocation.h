@@ -5,12 +5,11 @@
  */
 // ======================================================================
 
-#ifndef NFMILOCATION_H
-#define NFMILOCATION_H
+#pragma once
 
-#include "NFmiSaveBaseFactory.h"
-#include "NFmiPoint.h"
 #include "NFmiIndividual.h"
+#include "NFmiPoint.h"
+#include "NFmiSaveBaseFactory.h"
 #include <algorithm>
 
 class NFmiTime;
@@ -138,7 +137,5 @@ inline double NFmiLocation::Distance(const NFmiPoint& theLonLat) const
 
   return kRearth * acos(cos(la2 - la1) - (1. - cos(lo2 - lo1)) * cos(la1) * cos(la2));
 }
-
-#endif  // NFMILOCATION_H
 
 // ======================================================================

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMILEVELTYPE_H
-#define NFMILEVELTYPE_H
+#pragma once
 
 //! Enumeraatio mahdollisista korkeuspintojen tyypeistä
 
@@ -30,7 +29,5 @@ enum FmiLevelType
   kFmi = 1001,             //!< Level of SYNOP observation, height 0...10 m
   kFmiAnyLevelType = 5000  //!< ???
 };
-
-#endif  // NFMILEVELTYPE_H
 
 // ======================================================================

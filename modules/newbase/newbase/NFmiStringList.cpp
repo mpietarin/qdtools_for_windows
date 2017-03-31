@@ -28,7 +28,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiStringList::~NFmiStringList(void) { Destroy(); }
+NFmiStringList::~NFmiStringList() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -79,7 +79,7 @@ bool NFmiStringList::Next(NFmiString **theItem)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiStringList::Next(void)
+bool NFmiStringList::Next()
 {
   if (itsList.size())
   {
@@ -96,7 +96,7 @@ bool NFmiStringList::Next(void)
  * \return false, if the original value of itsIndex = 0, others true
  */
 //--------------------------------------------------------
-bool NFmiStringList::Previous(void)
+bool NFmiStringList::Previous()
 {
   if (itsIndex > 0)
   {
@@ -116,12 +116,12 @@ bool NFmiStringList::Previous(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiString *NFmiStringList::Current(void) const
+NFmiString *NFmiStringList::Current() const
 {
   if (itsIndex < itsList.size())
     return itsList[itsIndex];
   else
-    return 0;
+    return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -202,8 +202,8 @@ void NFmiStringList::Add(NFmiStringList *theList)
 
 void NFmiStringList::Add(NFmiString *theStr, unsigned short theLengthLimitForStrItem)
 {
-  NFmiString *strLeft = new NFmiString(*theStr);
-  NFmiString *tempStr = 0;
+  auto *strLeft = new NFmiString(*theStr);
+  NFmiString *tempStr = nullptr;
   unsigned long lineLenght = theLengthLimitForStrItem;
   unsigned long ind = 0;
 
@@ -306,7 +306,7 @@ std::istream &NFmiStringList::Read(std::istream &file)
 
   unsigned long classId;
 
-  NFmiString *item = 0;
+  NFmiString *item = nullptr;
   for (long i = 0; i < items; i++)
   {
     file >> classId;
@@ -370,13 +370,13 @@ bool NFmiStringList::Find(const NFmiString &str)
 // SYY VoidPointerList ja sen rajoitukset ja vaikeudet (en luettele tässä)
 // KORJAUS: Toteuta koko juttu STL-vector:ia käyttäen.
 
-bool NFmiStringList::Remove(void)
+bool NFmiStringList::Remove()
 {
   if (Current())
   {
-    StorageType::iterator iter = itsList.begin() + itsIndex;
+    auto iter = itsList.begin() + itsIndex;
     delete *iter;
-    *iter = 0;
+    *iter = nullptr;
     itsList.erase(iter);
     if (itsIndex > itsList.size()) Reset();
     return true;
@@ -390,7 +390,7 @@ bool NFmiStringList::Remove(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiStringList::Destroy(void)
+void NFmiStringList::Destroy()
 {
   const StorageType::iterator begin = itsList.begin();
   const StorageType::iterator end = itsList.end();

@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiLatLonArea::~NFmiLatLonArea(void) {}
+NFmiLatLonArea::~NFmiLatLonArea() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiLatLonArea::NFmiLatLonArea(void)
+NFmiLatLonArea::NFmiLatLonArea()
     : NFmiArea(),
       itsBottomLeftLatLon(),
       itsTopRightLatLon(),
@@ -73,14 +73,8 @@ NFmiLatLonArea::NFmiLatLonArea(const NFmiPoint &theBottomLeftLatLon,
 // ----------------------------------------------------------------------
 
 NFmiLatLonArea::NFmiLatLonArea(const NFmiLatLonArea &theLatLonArea)
-    : NFmiArea(theLatLonArea),
-      itsBottomLeftLatLon(theLatLonArea.itsBottomLeftLatLon),
-      itsTopRightLatLon(theLatLonArea.itsTopRightLatLon),
-      itsXScaleFactor(theLatLonArea.itsXScaleFactor),
-      itsYScaleFactor(theLatLonArea.itsYScaleFactor),
-      itsWorldRect(theLatLonArea.itsWorldRect)  // 18.10.2000/EL
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -88,7 +82,7 @@ NFmiLatLonArea::NFmiLatLonArea(const NFmiLatLonArea &theLatLonArea)
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiLatLonArea::Clone(void) const { return new NFmiLatLonArea(*this); }
+NFmiArea *NFmiLatLonArea::Clone() const { return new NFmiLatLonArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param fKeepWorldRect Undocumented
@@ -158,14 +152,14 @@ const NFmiPoint NFmiLatLonArea::XYToWorldXY(const NFmiPoint &theXYPoint) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiLatLonArea::XScale(void) const { return 1. / itsXScaleFactor; }
+double NFmiLatLonArea::XScale() const { return 1. / itsXScaleFactor; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-double NFmiLatLonArea::YScale(void) const { return 1. / itsYScaleFactor; }
+double NFmiLatLonArea::YScale() const { return 1. / itsYScaleFactor; }
 // ----------------------------------------------------------------------
 /*!
  * \param theBottomLeftLatLon Undocumented
@@ -249,7 +243,7 @@ std::istream &NFmiLatLonArea::Read(std::istream &file)
   return file;
 }
 
-const std::string NFmiLatLonArea::AreaStr(void) const
+const std::string NFmiLatLonArea::AreaStr() const
 {
   std::ostringstream out;
   out << "latlon:" << BottomLeftLatLon().X() << ',' << BottomLeftLatLon().Y() << ','
@@ -271,10 +265,10 @@ const std::string NFmiLatLonArea::AreaStr(void) const
 const std::string NFmiLatLonArea::WKT() const
 {
   std::ostringstream ret;
-  ret << "GEOGCS[\"FMI_Sphere\","
-      << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"Degree\",0.0174532925199433]]";
+  ret << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]])";
   return ret.str();
 }
 

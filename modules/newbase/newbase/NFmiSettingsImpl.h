@@ -5,14 +5,13 @@
  */
 // ======================================================================
 
-#ifndef NFMISETTINGSIMPL_H
-#define NFMISETTINGSIMPL_H
+#pragma once
 
 #include "NFmiDef.h"
 #include <list>
+#include <map>
 #include <set>
 #include <string>
-#include <map>
 #include <vector>
 
 //! A generic settings holder
@@ -73,7 +72,5 @@ class _FMI_DLL NFmiSettingsImpl
   mutable FileMap itsFilenames;
 
 };  // class NFmiSettingsImpl
-
-#endif  // NFMISETTINGSIMPL_H
 
 // ======================================================================

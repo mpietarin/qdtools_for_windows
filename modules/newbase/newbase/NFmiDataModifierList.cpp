@@ -23,7 +23,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierList::~NFmiDataModifierList(void) {}
+NFmiDataModifierList::~NFmiDataModifierList() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -43,7 +43,7 @@ NFmiDataModifierList::NFmiDataModifierList(NFmiCombinedParam* /* thePotentialCom
  * \return Undocumented, always false
  */
 // ----------------------------------------------------------------------
-bool NFmiDataModifierList::IsCombinedParam(void) { return false; }
+bool NFmiDataModifierList::IsCombinedParam() { return false; }
 // ----------------------------------------------------------------------
 /*!
  * \param theModifier Undocumented
@@ -62,7 +62,7 @@ bool NFmiDataModifierList::Add(NFmiDataModifier* theModifier)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataModifierList::Reset(void)
+bool NFmiDataModifierList::Reset()
 {
   itsIter = itsList.Start();
   return true;
@@ -74,14 +74,14 @@ bool NFmiDataModifierList::Reset(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataModifierList::Next(void) { return itsIter.Next() == true; }
+bool NFmiDataModifierList::Next() { return itsIter.Next() == true; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifier* NFmiDataModifierList::Current(void) { return itsIter.CurrentPtr(); }
+NFmiDataModifier* NFmiDataModifierList::Current() { return itsIter.CurrentPtr(); }
 // ----------------------------------------------------------------------
 /*
  * \param fDeleteData Undocumented
@@ -123,7 +123,7 @@ void NFmiDataModifierList::Calculate(float /* theParam */)
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataModifierList::FloatValue(void)
+double NFmiDataModifierList::FloatValue()
 {
   itsReturnValue = 0;
   Reset();

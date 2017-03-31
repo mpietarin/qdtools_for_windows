@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierBase::~NFmiDataModifierBase(void) {}
+NFmiDataModifierBase::~NFmiDataModifierBase() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -44,9 +44,8 @@ NFmiDataModifierBase::NFmiDataModifierBase(FmiJoinOperator theJoinOperator)
 // ----------------------------------------------------------------------
 
 NFmiDataModifierBase::NFmiDataModifierBase(const NFmiDataModifierBase &other)
-    : itsJoinOperator(other.itsJoinOperator), itsExpressionType(other.itsExpressionType)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -54,7 +53,7 @@ NFmiDataModifierBase::NFmiDataModifierBase(const NFmiDataModifierBase &other)
  */
 // ----------------------------------------------------------------------
 
-FmiJoinOperator NFmiDataModifierBase::JoinOperator(void) { return itsJoinOperator; }
+FmiJoinOperator NFmiDataModifierBase::JoinOperator() { return itsJoinOperator; }
 // ----------------------------------------------------------------------
 /*!
  * Write the object to the given output stream

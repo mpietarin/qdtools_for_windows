@@ -5,15 +5,14 @@
  */
 // ======================================================================
 
-#ifndef NFMIHPLACEDESCRIPTOR_H
-#define NFMIHPLACEDESCRIPTOR_H
+#pragma once
 
-#include "NFmiSaveBaseFactory.h"
 #include "NFmiDataDescriptor.h"
 #include "NFmiDataMatrix.h"
 #include "NFmiGlobals.h"
-#include "NFmiPoint.h"
 #include "NFmiLocation.h"
+#include "NFmiPoint.h"
+#include "NFmiSaveBaseFactory.h"
 #include <algorithm>
 
 class NFmiLocationBag;
@@ -281,6 +280,5 @@ inline unsigned long NFmiHPlaceDescriptor::ClassId(void) const { return kNFmiHPl
 // ----------------------------------------------------------------------
 
 inline const char *NFmiHPlaceDescriptor::ClassName(void) const { return "NFmiHPlaceDescriptor"; }
-#endif  // NFMIHPLACEDESCRIPTOR_H
 
 // ======================================================================

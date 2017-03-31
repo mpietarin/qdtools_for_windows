@@ -6,8 +6,8 @@
 // ======================================================================
 
 #include "NFmiBitmapAreaMask.h"
-#include "NFmiFastQueryInfo.h"
 #include "NFmiArea.h"
+#include "NFmiFastQueryInfo.h"
 #include "NFmiGrid.h"
 
 // ----------------------------------------------------------------------
@@ -16,21 +16,21 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiBitmapAreaMask::~NFmiBitmapAreaMask(void) { Destroy(); }
+NFmiBitmapAreaMask::~NFmiBitmapAreaMask() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiBitmapAreaMask::NFmiBitmapAreaMask(void)
+NFmiBitmapAreaMask::NFmiBitmapAreaMask()
     : NFmiAreaMaskImpl(),
       itsBitmask(),
-      itsArea(0),
+      itsArea(nullptr),
       itsGridXSize(0),
       itsGridYSize(0),
-      itsDataIdent(0),
-      itsLevel(0)
+      itsDataIdent(nullptr),
+      itsLevel(nullptr)
 {
 }
 
@@ -56,11 +56,11 @@ NFmiBitmapAreaMask::NFmiBitmapAreaMask(int theXSize,
     : NFmiAreaMaskImpl(
           NFmiCalculationCondition(), kBinary, NFmiInfoData::kStationary, thePostBinaryOperator),
       itsBitmask(theXSize * theYSize, false),
-      itsArea(theArea ? theArea->Clone() : 0),
+      itsArea(theArea ? theArea->Clone() : nullptr),
       itsGridXSize(theXSize),
       itsGridYSize(theYSize),
-      itsDataIdent(theDataIdent ? new NFmiDataIdent(*theDataIdent) : 0),
-      itsLevel(theLevel ? new NFmiLevel(*theLevel) : 0)
+      itsDataIdent(theDataIdent ? new NFmiDataIdent(*theDataIdent) : nullptr),
+      itsLevel(theLevel ? new NFmiLevel(*theLevel) : nullptr)
 {
 }
 
@@ -85,8 +85,8 @@ NFmiBitmapAreaMask::NFmiBitmapAreaMask(const NFmiGrid& theGrid,
       itsArea(theGrid.Area()->Clone()),
       itsGridXSize(theGrid.XNumber()),
       itsGridYSize(theGrid.YNumber()),
-      itsDataIdent(theDataIdent ? new NFmiDataIdent(*theDataIdent) : 0),
-      itsLevel(theLevel ? new NFmiLevel(*theLevel) : 0)
+      itsDataIdent(theDataIdent ? new NFmiDataIdent(*theDataIdent) : nullptr),
+      itsLevel(theLevel ? new NFmiLevel(*theLevel) : nullptr)
 {
 }
 
@@ -102,11 +102,11 @@ NFmiBitmapAreaMask::NFmiBitmapAreaMask(const NFmiGrid& theGrid,
 NFmiBitmapAreaMask::NFmiBitmapAreaMask(const NFmiBitmapAreaMask& theMask)
     : NFmiAreaMaskImpl(theMask),
       itsBitmask(theMask.itsBitmask),
-      itsArea(theMask.itsArea ? theMask.itsArea->Clone() : 0),
+      itsArea(theMask.itsArea ? theMask.itsArea->Clone() : nullptr),
       itsGridXSize(theMask.itsGridXSize),
       itsGridYSize(theMask.itsGridYSize),
-      itsDataIdent(theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : 0),
-      itsLevel(theMask.itsLevel ? new NFmiLevel(*theMask.itsLevel) : 0)
+      itsDataIdent(theMask.itsDataIdent ? new NFmiDataIdent(*theMask.itsDataIdent) : nullptr),
+      itsLevel(theMask.itsLevel ? new NFmiLevel(*theMask.itsLevel) : nullptr)
 {
 }
 
@@ -119,21 +119,21 @@ NFmiBitmapAreaMask::NFmiBitmapAreaMask(const NFmiBitmapAreaMask& theMask)
  */
 // ----------------------------------------------------------------------
 
-NFmiAreaMask* NFmiBitmapAreaMask::Clone(void) const { return new NFmiBitmapAreaMask(*this); }
+NFmiAreaMask* NFmiBitmapAreaMask::Clone() const { return new NFmiBitmapAreaMask(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Internal data destructuction utility
  */
 // ----------------------------------------------------------------------
 
-void NFmiBitmapAreaMask::Destroy(void)
+void NFmiBitmapAreaMask::Destroy()
 {
   delete itsArea;
-  itsArea = 0;
+  itsArea = nullptr;
   delete itsDataIdent;
-  itsDataIdent = 0;
+  itsDataIdent = nullptr;
   delete itsLevel;
-  itsLevel = 0;
+  itsLevel = nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -158,9 +158,9 @@ void NFmiBitmapAreaMask::Init(boost::shared_ptr<NFmiFastQueryInfo>& theInfo,
 {
   Destroy();
   itsBitmask.resize(theInfo->HPlaceDescriptor().Size(), false);
-  itsArea = theInfo->Area() ? theInfo->Area()->Clone() : 0;
+  itsArea = theInfo->Area() ? theInfo->Area()->Clone() : nullptr;
   itsDataIdent = new NFmiDataIdent(theInfo->Param());
-  itsLevel = theInfo->Level() ? new NFmiLevel(*theInfo->Level()) : 0;
+  itsLevel = theInfo->Level() ? new NFmiLevel(*theInfo->Level()) : nullptr;
   if (theInfo->IsGrid())
   {
     itsGridXSize = theInfo->Grid()->XNumber();
@@ -257,7 +257,7 @@ double NFmiBitmapAreaMask::CalcValueFromLocation(const NFmiPoint& theLatLon) con
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiBitmapAreaMask::MakeSubMaskString(void) const
+const NFmiString NFmiBitmapAreaMask::MakeSubMaskString() const
 {
   return NFmiString("NFmiBitmapAreaMask::MakeSubMaskString ei ole toteutettu");
 }
@@ -286,8 +286,8 @@ int NFmiBitmapAreaMask::LatLon2Index(const NFmiPoint& theLatLon) const
   if (itsArea)
   {
     NFmiPoint xyPoint(itsArea->ToXY(theLatLon));  // tämä on 'suhteellisessa' 0,0 - 1,1 maailmassa
-    int x = static_cast<int>(round((itsGridXSize - 1) * itsArea->Width() * xyPoint.X()));
-    int y = static_cast<int>(round((itsGridYSize - 1) * itsArea->Height() * xyPoint.Y()));
+    auto x = static_cast<int>(round((itsGridXSize - 1) * itsArea->Width() * xyPoint.X()));
+    auto y = static_cast<int>(round((itsGridYSize - 1) * itsArea->Height() * xyPoint.Y()));
     // pitää vielä kääntää
     y = static_cast<int>(round((itsGridYSize - 1) * itsArea->Height() - y));
     int finalIndex = y * itsGridXSize + x;

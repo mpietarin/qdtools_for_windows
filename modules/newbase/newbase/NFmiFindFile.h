@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIFINDFILE_H
-#define NFMIFINDFILE_H
+#pragma once
 
 #include "NFmiFileString.h"
 #include "NFmiGlobals.h"
@@ -47,7 +46,5 @@ class _FMI_DLL NFmiFindFile
 #endif
 
 };  // class NFmiFindFile
-
-#endif  // NFMIFINDFILE_H
 
 // ======================================================================

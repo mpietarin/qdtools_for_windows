@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef FMIDEF_H
-#define FMIDEF_H
+#pragma once
 
 //! FMI_DLL definition for MSVC linking
 #if defined _MSC_VER || defined __BORLANDC__
@@ -32,7 +31,5 @@ const unsigned char kFmiDirectorySeparator = '/';
 #else
 const unsigned char kFmiDirectorySeparator = '\\';
 #endif
-
-#endif  // FMIDEF_H
 
 // ======================================================================

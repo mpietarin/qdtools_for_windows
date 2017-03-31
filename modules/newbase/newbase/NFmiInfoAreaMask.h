@@ -5,14 +5,13 @@
  */
 // ======================================================================
 
-#ifndef NFMIINFOAREAMASK_H
-#define NFMIINFOAREAMASK_H
+#pragma once
 
 #include "NFmiAreaMaskImpl.h"
 #include "NFmiDataIdent.h"
+#include "NFmiGrid.h"  // täältä tulee NFmiTimeCache-luokka (tiedän, pitäisi jakaa newbase:a osiin)
 #include "NFmiLevel.h"
 #include "NFmiMetTime.h"
-#include "NFmiGrid.h"  // täältä tulee NFmiTimeCache-luokka (tiedän, pitäisi jakaa newbase:a osiin)
 
 class NFmiDataModifier;
 
@@ -72,6 +71,7 @@ class _FMI_DLL NFmiInfoAreaMask : public NFmiAreaMaskImpl
   void UsePressureLevelInterpolation(bool newValue) { fUsePressureLevelInterpolation = newValue; }
   double UsedPressureLevelValue(void) const { return itsUsedPressureLevelValue; }
   void UsedPressureLevelValue(double newValue) { itsUsedPressureLevelValue = newValue; }
+
  protected:
   virtual double CalcValueFromLocation(const NFmiPoint &theLatLon) const;
   virtual const NFmiString MakeSubMaskString(void) const;
@@ -306,6 +306,7 @@ class _FMI_DLL NFmiInfoAreaMaskGrad : public NFmiInfoAreaMaskMetFuncBase
   const CalcFactorVector &LowerEdgeFactors(void) const { return itsLowerEdgeFactors; }
   const CalcFactorVector &UpperEdgeFactors(void) const { return itsUpperEdgeFactors; }
   const CalcFactorVector &MiddleAreaFactors(void) const { return itsMiddleAreaFactors; }
+
  private:
   static CalcFactorVector itsLowerEdgeFactors;
   static CalcFactorVector itsUpperEdgeFactors;
@@ -373,6 +374,7 @@ class _FMI_DLL NFmiInfoAreaMaskLaplace : public NFmiInfoAreaMaskMetFuncBase
   const CalcFactorVector &LowerEdgeFactors(void) const { return itsLowerEdgeFactors; }
   const CalcFactorVector &UpperEdgeFactors(void) const { return itsUpperEdgeFactors; }
   const CalcFactorVector &MiddleAreaFactors(void) const { return itsMiddleAreaFactors; }
+
  private:
   static CalcFactorVector itsLowerEdgeFactors;
   static CalcFactorVector itsUpperEdgeFactors;
@@ -728,7 +730,5 @@ class _FMI_DLL NFmiInfoRectAreaIntegrator : public NFmiInfoAreaMaskMetFuncBase
   int itsStartYOffset;
   int itsEndYOffset;
 };
-
-#endif  // NFMIINFOAREAMASK_H
 
 // ======================================================================

@@ -17,7 +17,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiSnapShotInterface::~NFmiSnapShotInterface(void)
+NFmiSnapShotInterface::~NFmiSnapShotInterface()
 {
   delete itsData;
   delete itsInfo;
@@ -40,12 +40,12 @@ NFmiSnapShotInterface::NFmiSnapShotInterface(NFmiString theDataFileName,
                                              time_t theUpdateInterval)
     : fIsValid(),
       itsUpdateInterval(theUpdateInterval),
-      itsInfo(0),
-      itsData(0),
+      itsInfo(nullptr),
+      itsData(nullptr),
       itsDataFileName(),
       itsSourceDirectory(theSourceDirectory),
       itsWorkingDirectory(theWorkingDirectory),
-      itsStartingTime(time(NULL))
+      itsStartingTime(time(nullptr))
 {
   theDataFileName.UpperCase();
   if (theDataFileName == NFmiString("ECMWF"))
@@ -82,11 +82,11 @@ NFmiSnapShotInterface::NFmiSnapShotInterface(NFmiString theDataFileName,
   }
   else if (theDataFileName == NFmiString("TOPOGRAFIA"))
   {
-    itsDataFileName = "Mask\\topography_europe_400x399_polster_text.fqd";
+    itsDataFileName = R"(Mask\topography_europe_400x399_polster_text.fqd)";
   }
   else if (theDataFileName == NFmiString("TIEPIIRIT"))
   {
-    itsDataFileName = "Mask\\tiealueet2.sqd";
+    itsDataFileName = R"(Mask\tiealueet2.sqd)";
   }
   else
   {
@@ -126,9 +126,9 @@ bool NFmiSnapShotInterface::Update(NFmiQueryInfo** theInfo)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSnapShotInterface::IsValid(void)
+bool NFmiSnapShotInterface::IsValid()
 {
-  if (!itsInfo || time(NULL) - itsStartingTime > itsUpdateInterval)
+  if (!itsInfo || time(nullptr) - itsStartingTime > itsUpdateInterval)
   {
     return false;
   }
@@ -142,7 +142,7 @@ bool NFmiSnapShotInterface::IsValid(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSnapShotInterface::ReadData(void)
+bool NFmiSnapShotInterface::ReadData()
 {
   // Kopioidaan tiedosto paikalliseksi
   NFmiString command = NFmiString("clone.exe ");
@@ -160,8 +160,8 @@ bool NFmiSnapShotInterface::ReadData(void)
 
   delete itsData;
   delete itsInfo;
-  itsData = 0;
-  itsInfo = 0;
+  itsData = nullptr;
+  itsInfo = nullptr;
   NFmiString fileName = NFmiString(itsWorkingDirectory) += itsDataFileName;
   ifstream localFile;
   localFile.open(fileName, ios::in | ios::binary);

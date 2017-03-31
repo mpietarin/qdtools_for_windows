@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERCHANGE_H
-#define NFMIDATAMODIFIERCHANGE_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -32,7 +31,5 @@ class _FMI_DLL NFmiDataModifierChange : public NFmiDataModifier
   float itsLastValue;
 
 };  // class NFmiDataModifierChange
-
-#endif  // NFMIDATAMODIFIERCHANGE_H
 
 // ======================================================================

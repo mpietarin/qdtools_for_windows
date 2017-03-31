@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMITIMELIST_H
-#define NFMITIMELIST_H
+#pragma once
 
 #include "NFmiDataMatrix.h"
 
@@ -154,6 +153,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiTimeList &ob)
 
 // ----------------------------------------------------------------------
 inline std::istream &operator>>(std::istream &file, NFmiTimeList &ob) { return ob.Read(file); }
-#endif  // NFMITIMELIST_H
 
 // ======================================================================

@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIMETTIME_H
-#define NFMIMETTIME_H
+#pragma once
 
-#include "NFmiTimePeriod.h"
 #include "NFmiTime.h"
+#include "NFmiTimePeriod.h"
 
 class NFmiLocation;
 
@@ -324,6 +323,5 @@ inline std::ostream& operator<<(std::ostream& os, const NFmiMetTime& ob) { retur
 // ----------------------------------------------------------------------
 
 inline std::istream& operator>>(std::istream& is, NFmiMetTime& ob) { return ob.Read(is); }
-#endif  // NFMIMETTIME_H
 
 // ======================================================================

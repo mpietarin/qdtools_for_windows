@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIRELATIVETIMEINTEGRATIONITERATOR_H
-#define NFMIRELATIVETIMEINTEGRATIONITERATOR_H
+#pragma once
 
 #include "NFmiDataIterator.h"
 
@@ -50,7 +49,5 @@ class _FMI_DLL NFmiRelativeTimeIntegrationIterator2 : public NFmiDataIterator
   int itsStepnumber;  //! integroitavien aika-askelten lukumäärä
 
 };  // class NFmiRelativeTimeIntegrationIterator
-
-#endif  // NFMIRELATIVETIMEINTEGRATIONITERATOR_H
 
 // ======================================================================

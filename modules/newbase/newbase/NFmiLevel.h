@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMILEVEL_H
-#define NFMILEVEL_H
+#pragma once
 
-#include "NFmiLevelType.h"
 #include "NFmiIndividual.h"
+#include "NFmiLevelType.h"
 
 //! Undocumented
 
@@ -42,7 +41,5 @@ class _FMI_DLL NFmiLevel : public NFmiIndividual
   float itsLevelValue;
 
 };  // class NFmiLevel
-
-#endif  // NFMILEVEL_H
 
 // ======================================================================

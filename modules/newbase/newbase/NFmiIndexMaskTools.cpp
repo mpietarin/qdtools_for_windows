@@ -579,6 +579,8 @@
 // ======================================================================
 
 #include "NFmiIndexMaskTools.h"
+#include "NFmiCalculationCondition.h"
+#include "NFmiFastQueryInfo.h"
 #include "NFmiGeoTools.h"
 #include "NFmiGrid.h"
 #include "NFmiIndexMask.h"
@@ -586,8 +588,6 @@
 #include "NFmiPoint.h"
 #include "NFmiSvgPath.h"
 #include "NFmiSvgTools.h"
-#include "NFmiFastQueryInfo.h"
-#include "NFmiCalculationCondition.h"
 #include <cassert>
 
 // Implementation hiding detail functions
@@ -665,12 +665,12 @@ void Insert(NFmiNearTree<NFmiPoint> &theTree, const NFmiSvgPath &thePath, double
 
   NFmiPoint lastPoint(0, 0);
 
-  for (NFmiSvgPath::const_iterator it = thePath.begin(); it != thePath.end(); ++it)
+  for (const auto &it : thePath)
   {
-    switch (it->itsType)
+    switch (it.itsType)
     {
       case NFmiSvgPath::kElementMoveto:
-        lastPoint.Set(it->itsX, it->itsY);
+        lastPoint.Set(it.itsX, it.itsY);
         firstPoint = lastPoint;
         break;
       case NFmiSvgPath::kElementClosePath:
@@ -681,7 +681,7 @@ void Insert(NFmiNearTree<NFmiPoint> &theTree, const NFmiSvgPath &thePath, double
       }
       case NFmiSvgPath::kElementLineto:
       {
-        NFmiPoint nextPoint(it->itsX, it->itsY);
+        NFmiPoint nextPoint(it.itsX, it.itsY);
         Insert(theTree, lastPoint, nextPoint, theResolution);
         lastPoint = nextPoint;
         break;

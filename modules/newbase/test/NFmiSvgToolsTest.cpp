@@ -5,10 +5,10 @@
  */
 // ======================================================================
 
-#include "NFmiSvgTools.h"
-#include "NFmiSvgPath.h"
 #include "NFmiGeoTools.h"
 #include "NFmiPoint.h"
+#include "NFmiSvgPath.h"
+#include "NFmiSvgTools.h"
 #include <regression/tframe.h>
 #include <cmath>
 

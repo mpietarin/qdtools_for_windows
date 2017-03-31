@@ -7,8 +7,7 @@
  */
 // ======================================================================
 
-#ifndef NFMITIMEPERIOID_H
-#define NFMITIMEPERIOID_H
+#pragma once
 
 #include "NFmiGlobals.h"
 #include <iostream>
@@ -253,6 +252,5 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiTimePerioid &ob)
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiTimePerioid &ob) { return ob.Read(file); }
-#endif  // NFMITIMEPERIOID_H
 
 // ======================================================================

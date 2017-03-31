@@ -23,7 +23,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiLambertEqualArea::NFmiLambertEqualArea(void) {}
+NFmiLambertEqualArea::NFmiLambertEqualArea() = default;
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -33,9 +33,8 @@ NFmiLambertEqualArea::NFmiLambertEqualArea(void) {}
 // ----------------------------------------------------------------------
 
 NFmiLambertEqualArea::NFmiLambertEqualArea(const NFmiLambertEqualArea &theLambertEqualArea)
-    : NFmiAzimuthalArea(theLambertEqualArea)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -258,7 +257,7 @@ double NFmiLambertEqualArea::CalcDelta(const double xyDistance) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiLambertEqualArea::DistanceFromPerspectivePointToCenterOfEarth(void) const
+double NFmiLambertEqualArea::DistanceFromPerspectivePointToCenterOfEarth() const
 {
   // Distance (in world-coordinate meters) for LambertEqual projection.
   // See details in ref. [2] p. 13.
@@ -310,7 +309,7 @@ NFmiArea *NFmiLambertEqualArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiLambertEqualArea::Clone(void) const { return new NFmiLambertEqualArea(*this); }
+NFmiArea *NFmiLambertEqualArea::Clone() const { return new NFmiLambertEqualArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -322,11 +321,8 @@ NFmiArea *NFmiLambertEqualArea::Clone(void) const { return new NFmiLambertEqualA
  */
 // ----------------------------------------------------------------------
 
-NFmiLambertEqualArea &NFmiLambertEqualArea::operator=(const NFmiLambertEqualArea &theArea)
-{
-  NFmiAzimuthalArea::operator=(theArea);
-  return *this;
-}
+NFmiLambertEqualArea &NFmiLambertEqualArea::operator=(const NFmiLambertEqualArea &theArea) =
+    default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -419,7 +415,7 @@ NFmiArea *NFmiLambertEqualArea::CreateNewArea(const NFmiRect &theRect) const
   return area;
 }
 
-const std::string NFmiLambertEqualArea::AreaStr(void) const
+const std::string NFmiLambertEqualArea::AreaStr() const
 {
   std::ostringstream out;
   out << "lambertequal," << CentralLongitude() << ',' << CentralLatitude() << ','
@@ -436,27 +432,27 @@ const std::string NFmiLambertEqualArea::WKT() const
 
   if (itsCentralLatitude.Value() != 90)
   {
-    ret << std::setprecision(16) << "PROJCS[\"FMI_LambertEqual\","
-        << "GEOGCS[\"FMI_Sphere\","
-        << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-        << "PRIMEM[\"Greenwich\",0],"
-        << "UNIT[\"Degree\",0.0174532925199433]],"
-        << "PROJECTION[\"LambertEqual\"],"
-        << "PARAMETER[\"latitude_of_origin\"," << itsCentralLatitude.Value() << "],"
-        << "PARAMETER[\"central_meridian\"," << itsCentralLongitude << "],"
-        << "UNIT[\"Metre\",1.0]]";
+    ret << std::setprecision(16) << R"(PROJCS["FMI_LambertEqual",)"
+        << R"(GEOGCS["FMI_Sphere",)"
+        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+        << R"(PRIMEM["Greenwich",0],)"
+        << R"(UNIT["Degree",0.0174532925199433]],)"
+        << R"(PROJECTION["LambertEqual"],)"
+        << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
+        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+        << R"(UNIT["Metre",1.0]])";
   }
   else
   {
-    ret << std::setprecision(16) << "PROJCS[\"FMI_LambertEqual\","
-        << "GEOGCS[\"FMI_Sphere\","
-        << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-        << "PRIMEM[\"Greenwich\",0],"
-        << "UNIT[\"Degree\",0.0174532925199433]],"
-        << "PROJECTION[\"LambertEqual\"],"
-        << "PARAMETER[\"latitude_of_origin\"," << itsTrueLatitude.Value() << "],"
-        << "PARAMETER[\"central_meridian\"," << itsCentralLongitude << "],"
-        << "UNIT[\"Metre\",1.0]]";
+    ret << std::setprecision(16) << R"(PROJCS["FMI_LambertEqual",)"
+        << R"(GEOGCS["FMI_Sphere",)"
+        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+        << R"(PRIMEM["Greenwich",0],)"
+        << R"(UNIT["Degree",0.0174532925199433]],)"
+        << R"(PROJECTION["LambertEqual"],)"
+        << R"(PARAMETER["latitude_of_origin",)" << itsTrueLatitude.Value() << "],"
+        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+        << R"(UNIT["Metre",1.0]])";
   }
   return ret.str();
 }

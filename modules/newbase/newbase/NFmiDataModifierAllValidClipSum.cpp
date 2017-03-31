@@ -25,14 +25,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAllValidClipSum::~NFmiDataModifierAllValidClipSum(void) {}
+NFmiDataModifierAllValidClipSum::~NFmiDataModifierAllValidClipSum() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierAllValidClipSum::NFmiDataModifierAllValidClipSum(void)
+NFmiDataModifierAllValidClipSum::NFmiDataModifierAllValidClipSum()
     : NFmiDataModifierAllValidSum(), itsHalfValue(0)
 {
 }

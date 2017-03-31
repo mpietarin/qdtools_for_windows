@@ -13,8 +13,8 @@
 // ======================================================================
 
 #include "NFmiSortedList.h"
-#include "NFmiSortable.h"
 #include "NFmiMetTime.h"
+#include "NFmiSortable.h"
 
 // ----------------------------------------------------------------------
 /*!
@@ -22,7 +22,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiSortedList::~NFmiSortedList(void) {}
+NFmiSortedList::~NFmiSortedList() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -45,9 +45,8 @@ NFmiSortedList::NFmiSortedList(FmiSortOrder theSortOrder)
 // ----------------------------------------------------------------------
 
 NFmiSortedList::NFmiSortedList(NFmiSortedList &theList)
-    : NFmiVoidPtrList(theList), itsSortOrder(theList.itsSortOrder)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!

@@ -98,7 +98,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiMercatorArea::NFmiMercatorArea(void)
+NFmiMercatorArea::NFmiMercatorArea()
     : NFmiArea(),
       itsBottomLeftLatLon(),
       itsTopRightLatLon(),
@@ -143,14 +143,8 @@ NFmiMercatorArea::NFmiMercatorArea(const NFmiPoint& theBottomLeftLatLon,
 // ----------------------------------------------------------------------
 
 NFmiMercatorArea::NFmiMercatorArea(const NFmiMercatorArea& theLatLonArea)
-    : NFmiArea(theLatLonArea),
-      itsBottomLeftLatLon(theLatLonArea.itsBottomLeftLatLon),
-      itsTopRightLatLon(theLatLonArea.itsTopRightLatLon),
-      itsXScaleFactor(theLatLonArea.itsXScaleFactor),
-      itsYScaleFactor(theLatLonArea.itsYScaleFactor),
-      itsWorldRect(theLatLonArea.itsWorldRect)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -159,7 +153,7 @@ NFmiMercatorArea::NFmiMercatorArea(const NFmiMercatorArea& theLatLonArea)
  */
 // ----------------------------------------------------------------------
 
-NFmiArea* NFmiMercatorArea::Clone(void) const { return new NFmiMercatorArea(*this); }
+NFmiArea* NFmiMercatorArea::Clone() const { return new NFmiMercatorArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param fKeepWorldRect Undocumented
@@ -288,14 +282,14 @@ const NFmiPoint NFmiMercatorArea::ToLatLon(const NFmiPoint& theXYPoint) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiMercatorArea::XScale(void) const { return 1. / itsXScaleFactor; }
+double NFmiMercatorArea::XScale() const { return 1. / itsXScaleFactor; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-double NFmiMercatorArea::YScale(void) const { return 1. / itsYScaleFactor; }
+double NFmiMercatorArea::YScale() const { return 1. / itsYScaleFactor; }
 // ----------------------------------------------------------------------
 /*!
  * \param theBottomLeftLatLon Undocumented
@@ -381,7 +375,7 @@ std::istream& NFmiMercatorArea::Read(std::istream& file)
   return file;
 }
 
-const std::string NFmiMercatorArea::AreaStr(void) const
+const std::string NFmiMercatorArea::AreaStr() const
 {
   std::ostringstream out;
   out << "mercator:" << BottomLeftLatLon().X() << ',' << BottomLeftLatLon().Y() << ','
@@ -412,13 +406,13 @@ const std::string NFmiMercatorArea::AreaStr(void) const
 const std::string NFmiMercatorArea::WKT() const
 {
   std::ostringstream ret;
-  ret << "PROJCS[\"FMI_Transverse_Mercator\","
-      << "GEOGCS[\"FMI_Sphere\","
-      << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"Degree\",0.0174532925199433]],"
-      << "PROJECTION[\"Transverse_Mercator\"],"
-      << "UNIT[\"Metre\",1.0]]";
+  ret << R"(PROJCS["FMI_Transverse_Mercator",)"
+      << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Transverse_Mercator"],)"
+      << R"(UNIT["Metre",1.0]])";
   return ret.str();
 }
 

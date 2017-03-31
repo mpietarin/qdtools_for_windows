@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERWITHMODIFIER_H
-#define NFMIDATAMODIFIERWITHMODIFIER_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -84,7 +83,5 @@ inline float NFmiDataModifierWithModifier::CalculationResult(void)
 {
   return itsModifier->CalculationResult();
 }
-
-#endif  // NFMIDATAMODIFIERWITHMODIFIER_H
 
 // ======================================================================

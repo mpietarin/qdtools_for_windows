@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIINTEGRATIONSELECTOR_H
-#define NFMIINTEGRATIONSELECTOR_H
+#pragma once
 
 #include "NFmiDataModifierBase.h"
 
@@ -176,7 +175,5 @@ inline void NFmiIntegrationSelector::ScaleUpperLimit(float theFactor)
 {
   if (itsProbabilityLowerLimit != kFloatMissing) itsProbabilityUpperLimit *= theFactor;
 }
-
-#endif  // NFMIINTEGRATIONSELECTOR_H
 
 // ======================================================================

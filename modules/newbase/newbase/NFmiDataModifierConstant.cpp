@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierConstant::~NFmiDataModifierConstant(void) {}
+NFmiDataModifierConstant::~NFmiDataModifierConstant() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -43,7 +43,7 @@ NFmiDataModifierConstant::NFmiDataModifierConstant(double theConstant,
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataModifierConstant::FloatValue(void) { return itsConstant; }
+double NFmiDataModifierConstant::FloatValue() { return itsConstant; }
 // ----------------------------------------------------------------------
 /*!
  * Write the object to the given stream.

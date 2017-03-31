@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMICMDLINE_H
-#define NFMICMDLINE_H
+#pragma once
 
 #include "NFmiStatus.h"
 
@@ -50,7 +49,5 @@ class _FMI_DLL NFmiCmdLine
   char** itsParameters;
 
 };  // class NFmiCmdLine
-
-#endif  // NFMICMDLINE_H
 
 // ======================================================================

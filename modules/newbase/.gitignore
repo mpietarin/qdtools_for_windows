@@ -3,3 +3,5 @@
 obj
 *.plist
 *.so
+*.a
+

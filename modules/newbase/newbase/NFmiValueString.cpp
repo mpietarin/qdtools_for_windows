@@ -6,12 +6,12 @@
 // ----------------------------------------------------------------------
 
 #include "NFmiValueString.h"
-#include <cstdio>
-#include <iostream>
-#include <cstdlib>
-#include <string>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -21,14 +21,14 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiValueString::~NFmiValueString(void) {}
+NFmiValueString::~NFmiValueString() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiValueString::NFmiValueString(void) : NFmiString(), itsValueType(eNull) {}
+NFmiValueString::NFmiValueString() : NFmiString(), itsValueType(eNull) {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -277,7 +277,7 @@ void NFmiValueString::SetValue(const double theValue, const char *theFormat)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiValueString::IsShort(void) const
+bool NFmiValueString::IsShort() const
 {
   short returnValue;
 
@@ -296,7 +296,7 @@ bool NFmiValueString::IsShort(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned int NFmiValueString::SignificantDecimals(void) const
+unsigned int NFmiValueString::SignificantDecimals() const
 {
   unsigned int pointIndex = Search(reinterpret_cast<const unsigned char *>("."));
 

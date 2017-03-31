@@ -76,7 +76,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiKKJArea::NFmiKKJArea(void)
+NFmiKKJArea::NFmiKKJArea()
     : NFmiArea(),
       itsTopRightLatLon(),
       itsBottomLeftLatLon(),
@@ -269,7 +269,7 @@ NFmiKKJArea::NFmiKKJArea(const NFmiPoint &theTopLeftXY, const NFmiPoint &theBott
  */
 // ----------------------------------------------------------------------
 
-void NFmiKKJArea::SetupGaussKruger(void)
+void NFmiKKJArea::SetupGaussKruger()
 {
   // Set up Gauss-Krueger projection parameters
   a = 6378388.;                         // Major radius
@@ -649,7 +649,7 @@ void NFmiKKJArea::Init(bool fKeepWorldRect)
   NFmiArea::Init(fKeepWorldRect);
 }
 
-const std::string NFmiKKJArea::AreaStr(void) const
+const std::string NFmiKKJArea::AreaStr() const
 {
   std::ostringstream out;
   out << "kkj:" << BottomLeftLatLon().X() << ',' << BottomLeftLatLon().Y() << ','

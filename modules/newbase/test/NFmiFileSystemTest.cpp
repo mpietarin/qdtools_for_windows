@@ -7,10 +7,10 @@
 
 #include "NFmiFileSystem.h"
 #include "NFmiStringTools.h"
-#include <regression/tframe.h>
 #include <boost/lexical_cast.hpp>
-#include <string>
+#include <regression/tframe.h>
 #include <list>
+#include <string>
 
 extern "C" {
 #include <unistd.h>  // sleep

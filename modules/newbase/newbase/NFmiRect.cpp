@@ -14,8 +14,8 @@
 
 #include "NFmiRect.h"
 #include <boost/functional/hash.hpp>
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 
 // ----------------------------------------------------------------------
 /*!

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIGLOBALS_H
-#define NFMIGLOBALS_H
+#pragma once
 
 #include "NFmiDef.h"
 #include "NFmiPragma.h"
@@ -289,7 +288,5 @@ inline double FmiMax(double a, double b) { return a < b ? b : a; }
    // 8.6.98/EL
    inline long		FmiTrunc(double x) const { return (long) x;}; // 8.6.98/EL
 */
-
-#endif  // NFMIGLOBALS_H
 
 // ======================================================================

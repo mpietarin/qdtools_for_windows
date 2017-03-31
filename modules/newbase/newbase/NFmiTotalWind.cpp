@@ -13,12 +13,12 @@
 // ======================================================================
 
 #include "NFmiTotalWind.h"
+#include "NFmiAngle.h"
 #include "NFmiDataIdent.h"
 #include "NFmiParamBag.h"
-#include "NFmiAngle.h"
 
-#include <cmath>  // Mika: abs()
 #include <algorithm>
+#include <cmath>  // Mika: abs()
 
 using namespace std;
 
@@ -27,7 +27,7 @@ using namespace std;
  * Destructor
  */
 // ----------------------------------------------------------------------
-NFmiTotalWind::~NFmiTotalWind() {}
+NFmiTotalWind::~NFmiTotalWind() = default;
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -335,11 +335,11 @@ bool NFmiTotalWind::FromWindVector(unsigned long theValue)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiTotalWind::ToWindVector(void)
+unsigned long NFmiTotalWind::ToWindVector()
 {
   unsigned long windVector = kUnsignedLongMissing;
   if (itsData.longType == kTCombinedWeatherMissing) return windVector;
-  unsigned long speed = static_cast<unsigned long>(round(WindSpeedVx(WindSpeed())));
+  auto speed = static_cast<unsigned long>(round(WindSpeedVx(WindSpeed())));
   unsigned long dir = WindDirection();
   if (speed != kFloatMissing && dir != kT6BitMissing) windVector = speed * 100 + (dir);
   return windVector;
@@ -496,7 +496,7 @@ double NFmiTotalWind::SubValue(FmiParameterName theParam,
  */
 // ----------------------------------------------------------------------
 
-double NFmiTotalWind::WindDirectionValue(void)
+double NFmiTotalWind::WindDirectionValue()
 {
   double returnVal = kFloatMissing;
   unsigned long tempValue = WindDirection();
@@ -517,11 +517,11 @@ double NFmiTotalWind::WindDirectionValue(void)
  */
 // ----------------------------------------------------------------------
 
-double NFmiTotalWind::CalcU(void)
+double NFmiTotalWind::CalcU()
 {
   double value = kFloatMissing;
   double WS = WindSpeedVx(WindSpeed());
-  int WD = static_cast<int>(WindDirectionValue());
+  auto WD = static_cast<int>(WindDirectionValue());
   if (WD ==
       999)  // jos tuulensuunta on vaihtelevaa (999), palautetaan 0 arvo (voisi olla myös puuttuvaa)
     return 0;
@@ -543,11 +543,11 @@ double NFmiTotalWind::CalcU(void)
  */
 // ----------------------------------------------------------------------
 
-double NFmiTotalWind::CalcV(void)
+double NFmiTotalWind::CalcV()
 {
   double value = kFloatMissing;
   double WS = WindSpeedVx(WindSpeed());
-  int WD = static_cast<int>(WindDirectionValue());
+  auto WD = static_cast<int>(WindDirectionValue());
   if (WD ==
       999)  // jos tuulensuunta on vaihtelevaa (999), palautetaan 0 arvo (voisi olla myös puuttuvaa)
     return 0;
@@ -642,16 +642,16 @@ NFmiDataIdent *NFmiTotalWind::CreateParam(const NFmiProducer &theProducer,
 
   param = NFmiParam(
       kFmiTotalWindMS, "Wind", kFloatMissing, kFloatMissing, 1, 0, "%.1f", kByCombinedParam);
-  NFmiDataIdent *theDataIdent = new NFmiDataIdent(param,
-                                                  theProducer,
-                                                  kContinuousParam,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  &subParamBag,
-                                                  theSecondaryProducerList);
+  auto *theDataIdent = new NFmiDataIdent(param,
+                                         theProducer,
+                                         kContinuousParam,
+                                         true,
+                                         true,
+                                         true,
+                                         true,
+                                         true,
+                                         &subParamBag,
+                                         theSecondaryProducerList);
 
   return theDataIdent;
 }
@@ -728,13 +728,13 @@ unsigned long NFmiTotalWind::WindDirectionMean(unsigned long dir1, unsigned long
       return dir2;  // ei tarvitse laskea mitään
   }
 
-  for (int i = 0; i < 2; i++)  // katsotaan kummalla puolella 180:aa astetta arvot ovat
+  for (unsigned long i : dirTable)  // katsotaan kummalla puolella 180:aa astetta arvot ovat
   {
-    if (dirTable[i] != kT6BitMissing)
+    if (i != kT6BitMissing)
     {
-      if (dirTable[i] < 18)
+      if (i < 18)
         lkm1++;
-      else if (dirTable[i] >= 18)
+      else if (i >= 18)
         lkm2++;
     }
     else
@@ -805,10 +805,10 @@ bool NFmiTotalWind::SetToWeightedMean(NFmiCombinedParam *theCombinedParam1,
                                       float fac4)
 
 {
-  NFmiTotalWind *theWind1 = static_cast<NFmiTotalWind *>(theCombinedParam1);
-  NFmiTotalWind *theWind2 = static_cast<NFmiTotalWind *>(theCombinedParam2);
-  NFmiTotalWind *theWind3 = static_cast<NFmiTotalWind *>(theCombinedParam3);
-  NFmiTotalWind *theWind4 = static_cast<NFmiTotalWind *>(theCombinedParam4);
+  auto *theWind1 = static_cast<NFmiTotalWind *>(theCombinedParam1);
+  auto *theWind2 = static_cast<NFmiTotalWind *>(theCombinedParam2);
+  auto *theWind3 = static_cast<NFmiTotalWind *>(theCombinedParam3);
+  auto *theWind4 = static_cast<NFmiTotalWind *>(theCombinedParam4);
 
   float factorSum = fac1 + fac2;
   if (fac3 != kFloatMissing) factorSum += fac3;

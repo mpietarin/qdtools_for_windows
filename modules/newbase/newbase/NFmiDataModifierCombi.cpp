@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierCombi::~NFmiDataModifierCombi(void)
+NFmiDataModifierCombi::~NFmiDataModifierCombi()
 {
   if (itsFrequencies) delete[] itsFrequencies;
 }
@@ -50,7 +50,7 @@ NFmiDataModifierCombi::NFmiDataModifierCombi(unsigned int theNumberOfValues,
       itsMin(),
       itsMax(),
       itsSum(),
-      itsFrequencies(0)
+      itsFrequencies(nullptr)
 {
   if (itsNumberOfValues > 0) itsFrequencies = new int[itsNumberOfValues];
   Clear();
@@ -72,7 +72,7 @@ NFmiDataModifierCombi::NFmiDataModifierCombi(const NFmiDataModifierCombi& other)
       itsMin(other.itsMin),
       itsMax(other.itsMax),
       itsSum(other.itsSum),
-      itsFrequencies(0)
+      itsFrequencies(nullptr)
 {
   if (itsNumberOfValues > 0)
   {
@@ -88,7 +88,7 @@ NFmiDataModifierCombi::NFmiDataModifierCombi(const NFmiDataModifierCombi& other)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierCombi::Clear(void)
+void NFmiDataModifierCombi::Clear()
 {
   itsSum = 0;
   itsMax = -kFloatMissing;

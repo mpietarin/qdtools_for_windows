@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMICALCULATOR_H
-#define NFMICALCULATOR_H
+#pragma once
 
 #include "NFmiDataIterator.h"
 #include "NFmiDataModifier.h"
@@ -88,6 +87,5 @@ inline NFmiDataIterator* NFmiCalculator::DataIterator(void) { return itsDataIter
 // ----------------------------------------------------------------------
 
 inline NFmiDataModifier* NFmiCalculator::DataModifier(void) { return itsDataModifier; }
-#endif  // NFMICALCULATOR_H
 
 // ======================================================================

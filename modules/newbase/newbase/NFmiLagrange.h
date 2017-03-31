@@ -5,15 +5,14 @@
  */
 // ======================================================================
 
-#include "NFmiDef.h"
-#include "NFmiGlobals.h"     // for kFloatMissing
 #include "NFmiDataMatrix.h"  // for kFloatMissing
+#include "NFmiDef.h"
+#include "NFmiGlobals.h"  // for kFloatMissing
 
-#include <string>
 #include <cmath>
+#include <string>
 
-#ifndef NFMILAGRANGE_H
-#define NFMILAGRANGE_H
+#pragma once
 
 //! Undocumented
 class _FMI_DLL NFmiLagrange
@@ -67,7 +66,5 @@ class _FMI_DLL NFmiLagrange
   checkedVector<double> itsLt;
 
 };  // class NFmiLagrange
-
-#endif  // NFMILAGRANGE_H
 
 // ======================================================================

@@ -40,7 +40,7 @@ NFmiCalculationCondition::NFmiCalculationCondition(FmiMaskOperation theCondition
  */
 // ----------------------------------------------------------------------
 
-NFmiCalculationCondition::NFmiCalculationCondition(void)
+NFmiCalculationCondition::NFmiCalculationCondition()
     : itsCondition(kFmiNoMaskOperation), itsUpperLimit(1), itsLowerLimit(0)
 {
 }

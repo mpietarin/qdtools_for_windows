@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISORTEDLIST_H
-#define NFMISORTEDLIST_H
+#pragma once
 
 #include "NFmiVoidPtrList.h"
 
@@ -50,4 +49,3 @@ typedef NFmiSortedList* PNFmiSortedList;
 // ----------------------------------------------------------------------
 
 inline FmiSortOrder NFmiSortedList::SortOrder(void) { return itsSortOrder; }
-#endif  //__NSORTLIS_H__

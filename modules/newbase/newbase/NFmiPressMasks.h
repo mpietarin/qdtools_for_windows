@@ -5,15 +5,12 @@
  */
 // ======================================================================
 
-#ifndef FMIPRESSMASKS_H
-#define FMIPRESSMASKS_H
+#pragma once
 
 enum FmiPressMasks
 {
   kPressMaskNone = 0,
   kPressTampereenAlue = 1
 };
-
-#endif  // FMIPRESSMASKS_H
 
 // ======================================================================

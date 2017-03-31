@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERLIST_H
-#define NFMIDATAMODIFIERLIST_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 #include "NFmiPtrList.h"
@@ -90,6 +89,5 @@ inline void NFmiDataModifierList::Clear(void) {}
 // ----------------------------------------------------------------------
 
 inline unsigned long NFmiDataModifierList::NumberOfItems(void) { return itsList.NumberOfItems(); }
-#endif  // NFMIDATAMODIFIERLIST_H
 
 // ======================================================================

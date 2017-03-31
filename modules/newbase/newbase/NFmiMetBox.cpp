@@ -32,7 +32,7 @@ NFmiMetBox::NFmiMetBox(const NFmiTimeBag &theTimeDescriptor,
     : itsTimeDescriptor(new NFmiTimeBag(theTimeDescriptor)),
       itsParamDescriptor(new NFmiParamBag(theParamDescriptor)),
       itsStationDescriptor(new NFmiLocationBag(theStationDescriptor)),
-      itsData(0)
+      itsData(nullptr)
 {
   itsData = new NFmiBox(CalcSize());
 }
@@ -43,8 +43,11 @@ NFmiMetBox::NFmiMetBox(const NFmiTimeBag &theTimeDescriptor,
  */
 // ----------------------------------------------------------------------
 
-NFmiMetBox::NFmiMetBox(void)
-    : itsTimeDescriptor(0), itsParamDescriptor(0), itsStationDescriptor(0), itsData(0)
+NFmiMetBox::NFmiMetBox()
+    : itsTimeDescriptor(nullptr),
+      itsParamDescriptor(nullptr),
+      itsStationDescriptor(nullptr),
+      itsData(nullptr)
 {
   itsData = new NFmiBox;
 }
@@ -55,7 +58,7 @@ NFmiMetBox::NFmiMetBox(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiMetBox::~NFmiMetBox(void)
+NFmiMetBox::~NFmiMetBox()
 {
   delete itsTimeDescriptor;
   delete itsStationDescriptor;
@@ -70,7 +73,7 @@ NFmiMetBox::~NFmiMetBox(void)
  */
 // ----------------------------------------------------------------------
 
-long NFmiMetBox::CalcTimeAddition(void)
+long NFmiMetBox::CalcTimeAddition()
 {
   return itsParamDescriptor->GetSize() * itsStationDescriptor->GetSize();
 }
@@ -81,7 +84,7 @@ long NFmiMetBox::CalcTimeAddition(void)
  */
 // ----------------------------------------------------------------------
 
-long NFmiMetBox::CalcStationAddition(void)
+long NFmiMetBox::CalcStationAddition()
 {
   return itsParamDescriptor ? itsParamDescriptor->GetSize() : 0;
 }
@@ -91,7 +94,7 @@ long NFmiMetBox::CalcStationAddition(void)
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
-long NFmiMetBox::CalcSize(void)
+long NFmiMetBox::CalcSize()
 {
   return (itsTimeDescriptor->GetSize() * itsParamDescriptor->GetSize() *
           itsStationDescriptor->GetSize());
@@ -133,9 +136,9 @@ std::ostream &NFmiMetBox::Write(std::ostream &file) const
        << " ";
   file << "VER " << FmiBoxVersion << std::endl;
 
-  for (int i = 0; i < HEADERMAX; i++)
+  for (const auto &i : itsHeader)
   {
-    file << itsHeader[i];
+    file << i;
   }
 
   FmiInfoVersion = 3;  // Halutaan kirjoittaa Box vanhalla versiolla
@@ -175,9 +178,9 @@ std::istream &NFmiMetBox::Read(std::istream &file)
     file >> tmpchars2;
     file >> FmiBoxVersion;  // ..really, this modifies a system wide global? --AKa 3-Jun-10
 
-    for (int i = 0; i < HEADERMAX; i++)
+    for (auto &i : itsHeader)
     {
-      file >> itsHeader[i];
+      file >> i;
     }
   }
   else
@@ -259,7 +262,7 @@ NFmiMetBoxIterator::NFmiMetBoxIterator(const NFmiMetBoxIterator &theIterator)
  */
 // ----------------------------------------------------------------------
 
-NFmiMetBoxIterator::~NFmiMetBoxIterator(void)
+NFmiMetBoxIterator::~NFmiMetBoxIterator()
 {
   delete itsTimeDescriptor;
   delete itsStationDescriptor;
@@ -272,7 +275,7 @@ NFmiMetBoxIterator::~NFmiMetBoxIterator(void)
  */
 // ----------------------------------------------------------------------
 
-long NFmiMetBoxIterator::CalcBoxIndex(void)
+long NFmiMetBoxIterator::CalcBoxIndex()
 {
   return (static_cast<NFmiMetBox *>(itsBox))
       ->CalcBoxIndex(itsTimeDescriptor->CurrentIndex(),
@@ -300,7 +303,7 @@ bool NFmiMetBoxIterator::MapCursorFrom(const NFmiMetBoxIterator &theIterator)
  */
 // ----------------------------------------------------------------------
 
-float NFmiMetBoxIterator::CurrentValue(void) { return itsBox->Value(CalcBoxIndex()); }
+float NFmiMetBoxIterator::CurrentValue() { return itsBox->Value(CalcBoxIndex()); }
 // ----------------------------------------------------------------------
 /*!
  * \param theBoxValue Undocumented
@@ -410,54 +413,54 @@ bool NFmiMetBoxIterator::PreviousParamValue(float &theBoxValue)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::NextTime(void) { return itsTimeDescriptor->Next(); }
+bool NFmiMetBoxIterator::NextTime() { return itsTimeDescriptor->Next(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::PreviousTime(void) { return itsTimeDescriptor->Previous(); }
+bool NFmiMetBoxIterator::PreviousTime() { return itsTimeDescriptor->Previous(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::NextStation(void) { return itsStationDescriptor->Next(); }
+bool NFmiMetBoxIterator::NextStation() { return itsStationDescriptor->Next(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::PreviousStation(void) { return itsStationDescriptor->Previous(); }
+bool NFmiMetBoxIterator::PreviousStation() { return itsStationDescriptor->Previous(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::NextParam(void) { return itsParamDescriptor->Next(); }
+bool NFmiMetBoxIterator::NextParam() { return itsParamDescriptor->Next(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::NextActiveParam(void) { return itsParamDescriptor->NextActive(); }
+bool NFmiMetBoxIterator::NextActiveParam() { return itsParamDescriptor->NextActive(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::NextDataParam(void) { return itsParamDescriptor->NextData(); }
+bool NFmiMetBoxIterator::NextDataParam() { return itsParamDescriptor->NextData(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiMetBoxIterator::PreviousParam(void) { return itsParamDescriptor->Previous(); }
+bool NFmiMetBoxIterator::PreviousParam() { return itsParamDescriptor->Previous(); }
 // ======================================================================

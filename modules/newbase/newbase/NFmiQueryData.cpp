@@ -14,17 +14,17 @@
 
 #include "NFmiVersion.h"
 
+#include "NFmiFileSystem.h"
+#include "NFmiGrid.h"
 #include "NFmiQueryData.h"
 #include "NFmiQueryInfo.h"
-#include "NFmiGrid.h"
-#include "NFmiFileSystem.h"
-#include "NFmiStationBag.h"
 #include "NFmiSaveBaseFactory.h"
+#include "NFmiStationBag.h"
 
 #include <boost/make_shared.hpp>
 
-#include <fstream>
 #include <fcntl.h>
+#include <fstream>
 
 #ifndef UNIX
 #include <io.h>
@@ -32,9 +32,9 @@
 
 #ifdef FMI_COMPRESSION
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #endif
 
 //#ifndef  NDEBUG
@@ -134,9 +134,9 @@ NFmiQueryData::~NFmiQueryData()
 // ----------------------------------------------------------------------
 
 NFmiQueryData::NFmiQueryData()
-    : itsRawData(0),
+    : itsRawData(nullptr),
       itsFirst(false),
-      itsQueryInfo(0),
+      itsQueryInfo(nullptr),
       itsLatLonCache(),
       itsLatLonCacheFlag(BOOST_ONCE_INIT)
 {
@@ -193,7 +193,10 @@ NFmiQueryData::NFmiQueryData(const NFmiQueryData &theData)
 // ----------------------------------------------------------------------
 
 NFmiQueryData::NFmiQueryData(const string &thePath, bool theMemoryMapFlag)
-    : itsRawData(0), itsFirst(false), itsQueryInfo(0), itsLatLonCacheFlag(BOOST_ONCE_INIT)
+    : itsRawData(nullptr),
+      itsFirst(false),
+      itsQueryInfo(nullptr),
+      itsLatLonCacheFlag(BOOST_ONCE_INIT)
 {
   //#ifndef  NDEBUG
   NFmiQueryData::itsConstructorCalls++;
@@ -305,7 +308,7 @@ void NFmiQueryData::swap(NFmiQueryData &theOther)
  */
 // ----------------------------------------------------------------------
 
-void NFmiQueryData::Destroy(void)
+void NFmiQueryData::Destroy()
 {
   if (itsQueryInfo) delete itsQueryInfo;
   if (itsRawData) delete itsRawData;
@@ -317,7 +320,7 @@ void NFmiQueryData::Destroy(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiQueryData::Init(void)
+bool NFmiQueryData::Init()
 {
   bool status = (itsQueryInfo && itsRawData->Init(itsQueryInfo->Size()));
   return status;
@@ -340,7 +343,7 @@ bool NFmiQueryData::Init(const NFmiQueryInfo &theInfo)
   itsRawData = new NFmiRawData();
   itsRawData->Init(itsQueryInfo->Size());
 
-  return (itsQueryInfo != 0);
+  return (itsQueryInfo != nullptr);
 }
 
 // ----------------------------------------------------------------------
@@ -365,7 +368,7 @@ bool NFmiQueryData::Init(const std::string &theHeader,
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryData *NFmiQueryData::Clone(void) const { return new NFmiQueryData(*this); }
+NFmiQueryData *NFmiQueryData::Clone() const { return new NFmiQueryData(*this); }
 // ----------------------------------------------------------------------
 /*!
  *
@@ -425,7 +428,7 @@ bool NFmiQueryData::Next()
  */
 // ----------------------------------------------------------------------
 
-const NFmiMetTime NFmiQueryData::Time(void) const
+const NFmiMetTime NFmiQueryData::Time() const
 {
   if (itsQueryInfo->itsTimeDescriptor->IsValidTime())
     return itsQueryInfo->itsTimeDescriptor->ValidTime();
@@ -439,14 +442,14 @@ const NFmiMetTime NFmiQueryData::Time(void) const
  */
 // ----------------------------------------------------------------------
 
-float NFmiQueryData::FloatValue(void) { return itsRawData->GetValue(itsQueryInfo->Index()); }
+float NFmiQueryData::FloatValue() { return itsRawData->GetValue(itsQueryInfo->Index()); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-const NFmiGrid &NFmiQueryData::GridInfo(void) { return *Info()->Grid(); }
+const NFmiGrid &NFmiQueryData::GridInfo() { return *Info()->Grid(); }
 // ----------------------------------------------------------------------
 /*!
  * Equality comparison
@@ -500,7 +503,7 @@ float NFmiQueryData::Quality() const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiQueryData::Header1(void) const
+const NFmiString NFmiQueryData::Header1() const
 {
   itsQueryInfo->ResetText();
 
@@ -515,7 +518,7 @@ const NFmiString NFmiQueryData::Header1(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiQueryData::Header2(void) const
+const NFmiString NFmiQueryData::Header2() const
 {
   itsQueryInfo->ResetText();
 
@@ -535,7 +538,7 @@ const NFmiString NFmiQueryData::Header2(void) const
  */
 // ----------------------------------------------------------------------
 
-const NFmiString NFmiQueryData::Header3(void) const
+const NFmiString NFmiQueryData::Header3() const
 {
   itsQueryInfo->ResetText();
 

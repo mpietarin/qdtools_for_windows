@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierBoolean::~NFmiDataModifierBoolean(void) {}
+NFmiDataModifierBoolean::~NFmiDataModifierBoolean() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -59,7 +59,7 @@ NFmiDataModifierBoolean::operator bool() { return BooleanValue(); }
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataModifierBoolean::BooleanValue(void)
+bool NFmiDataModifierBoolean::BooleanValue()
 {
   if (itsFirstValue && itsSecondValue)
   {

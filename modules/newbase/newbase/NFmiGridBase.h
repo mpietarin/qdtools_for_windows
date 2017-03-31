@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIGRIDBASE_H
-#define NFMIGRIDBASE_H
+#pragma once
 
 #include "NFmiDataPool.h"
 #include "NFmiPoint.h"
@@ -841,6 +840,5 @@ inline void NFmiGridBase::CenterY()
 // ----------------------------------------------------------------------
 
 inline const char* NFmiGridBase::ClassName() const { return "NFmiGridBase"; }
-#endif  // NFMIGRIDBASE_H
 
 // ======================================================================

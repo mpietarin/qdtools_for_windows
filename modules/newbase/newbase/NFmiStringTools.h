@@ -11,19 +11,18 @@
  */
 // ======================================================================
 
-#ifndef NFMISTRINGTOOLS_H
-#define NFMISTRINGTOOLS_H
+#pragma once
 
 #include "NFmiDef.h"
 #include "NFmiTypeNameTraits.h"
+#include <cstring>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <cstring>
-#include <iterator>
 
 namespace NFmiStringTools
 {
@@ -164,7 +163,5 @@ inline const std::string Join(const T &theWords, const std::string &theSeparator
   return ret;
 }
 }
-
-#endif  // NFMISTRINGTOOLS_H
 
 // ======================================================================

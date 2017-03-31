@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef FMITIESAAALUEET_H
-#define FMITIESAAALUEET_H
+#pragma once
 
 enum FmiTiesaaAlueet
 {
@@ -63,7 +62,5 @@ enum FmiTiesaaAlueet
   kTieAlueKe1 = 901,
   kTieAlueKe2 = 902
 };
-
-#endif  // NFMITIESAAALUEET_H
 
 // ======================================================================

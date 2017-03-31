@@ -25,13 +25,13 @@ std::string NFmiMilliSecondTimer::EasyTimeDiffStr(int theDiffInMS, bool fIgnoreM
   static const double hourInMS = 1000. * 60 * 60;
   static const double minuteInMS = 1000. * 60;
   int diffInMS = theDiffInMS;
-  int days = static_cast<int>(diffInMS / dayInMS);
+  auto days = static_cast<int>(diffInMS / dayInMS);
   if (days > 0) diffInMS = static_cast<int>(diffInMS - days * dayInMS);
-  int hours = static_cast<int>(diffInMS / hourInMS);
+  auto hours = static_cast<int>(diffInMS / hourInMS);
   if (hours > 0) diffInMS = static_cast<int>(diffInMS - hours * hourInMS);
-  int minutes = static_cast<int>(diffInMS / minuteInMS);
+  auto minutes = static_cast<int>(diffInMS / minuteInMS);
   if (minutes > 0) diffInMS = static_cast<int>(diffInMS - minutes * minuteInMS);
-  int seconds = static_cast<int>(diffInMS / 1000.);
+  auto seconds = static_cast<int>(diffInMS / 1000.);
   int msecs = diffInMS % 1000;
   std::string result;
   bool printRest = false;

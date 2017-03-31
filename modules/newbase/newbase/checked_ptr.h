@@ -33,8 +33,7 @@ toimimasta, koska objekti ei olekaan enää pointteri, eli mahdolliset
 deallokointi virheet löytyvät tätä kautta.
  */
 
-#ifndef CHECKED_PTR_H
-#define CHECKED_PTR_H
+#pragma once
 
 #include <stdexcept>
 
@@ -89,5 +88,3 @@ class checked_ptr
 
   void reset(element_type* ptr = 0) { p = ptr; }
 };
-
-#endif  // CHECKED_PTR_H

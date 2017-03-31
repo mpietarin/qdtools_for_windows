@@ -14,10 +14,10 @@
 
 #include "NFmiHPlaceDescriptor.h"
 #include "NFmiGrid.h"
-#include "NFmiValueString.h"
-#include "NFmiStation.h"
 #include "NFmiLocationBag.h"
 #include "NFmiSaveBaseFactory.h"
+#include "NFmiStation.h"
+#include "NFmiValueString.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -29,13 +29,13 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(void)
-    : itsLocationBag(0),
-      itsArea(0),
+NFmiHPlaceDescriptor::NFmiHPlaceDescriptor()
+    : itsLocationBag(nullptr),
+      itsArea(nullptr),
       itsSelectedType(kAll),
       itsMaxNumberOfSources(0),
-      itsGrid(0),
-      itsActivity(0)
+      itsGrid(nullptr),
+      itsActivity(nullptr)
 {
 }
 
@@ -53,10 +53,10 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiLocationBag &theLocationBag
                                            FmiStationType theSelectedType,
                                            unsigned long theMaxNumberOfSources)
     : itsLocationBag(theLocationBag.Clone()),
-      itsArea(0),
+      itsArea(nullptr),
       itsSelectedType(theSelectedType),
       itsMaxNumberOfSources(theMaxNumberOfSources),
-      itsGrid(0),
+      itsGrid(nullptr),
       itsActivity(new bool[theLocationBag.GetSize()])
 {
   for (int i = 0; i < static_cast<int>(theLocationBag.GetSize()); i++)
@@ -76,12 +76,12 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiLocationBag &theLocationBag
 NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiArea &theArea,
                                            FmiStationType theSelectedType,
                                            unsigned long theMaxNumberOfSources)
-    : itsLocationBag(0),
+    : itsLocationBag(nullptr),
       itsArea(theArea.Clone()),
       itsSelectedType(theSelectedType),
       itsMaxNumberOfSources(theMaxNumberOfSources),
-      itsGrid(0),
-      itsActivity(0)
+      itsGrid(nullptr),
+      itsActivity(nullptr)
 {
 }
 
@@ -98,12 +98,12 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiArea &theArea,
 NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiGrid &theGrid,
                                            FmiStationType theSelectedType,
                                            unsigned long theMaxNumberOfSources)
-    : itsLocationBag(0),
-      itsArea(0),
+    : itsLocationBag(nullptr),
+      itsArea(nullptr),
       itsSelectedType(theSelectedType),
       itsMaxNumberOfSources(theMaxNumberOfSources),
       itsGrid(new NFmiGrid(theGrid)),
-      itsActivity(0)
+      itsActivity(nullptr)
 {
 }
 
@@ -126,7 +126,7 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiLocationBag &theLocationBag
       itsArea(theArea.Clone()),
       itsSelectedType(theSelectedType),
       itsMaxNumberOfSources(theMaxNumberOfSources),
-      itsGrid(0),
+      itsGrid(nullptr),
       itsActivity(new bool[theLocationBag.GetSize()])
 {
   for (int i = 0; i < static_cast<int>(theLocationBag.GetSize()); i++)
@@ -148,12 +148,12 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiArea &theArea,
                                            const NFmiGrid &theGrid,
                                            FmiStationType theSelectedType,
                                            unsigned long theMaxNumberOfSources)
-    : itsLocationBag(0),
+    : itsLocationBag(nullptr),
       itsArea(theArea.Clone()),
       itsSelectedType(theSelectedType),
       itsMaxNumberOfSources(theMaxNumberOfSources),
       itsGrid(new NFmiGrid(theGrid)),
-      itsActivity(0)
+      itsActivity(nullptr)
 {
 }
 
@@ -167,15 +167,16 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiArea &theArea,
 
 NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiHPlaceDescriptor &theHPlaceDescriptor)
     : NFmiDataDescriptor(),
-      itsLocationBag(
-          theHPlaceDescriptor.itsLocationBag ? theHPlaceDescriptor.itsLocationBag->Clone() : 0),
-      itsArea(theHPlaceDescriptor.itsArea ? theHPlaceDescriptor.itsArea->Clone() : 0),
+      itsLocationBag(theHPlaceDescriptor.itsLocationBag
+                         ? theHPlaceDescriptor.itsLocationBag->Clone()
+                         : nullptr),
+      itsArea(theHPlaceDescriptor.itsArea ? theHPlaceDescriptor.itsArea->Clone() : nullptr),
       itsSelectedType(theHPlaceDescriptor.SelectedType()),
       itsMaxNumberOfSources(theHPlaceDescriptor.itsMaxNumberOfSources),
-      itsGrid(theHPlaceDescriptor.itsGrid ? new NFmiGrid(*(theHPlaceDescriptor.itsGrid)) : 0),
+      itsGrid(theHPlaceDescriptor.itsGrid ? new NFmiGrid(*(theHPlaceDescriptor.itsGrid)) : nullptr),
       itsActivity(theHPlaceDescriptor.itsLocationBag
                       ? new bool[theHPlaceDescriptor.itsLocationBag->GetSize()]
-                      : 0)
+                      : nullptr)
 {
   if (itsActivity)
     for (int i = 0; i < static_cast<int>(itsLocationBag->GetSize()); i++)
@@ -188,27 +189,27 @@ NFmiHPlaceDescriptor::NFmiHPlaceDescriptor(const NFmiHPlaceDescriptor &theHPlace
  */
 // ----------------------------------------------------------------------
 
-void NFmiHPlaceDescriptor::Destroy(void)
+void NFmiHPlaceDescriptor::Destroy()
 {
   if (itsLocationBag)
   {
     delete itsLocationBag;
-    itsLocationBag = 0;
+    itsLocationBag = nullptr;
   }
   if (itsArea)
   {
     delete itsArea;
-    itsArea = 0;
+    itsArea = nullptr;
   }
   if (itsGrid)
   {
     delete itsGrid;
-    itsGrid = 0;
+    itsGrid = nullptr;
   }
   if (itsActivity)
   {
     delete[] itsActivity;
-    itsActivity = 0;
+    itsActivity = nullptr;
   }
 }
 
@@ -234,10 +235,10 @@ void NFmiHPlaceDescriptor::LocationList(const NFmiLocationBag &theLocationBag)
  */
 // ----------------------------------------------------------------------
 
-const NFmiLocation *NFmiHPlaceDescriptor::Location(void) const
+const NFmiLocation *NFmiHPlaceDescriptor::Location() const
 {
   if (itsLocationBag) return itsLocationBag->Location();
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -250,7 +251,7 @@ const NFmiLocation *NFmiHPlaceDescriptor::Location(void) const
 const NFmiLocation *NFmiHPlaceDescriptor::LocationWithIndex(unsigned long theIndex) const
 {
   if (itsLocationBag) return itsLocationBag->Location(theIndex);
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -259,7 +260,7 @@ const NFmiLocation *NFmiHPlaceDescriptor::LocationWithIndex(unsigned long theInd
  */
 // ----------------------------------------------------------------------
 
-NFmiPoint NFmiHPlaceDescriptor::LatLon(void) const
+NFmiPoint NFmiHPlaceDescriptor::LatLon() const
 {
   if (itsLocationBag)
   {
@@ -306,7 +307,7 @@ NFmiPoint NFmiHPlaceDescriptor::LatLon(unsigned long theIndex) const
  */
 // ----------------------------------------------------------------------
 
-NFmiPoint NFmiHPlaceDescriptor::RelativePoint(void) const
+NFmiPoint NFmiHPlaceDescriptor::RelativePoint() const
 {
   if (itsLocationBag || !itsGrid)
     return NFmiPoint(kFloatMissing,
@@ -337,7 +338,7 @@ NFmiPoint NFmiHPlaceDescriptor::RelativePoint(unsigned long theIndex) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiHPlaceDescriptor::Next(void)
+bool NFmiHPlaceDescriptor::Next()
 {
   if (IsLocation())
     return (itsLocationBag->Next());
@@ -352,7 +353,7 @@ bool NFmiHPlaceDescriptor::Next(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiHPlaceDescriptor::Previous(void)
+bool NFmiHPlaceDescriptor::Previous()
 {
   if (IsLocation())
     return (itsLocationBag->Previous());
@@ -367,7 +368,7 @@ bool NFmiHPlaceDescriptor::Previous(void)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiHPlaceDescriptor::Size(void) const
+unsigned long NFmiHPlaceDescriptor::Size() const
 {
   if (IsLocation()) return (itsLocationBag->GetSize());
   if (IsArea()) return 1ul;
@@ -381,7 +382,7 @@ unsigned long NFmiHPlaceDescriptor::Size(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiHPlaceDescriptor::Index(void) const
+unsigned long NFmiHPlaceDescriptor::Index() const
 {
   if (IsLocation()) return itsLocationBag->CurrentIndex();
   if (IsArea()) return static_cast<unsigned long>(0);
@@ -538,7 +539,7 @@ bool NFmiHPlaceDescriptor::Location(const NFmiLocation &theLocation)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiHPlaceDescriptor::IsActive(void) const
+bool NFmiHPlaceDescriptor::IsActive() const
 {
   if (itsActivity)
     return (itsActivity[Index()]);
@@ -571,7 +572,7 @@ bool NFmiHPlaceDescriptor::SetActivity(bool theActivityState)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiHPlaceDescriptor::NextActive(void)
+bool NFmiHPlaceDescriptor::NextActive()
 {
   while (Next())
     if (IsActive()) return true;
@@ -597,9 +598,9 @@ NFmiHPlaceDescriptor &NFmiHPlaceDescriptor::operator=(
     Destroy();
 
     itsLocationBag =
-        theHPlaceDescriptor.itsLocationBag ? theHPlaceDescriptor.itsLocationBag->Clone() : 0;
-    itsArea = theHPlaceDescriptor.itsArea ? theHPlaceDescriptor.itsArea->Clone() : 0;
-    itsGrid = theHPlaceDescriptor.itsGrid ? new NFmiGrid(*theHPlaceDescriptor.itsGrid) : 0;
+        theHPlaceDescriptor.itsLocationBag ? theHPlaceDescriptor.itsLocationBag->Clone() : nullptr;
+    itsArea = theHPlaceDescriptor.itsArea ? theHPlaceDescriptor.itsArea->Clone() : nullptr;
+    itsGrid = theHPlaceDescriptor.itsGrid ? new NFmiGrid(*theHPlaceDescriptor.itsGrid) : nullptr;
 
     itsSelectedType = theHPlaceDescriptor.itsSelectedType;
 
@@ -661,7 +662,7 @@ const NFmiHPlaceDescriptor NFmiHPlaceDescriptor::Combine(const NFmiHPlaceDescrip
  */
 // ----------------------------------------------------------------------
 
-void NFmiHPlaceDescriptor::Reset(void)
+void NFmiHPlaceDescriptor::Reset()
 {
   if (IsLocation()) itsLocationBag->Reset();
   if (IsGrid()) itsGrid->Reset();
@@ -882,9 +883,9 @@ std::istream &NFmiHPlaceDescriptor::Read(std::istream &file)
  */
 // ----------------------------------------------------------------------
 
-const NFmiArea *NFmiHPlaceDescriptor::Area(void) const
+const NFmiArea *NFmiHPlaceDescriptor::Area() const
 {
-  return itsArea ? itsArea : itsGrid ? itsGrid->Area() : 0;
+  return itsArea ? itsArea : itsGrid ? itsGrid->Area() : nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -893,7 +894,7 @@ const NFmiArea *NFmiHPlaceDescriptor::Area(void) const
  */
 // ----------------------------------------------------------------------
 
-FmiInterpolationMethod NFmiHPlaceDescriptor::InterpolationMethod(void) const
+FmiInterpolationMethod NFmiHPlaceDescriptor::InterpolationMethod() const
 {
   return itsGrid ? itsGrid->InterpolationMethod() : kNoneInterpolation;
 }
@@ -904,7 +905,7 @@ FmiInterpolationMethod NFmiHPlaceDescriptor::InterpolationMethod(void) const
  */
 // ----------------------------------------------------------------------
 
-NFmiPoint NFmiHPlaceDescriptor::GridPoint(void) const
+NFmiPoint NFmiHPlaceDescriptor::GridPoint() const
 {
   return itsGrid ? itsGrid->GridPoint() : NFmiPoint(kFloatMissing, kFloatMissing);
 }
@@ -915,7 +916,7 @@ NFmiPoint NFmiHPlaceDescriptor::GridPoint(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiHPlaceDescriptor::First(void)
+bool NFmiHPlaceDescriptor::First()
 {
   return IsLocation() ? itsLocationBag->First() : itsGrid->First();
 }
@@ -1004,9 +1005,9 @@ std::size_t NFmiHPlaceDescriptor::HashValue() const
 {
   std::size_t hash = 0;
 
-  if (itsLocationBag != 0) boost::hash_combine(hash, itsLocationBag->HashValue());
+  if (itsLocationBag != nullptr) boost::hash_combine(hash, itsLocationBag->HashValue());
 
-  if (itsGrid != 0) boost::hash_combine(hash, itsGrid->HashValue());
+  if (itsGrid != nullptr) boost::hash_combine(hash, itsGrid->HashValue());
 
   return hash;
 }

@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiRegressionItem::~NFmiRegressionItem() {}
+NFmiRegressionItem::~NFmiRegressionItem() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -72,14 +72,14 @@ void NFmiRegressionItem::Calculate(NFmiQueryInfo *theData)
  */
 // ----------------------------------------------------------------------
 
-float NFmiRegressionItem::CalculationResult(void) { return static_cast<float>(itsReturnValue); }
+float NFmiRegressionItem::CalculationResult() { return static_cast<float>(itsReturnValue); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-double NFmiRegressionItem::FloatValue(void)
+double NFmiRegressionItem::FloatValue()
 {
   if (itsParam)
   {

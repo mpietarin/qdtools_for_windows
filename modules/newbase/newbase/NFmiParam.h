@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIPARAM_H
-#define NFMIPARAM_H
+#pragma once
 
 #include "NFmiIndividual.h"
 
@@ -228,4 +227,3 @@ inline std::ostream &operator<<(std::ostream &file, const NFmiParam &ob) { retur
 // ----------------------------------------------------------------------
 
 inline std::istream &operator>>(std::istream &file, NFmiParam &ob) { return ob.Read(file); }
-#endif  // __NPARAM_H__

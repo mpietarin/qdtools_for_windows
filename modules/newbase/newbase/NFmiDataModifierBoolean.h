@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERBOOLEAN_H
-#define NFMIDATAMODIFIERBOOLEAN_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -47,7 +46,5 @@ class _FMI_DLL NFmiDataModifierBoolean : public NFmiDataModifier
   NFmiDataModifierBoolean& operator=(const NFmiDataModifierBoolean& theMod);
 
 };  // class NFmiDataModifierBoolean
-
-#endif  // NFMIDATAMODIFIERBOOLEAN_H
 
 // ======================================================================

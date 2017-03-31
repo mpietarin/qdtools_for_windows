@@ -5,8 +5,8 @@
  */
 // ======================================================================
 
-#include "NFmiSettingsImpl.h"
 #include "NFmiFileSystem.h"
+#include "NFmiSettingsImpl.h"
 #include <regression/tframe.h>
 
 #include <fstream>

@@ -90,7 +90,7 @@ NFmiParam &NFmiParam::operator=(const NFmiParam &theParam)
  */
 // ----------------------------------------------------------------------
 
-float NFmiParam::Scale(void) const
+float NFmiParam::Scale() const
 {
   if (itsScale == kFloatMissing) return 1;
 
@@ -103,7 +103,7 @@ float NFmiParam::Scale(void) const
  */
 // ----------------------------------------------------------------------
 
-float NFmiParam::Base(void) const
+float NFmiParam::Base() const
 {
   if (itsBase == kFloatMissing) return 0;
 

@@ -8,8 +8,7 @@
  */
 // ======================================================================
 
-#ifndef NMIFAREAFACTORY_H
-#define NMIFAREAFACTORY_H
+#pragma once
 
 #include "NFmiPoint.h"
 #include <string>
@@ -35,7 +34,5 @@ return_type CreateProj(const std::string &projString,
                        const NFmiPoint &bottomRightXY = NFmiPoint(1.0f, 1.0f));
 
 }  // namespace NFmiAreaFactory
-
-#endif  // NMIFAREAFACTORY_H
 
 // ======================================================================

@@ -85,9 +85,8 @@ NFmiGnomonicArea::NFmiGnomonicArea() : NFmiAzimuthalArea() {}
 // ----------------------------------------------------------------------
 
 NFmiGnomonicArea::NFmiGnomonicArea(const NFmiGnomonicArea &theGnomonicArea)
-    : NFmiAzimuthalArea(theGnomonicArea)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -245,7 +244,7 @@ double NFmiGnomonicArea::CalcDelta(const double xyDistance) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiGnomonicArea::DistanceFromPerspectivePointToCenterOfEarth(void) const
+double NFmiGnomonicArea::DistanceFromPerspectivePointToCenterOfEarth() const
 {
   // Distance (in world-coordinate meters) for gnomonic projection.
   // See details in ref. [1] pp. 58-62.
@@ -296,7 +295,7 @@ NFmiArea *NFmiGnomonicArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiGnomonicArea::Clone(void) const { return new NFmiGnomonicArea(*this); }
+NFmiArea *NFmiGnomonicArea::Clone() const { return new NFmiGnomonicArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -308,11 +307,7 @@ NFmiArea *NFmiGnomonicArea::Clone(void) const { return new NFmiGnomonicArea(*thi
  */
 // ----------------------------------------------------------------------
 
-NFmiGnomonicArea &NFmiGnomonicArea::operator=(const NFmiGnomonicArea &theArea)
-{
-  NFmiAzimuthalArea::operator=(theArea);
-  return *this;
-}
+NFmiGnomonicArea &NFmiGnomonicArea::operator=(const NFmiGnomonicArea &theArea) = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -419,7 +414,7 @@ void NFmiGnomonicArea::Init(bool fKeepWorldRect)
   NFmiAzimuthalArea::Init(fKeepWorldRect);
 }
 
-const std::string NFmiGnomonicArea::AreaStr(void) const
+const std::string NFmiGnomonicArea::AreaStr() const
 {
   std::ostringstream out;
   out << "stereographic," << CentralLongitude() << ',' << CentralLatitude() << ','
@@ -448,15 +443,15 @@ const std::string NFmiGnomonicArea::AreaStr(void) const
 const std::string NFmiGnomonicArea::WKT() const
 {
   std::ostringstream ret;
-  ret << std::setprecision(16) << "PROJCS[\"FMI_Gnomonic\","
-      << "GEOGCS[\"FMI_Sphere\","
-      << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"Degree\",0.0174532925199433]],"
-      << "PROJECTION[\"Gnomonic\"],"
-      << "PARAMETER[\"latitude_of_origin\"," << itsCentralLatitude.Value() << "],"
-      << "PARAMETER[\"central_meridian\"," << itsCentralLongitude << "],"
-      << "UNIT[\"Metre\",1.0]]";
+  ret << std::setprecision(16) << R"(PROJCS["FMI_Gnomonic",)"
+      << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Gnomonic"],)"
+      << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
+      << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+      << R"(UNIT["Metre",1.0]])";
   return ret.str();
 }
 

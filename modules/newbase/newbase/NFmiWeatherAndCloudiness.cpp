@@ -17,14 +17,14 @@
 
 #include "NFmiWeatherAndCloudiness.h"
 #include "NFmiDataIdent.h"
-#include "NFmiParamBag.h"
-#include "NFmiQueryInfo.h"
-#include "NFmiPoint.h"
 #include "NFmiDataModifierClasses.h"
 #include "NFmiDataModifierCombi.h"
 #include "NFmiIntegrationSelector.h"
-#include <cmath>
+#include "NFmiParamBag.h"
+#include "NFmiPoint.h"
+#include "NFmiQueryInfo.h"
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -48,7 +48,7 @@ const float gMinimumPrecipitationForV7 = 0.015f;
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::DefaultPrecipitationTypeIsLargeScale(void) const
+bool NFmiWeatherAndCloudiness::DefaultPrecipitationTypeIsLargeScale() const
 {
   return fDefaultPrecipitationTypeIsLargeScale;
 }
@@ -94,7 +94,7 @@ NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness(double theInfoVersion)
  */
 // ----------------------------------------------------------------------
 
-NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness(void)
+NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness()
     : NFmiCombinedParam(7.),
       itsData(),
       itsTemperature(kFloatMissing),
@@ -341,14 +341,8 @@ NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness(float theCloudSymbol,
 // ----------------------------------------------------------------------
 
 NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness(const NFmiWeatherAndCloudiness &theWeather)
-    : NFmiCombinedParam(theWeather),
-      itsData(theWeather.itsData),
-      itsTemperature(theWeather.itsTemperature),
-      itsCrossCheckIndex(theWeather.itsCrossCheckIndex),
-      itsPrecipitationProbabilityLimit1(theWeather.itsPrecipitationProbabilityLimit1),
-      itsPrecipitationProbabilityLimit2(theWeather.itsPrecipitationProbabilityLimit2)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -356,7 +350,7 @@ NFmiWeatherAndCloudiness::NFmiWeatherAndCloudiness(const NFmiWeatherAndCloudines
  */
 // ----------------------------------------------------------------------
 
-NFmiWeatherAndCloudiness::~NFmiWeatherAndCloudiness() {}
+NFmiWeatherAndCloudiness::~NFmiWeatherAndCloudiness() = default;
 // ----------------------------------------------------------------------
 /*!
  * \param theCloudSymbol Undocumented
@@ -458,16 +452,16 @@ NFmiDataIdent *NFmiWeatherAndCloudiness::CreateParam(
                     0,
                     "%.1f",
                     kByCombinedParam);
-  NFmiDataIdent *theDataIdent = new NFmiDataIdent(param,
-                                                  theProducer,
-                                                  kContinuousParam,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  true,
-                                                  &subParamBag,
-                                                  theSecondaryProducerList);
+  auto *theDataIdent = new NFmiDataIdent(param,
+                                         theProducer,
+                                         kContinuousParam,
+                                         true,
+                                         true,
+                                         true,
+                                         true,
+                                         true,
+                                         &subParamBag,
+                                         theSecondaryProducerList);
   return theDataIdent;
 }
 
@@ -865,14 +859,10 @@ bool NFmiWeatherAndCloudiness::SetToWeightedMean(NFmiCombinedParam *theCombinedP
   // käytetään qinfosta painotettujen keskiarvojen laskemiseen
   // (latlon:n ympäröivistä 4:stä pisteestä)
 
-  NFmiWeatherAndCloudiness *theWeatherAndCloudiness1 =
-      static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam1);
-  NFmiWeatherAndCloudiness *theWeatherAndCloudiness2 =
-      static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam2);
-  NFmiWeatherAndCloudiness *theWeatherAndCloudiness3 =
-      static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam3);
-  NFmiWeatherAndCloudiness *theWeatherAndCloudiness4 =
-      static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam4);
+  auto *theWeatherAndCloudiness1 = static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam1);
+  auto *theWeatherAndCloudiness2 = static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam2);
+  auto *theWeatherAndCloudiness3 = static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam3);
+  auto *theWeatherAndCloudiness4 = static_cast<NFmiWeatherAndCloudiness *>(theCombinedParam4);
 
   float factorSum = fac1 + fac2;
   if (fac3 != kFloatMissing) factorSum += fac3;
@@ -1021,8 +1011,8 @@ unsigned long NFmiWeatherAndCloudiness::PrecipitationFormWeightedMean(unsigned l
   // painotus sademäärän mukaan
 
   double sums[FmiNumberOfPrecipitationForms];
-  for (unsigned int i = 0; i < FmiNumberOfPrecipitationForms; i++)
-    sums[i] = 0;
+  for (double &sum : sums)
+    sum = 0;
 
   if (form1 != kT3BitMissing && amount1 != TotalPrecipitationMissingValue())
   {
@@ -1979,8 +1969,8 @@ bool NFmiWeatherAndCloudiness::SetToWeightedPeriod(NFmiQueryInfo *info,
   double thunderProbabilitySum = 0.;
   double fogIntensitySum = 0.;
   double precipitationForms[FmiNumberOfPrecipitationForms];
-  for (unsigned int i = 0; i < FmiNumberOfPrecipitationForms; i++)
-    precipitationForms[i] = 0;
+  for (double &precipitationForm : precipitationForms)
+    precipitationForm = 0;
 
   double totalCloudinessFactorSum = 0;
   double lowCloudsFactorSum = 0;
@@ -2007,8 +1997,7 @@ bool NFmiWeatherAndCloudiness::SetToWeightedPeriod(NFmiQueryInfo *info,
       // jos lonlat annettu  pitää ottaa paikan mukaan interpoloitu
       if (!locationMissing) newInfo->InterpolatedValue(theLonLat);
 
-      const NFmiWeatherAndCloudiness *weather =
-          static_cast<const NFmiWeatherAndCloudiness *>(newInfo->CombinedParam());
+      const auto *weather = static_cast<const NFmiWeatherAndCloudiness *>(newInfo->CombinedParam());
       if (weather)
       {
         if (newInfo->Time() < info->Time())
@@ -2165,8 +2154,8 @@ bool NFmiWeatherAndCloudiness::SetToWeightedPeriod(NFmiQueryInfo *info,
   double thunderProbabilitySum = 0.;
   double fogIntensitySum = 0.;
   double precipitationForms[FmiNumberOfPrecipitationForms];
-  for (unsigned int i = 0; i < FmiNumberOfPrecipitationForms; i++)
-    precipitationForms[i] = 0;
+  for (double &precipitationForm : precipitationForms)
+    precipitationForm = 0;
 
   double totalCloudinessFactorSum = 0;
   double lowCloudsFactorSum = 0;
@@ -2193,8 +2182,7 @@ bool NFmiWeatherAndCloudiness::SetToWeightedPeriod(NFmiQueryInfo *info,
       // jos lonlat annettu  pitää ottaa paikan mukaan interpoloitu
       if (!locationMissing) newInfo->InterpolatedValue(theLonLat);
 
-      const NFmiWeatherAndCloudiness *weather =
-          static_cast<const NFmiWeatherAndCloudiness *>(newInfo->CombinedParam());
+      const auto *weather = static_cast<const NFmiWeatherAndCloudiness *>(newInfo->CombinedParam());
       if (weather)
       {
         if (newInfo->Time() < info->Time())
@@ -2317,7 +2305,7 @@ bool NFmiWeatherAndCloudiness::SetToWeightedPeriod(NFmiQueryInfo *info,
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::TotalCloudinessToHessaa(void) const
+unsigned long NFmiWeatherAndCloudiness::TotalCloudinessToHessaa() const
 {
   unsigned long clouds = kUnsignedLongMissing;
 
@@ -2338,7 +2326,7 @@ unsigned long NFmiWeatherAndCloudiness::TotalCloudinessToHessaa(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::TotalPrecipitationToHessaa(void) const
+unsigned long NFmiWeatherAndCloudiness::TotalPrecipitationToHessaa() const
 {
   unsigned long preci = kUnsignedLongMissing;
   if (CalcTotalPrecipitation() == kTNoPrecipitation)
@@ -2358,7 +2346,7 @@ unsigned long NFmiWeatherAndCloudiness::TotalPrecipitationToHessaa(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::PartlyCloudyHessaa(void)
+unsigned long NFmiWeatherAndCloudiness::PartlyCloudyHessaa()
 {
   unsigned long hessaa = kUnsignedLongMissing;
   if (IsConvective())  // tyyppi on jo asetettu
@@ -2471,7 +2459,7 @@ unsigned long NFmiWeatherAndCloudiness::PartlyCloudyHessaa(void)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::HalfCloudyHessaa(void)
+unsigned long NFmiWeatherAndCloudiness::HalfCloudyHessaa()
 {
   unsigned long hessaa = kUnsignedLongMissing;
   unsigned long preci = TotalPrecipitationToHessaa();
@@ -2591,7 +2579,7 @@ unsigned long NFmiWeatherAndCloudiness::HalfCloudyHessaa(void)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::OverCastHessaa(void)
+unsigned long NFmiWeatherAndCloudiness::OverCastHessaa()
 {
   unsigned long hessaa = kUnsignedLongMissing;
   unsigned long preci = TotalPrecipitationToHessaa();
@@ -2710,7 +2698,7 @@ unsigned long NFmiWeatherAndCloudiness::OverCastHessaa(void)
         Oletus arvo jos ukkosen tn >= 30 , jos muut arvot (rr ja N) ei puuttuvia on 61
 */
 
-unsigned long NFmiWeatherAndCloudiness::ThunderToHessaa(void) const
+unsigned long NFmiWeatherAndCloudiness::ThunderToHessaa() const
 {
   double thunderProb = ThunderProbabilityValue();
   double N = TotalCloudinessValue();
@@ -2745,7 +2733,7 @@ unsigned long NFmiWeatherAndCloudiness::ThunderToHessaa(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::ToHessaa(void)
+unsigned long NFmiWeatherAndCloudiness::ToHessaa()
 {
   unsigned long hessaa = kUnsignedLongMissing;
   if (itsData.longType == kTCombinedWeatherMissing) return hessaa;
@@ -2802,7 +2790,7 @@ bool NFmiWeatherAndCloudiness::CheckHessaa(unsigned long theValue) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::ToHsade(void) const
+unsigned long NFmiWeatherAndCloudiness::ToHsade() const
 {
   unsigned long hsade = kUnsignedLongMissing;
   if (CalcTotalPrecipitation() == kTNoPrecipitation)
@@ -3221,7 +3209,7 @@ unsigned long NFmiWeatherAndCloudiness::ThunderProbabilityFromHessaa(unsigned lo
 // ----------------------------------------------------------------------
 static const double gNoPrecipitationLimitV7 = 0.05;
 static const double gNoPrecipitationLimitV6 = 0.1;
-unsigned long NFmiWeatherAndCloudiness::CalcTotalPrecipitation(void) const
+unsigned long NFmiWeatherAndCloudiness::CalcTotalPrecipitation() const
 {
   // tänne sateen intensiteettirajat!!!!
   if (TotalPrecipitation() != TotalPrecipitationMissingValue())
@@ -3249,7 +3237,7 @@ unsigned long NFmiWeatherAndCloudiness::CalcTotalPrecipitation(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::LowAndMiddleClouds(void) const
+unsigned long NFmiWeatherAndCloudiness::LowAndMiddleClouds() const
 {
   unsigned long returnValue;
   if (HighClouds() == HighCloudsMissingValue() || HighClouds() == 0)
@@ -3658,7 +3646,7 @@ double NFmiWeatherAndCloudiness::SubValue(FmiParameterName theParam,
   return returnValue;
 }
 
-double NFmiWeatherAndCloudiness::ThunderProbabilityValue(void) const
+double NFmiWeatherAndCloudiness::ThunderProbabilityValue() const
 {
   unsigned long tempValue = ThunderProbability();
   if (tempValue != kTThunderProbabilityMissing && tempValue != kUnsignedLongMissing)
@@ -3667,7 +3655,7 @@ double NFmiWeatherAndCloudiness::ThunderProbabilityValue(void) const
     return kFloatMissing;
 }
 
-double NFmiWeatherAndCloudiness::TotalCloudinessValue(void) const
+double NFmiWeatherAndCloudiness::TotalCloudinessValue() const
 {
   unsigned long tempValue = TotalCloudiness();
   if (tempValue != kT4BitMissing && tempValue != kUnsignedLongMissing)
@@ -3676,7 +3664,7 @@ double NFmiWeatherAndCloudiness::TotalCloudinessValue(void) const
     return kFloatMissing;
 }
 
-double NFmiWeatherAndCloudiness::Precipitation1hValue(void) const
+double NFmiWeatherAndCloudiness::Precipitation1hValue() const
 {
   unsigned long tempValue = TotalPrecipitation();
   return PrecipitationScale(tempValue);
@@ -3755,7 +3743,7 @@ double NFmiWeatherAndCloudiness::RawSubValue(FmiParameterName theParam)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsPrecipitationOk(void) const
+bool NFmiWeatherAndCloudiness::IsPrecipitationOk() const
 {
   if (!DataOk()) return false;
   if (TotalPrecipitation() != TotalPrecipitationMissingValue())
@@ -3823,7 +3811,7 @@ bool NFmiWeatherAndCloudiness::IsFreezing(float precForm)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsFair(void) const
+bool NFmiWeatherAndCloudiness::IsFair() const
 {
   return (CalcTotalPrecipitation() == kTNoPrecipitation);
 }
@@ -3834,7 +3822,7 @@ bool NFmiWeatherAndCloudiness::IsFair(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::OnlySomePrecipitation(void) const
+bool NFmiWeatherAndCloudiness::OnlySomePrecipitation() const
 {
   return TotalPrecipitation() == kTSomePrecipitation;
 }
@@ -3845,7 +3833,7 @@ bool NFmiWeatherAndCloudiness::OnlySomePrecipitation(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsSnow(void) const
+bool NFmiWeatherAndCloudiness::IsSnow() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTSnow && !IsFair();
@@ -3857,7 +3845,7 @@ bool NFmiWeatherAndCloudiness::IsSnow(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsSleet(void) const
+bool NFmiWeatherAndCloudiness::IsSleet() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTSleet && !IsFair();
@@ -3869,7 +3857,7 @@ bool NFmiWeatherAndCloudiness::IsSleet(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsRain(void) const
+bool NFmiWeatherAndCloudiness::IsRain() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTRain && !IsFair();
@@ -3881,7 +3869,7 @@ bool NFmiWeatherAndCloudiness::IsRain(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsDrizzle(void) const
+bool NFmiWeatherAndCloudiness::IsDrizzle() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTDrizzle && !IsFair();
@@ -3893,7 +3881,7 @@ bool NFmiWeatherAndCloudiness::IsDrizzle(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsFreezingDrizzle(void) const
+bool NFmiWeatherAndCloudiness::IsFreezingDrizzle() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTFreezingDrizzle && !IsFair();
@@ -3905,7 +3893,7 @@ bool NFmiWeatherAndCloudiness::IsFreezingDrizzle(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsFreezingRain(void) const
+bool NFmiWeatherAndCloudiness::IsFreezingRain() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTFreezingRain && !IsFair();
@@ -3917,7 +3905,7 @@ bool NFmiWeatherAndCloudiness::IsFreezingRain(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsHail(void) const
+bool NFmiWeatherAndCloudiness::IsHail() const
 {
   //  Huom! Tässä tutkitaan vain sateen olomuoto ja sademäärä
   return PrecipitationForm() == kTHail && !IsFair();
@@ -3929,7 +3917,7 @@ bool NFmiWeatherAndCloudiness::IsHail(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsConvective(void) const
+bool NFmiWeatherAndCloudiness::IsConvective() const
 {
   //  Huom! Tässä tutkitaan vain sateen tyyppi ja sademäärä
   return PrecipitationType() == kTConvectivePrecipitation && !IsFair();
@@ -3941,7 +3929,7 @@ bool NFmiWeatherAndCloudiness::IsConvective(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsLargeScale(void) const
+bool NFmiWeatherAndCloudiness::IsLargeScale() const
 {
   //  Huom! Tässä tutkitaan vain sateen tyyppi ja sademäärä
   return PrecipitationType() == kTLargeScalePrecipitation && !IsFair();
@@ -3953,7 +3941,7 @@ bool NFmiWeatherAndCloudiness::IsLargeScale(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiWeatherAndCloudiness::IsThunder(void) const
+bool NFmiWeatherAndCloudiness::IsThunder() const
 {
   return (ThunderProbability() != kTThunderProbabilityMissing && ThunderProbability() >= 4);
 }
@@ -3964,7 +3952,7 @@ bool NFmiWeatherAndCloudiness::IsThunder(void) const
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiWeatherAndCloudiness::CalcTotalCloudiness(void)
+unsigned long NFmiWeatherAndCloudiness::CalcTotalCloudiness()
 {
   unsigned long N = 0;
   if (TotalCloudiness() == kT4BitMissing && MiddleClouds() == kT4BitMissing &&
@@ -4449,7 +4437,7 @@ void NFmiWeatherAndCloudiness::CrossCheck(FmiParameterName theParam)
  */
 // ----------------------------------------------------------------------
 
-void NFmiWeatherAndCloudiness::CheckIfPrecipZeroAndCleanTypeAndForm(void)
+void NFmiWeatherAndCloudiness::CheckIfPrecipZeroAndCleanTypeAndForm()
 {
   if (TotalPrecipitation() == 0)
   {
@@ -4464,7 +4452,7 @@ void NFmiWeatherAndCloudiness::CheckIfPrecipZeroAndCleanTypeAndForm(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiWeatherAndCloudiness::CreateIntegrators(void)
+void NFmiWeatherAndCloudiness::CreateIntegrators()
 {
   if (!itsSubParams) return;
 
@@ -4491,7 +4479,7 @@ void NFmiWeatherAndCloudiness::CreateIntegrators(void)
 
 NFmiCombinedParam *NFmiWeatherAndCloudiness::CreateNew(float theInitValue)
 {
-  NFmiWeatherAndCloudiness *kisu = new NFmiWeatherAndCloudiness(*this);
+  auto *kisu = new NFmiWeatherAndCloudiness(*this);
   kisu->LongValue(ConvertFloatToLong(theInitValue));
   return kisu;
 }
@@ -4502,7 +4490,7 @@ NFmiCombinedParam *NFmiWeatherAndCloudiness::CreateNew(float theInitValue)
  */
 // ----------------------------------------------------------------------
 
-void NFmiWeatherAndCloudiness::CreateSubParams(void)
+void NFmiWeatherAndCloudiness::CreateSubParams()
 {
   NFmiDataIdent subDataIdent[9];
 

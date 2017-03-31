@@ -20,14 +20,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierDummy::~NFmiDataModifierDummy(void) {}
+NFmiDataModifierDummy::~NFmiDataModifierDummy() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierDummy::NFmiDataModifierDummy(void) : NFmiDataModifier(), itsValue(kFloatMissing) {}
+NFmiDataModifierDummy::NFmiDataModifierDummy() : NFmiDataModifier(), itsValue(kFloatMissing) {}
 // ----------------------------------------------------------------------
 /*!
  * \param theValue Undocumented
@@ -48,12 +48,12 @@ void NFmiDataModifierDummy::Calculate(NFmiQueryInfo* theQI) { itsValue = theQI->
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierDummy::CalculationResult(void) { return itsValue; }
+float NFmiDataModifierDummy::CalculationResult() { return itsValue; }
 // ----------------------------------------------------------------------
 /*!
  *
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierDummy::Clear(void) { itsValue = kFloatMissing; }
+void NFmiDataModifierDummy::Clear() { itsValue = kFloatMissing; }
 // ======================================================================

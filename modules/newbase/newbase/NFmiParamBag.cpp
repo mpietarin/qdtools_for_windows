@@ -13,8 +13,8 @@
 // ======================================================================
 
 #include "NFmiParamBag.h"
-#include <fstream>
 #include <cassert>
+#include <fstream>
 
 using namespace std;
 
@@ -24,15 +24,15 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiParamBag::~NFmiParamBag(void) { Destroy(); }
+NFmiParamBag::~NFmiParamBag() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiParamBag::NFmiParamBag(void)
-    : NFmiSize(0), itsParamsVector(0), fIsSubParamUsed(false), itsUsedSubParam(0)
+NFmiParamBag::NFmiParamBag()
+    : NFmiSize(0), itsParamsVector(0), fIsSubParamUsed(false), itsUsedSubParam(nullptr)
 {
 }
 
@@ -49,7 +49,7 @@ NFmiParamBag::NFmiParamBag(FmiParameterName* theParamArray, unsigned long number
     : NFmiSize(numberOfParams),
       itsParamsVector(numberOfParams),
       fIsSubParamUsed(false),
-      itsUsedSubParam(0)
+      itsUsedSubParam(nullptr)
 {
   if (GetSize())
   {
@@ -74,7 +74,7 @@ NFmiParamBag::NFmiParamBag(NFmiDataIdent* theParamArray, unsigned long numberOfP
     : NFmiSize(numberOfParams),
       itsParamsVector(numberOfParams),
       fIsSubParamUsed(false),
-      itsUsedSubParam(0)
+      itsUsedSubParam(nullptr)
 {
   if (GetSize())
   {
@@ -166,7 +166,7 @@ bool NFmiParamBag::operator==(const NFmiParamBag& theOtherParams) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiParamBag::Destroy(void) { itsParamsVector.clear(); }
+void NFmiParamBag::Destroy() { itsParamsVector.clear(); }
 // ----------------------------------------------------------------------
 /*!
  * \param theBag Undocumented
@@ -367,7 +367,7 @@ NFmiDataIdent* NFmiParamBag::EditParam(bool fIgnoreSubParam)
 {
   if (!fIgnoreSubParam)
     if (fIsSubParamUsed) return itsUsedSubParam;
-  return GetSize() ? const_cast<NFmiDataIdent*>(&itsParamsVector[itsIndex]) : 0;
+  return GetSize() ? const_cast<NFmiDataIdent*>(&itsParamsVector[itsIndex]) : nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -391,7 +391,7 @@ bool NFmiParamBag::NextActive(bool fIgnoreSubParam)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamBag::NextData(void)
+bool NFmiParamBag::NextData()
 {
   while (Next())
     if (Current()->IsDataParam()) return true;
@@ -471,7 +471,7 @@ bool NFmiParamBag::SetCurrentActive(bool isActive, bool fIgnoreSubParam)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiParamBag::SizeOfActive(void)
+unsigned long NFmiParamBag::SizeOfActive()
 {
   NFmiParamBag tmpBag(*this);
   tmpBag.Reset();
@@ -574,18 +574,18 @@ bool NFmiParamBag::SetActivities(NFmiParamBag& theParams,
           this->Current(false)->SetActive(theParams.Current(false)->IsActive());
           break;
         case kAnd:  // eli jos molemmissa aktiviteetti oli true, laitetaan true, muuten false
-          this->Current(false)
-              ->SetActive(this->Current(false)->IsActive() && theParams.Current(false)->IsActive());
+          this->Current(false)->SetActive(this->Current(false)->IsActive() &&
+                                          theParams.Current(false)->IsActive());
           break;
         case kOr:  // eli jos kummassa tahansa on true, laitetaan true, muuten false (itse haluan
           // käyttää tätä siten, että theParams:issa on aktiivisina ne mitkä haluan lisäksi
           // aktivoida, mutta muita en halua deaktivoida)
-          this->Current(false)
-              ->SetActive(this->Current(false)->IsActive() || theParams.Current(false)->IsActive());
+          this->Current(false)->SetActive(this->Current(false)->IsActive() ||
+                                          theParams.Current(false)->IsActive());
           break;
         case kXor:  // jos toinen on false ja toinen true, tulkee true, muuten false
-          this->Current(false)
-              ->SetActive(this->Current(false)->IsActive() ^ theParams.Current(false)->IsActive());
+          this->Current(false)->SetActive(this->Current(false)->IsActive() ^
+                                          theParams.Current(false)->IsActive());
           break;
         case kNot:  // eli asetetaan this:in aktiviteetti päinvastoin kuin se on theParamsissa
           this->Current(false)->SetActive(!theParams.Current(false)->IsActive());
@@ -642,7 +642,7 @@ NFmiDataIdent* NFmiParamBag::Param(unsigned long theIndex, bool fIgnoreSubParam)
 
   unsigned long size = GetSize();
   if (size && theIndex < size) return const_cast<NFmiDataIdent*>(&itsParamsVector[theIndex]);
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -660,7 +660,7 @@ NFmiDataIdent* NFmiParamBag::EditParam(unsigned long theIndex, bool fIgnoreSubPa
 
   unsigned long size = GetSize();
   if (size && theIndex < size) return const_cast<NFmiDataIdent*>(&itsParamsVector[theIndex]);
-  return 0;
+  return nullptr;
 }
 
 // ----------------------------------------------------------------------
@@ -669,7 +669,7 @@ NFmiDataIdent* NFmiParamBag::EditParam(unsigned long theIndex, bool fIgnoreSubPa
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamBag::Next(void) { return Next(true); }
+bool NFmiParamBag::Next() { return Next(true); }
 // ----------------------------------------------------------------------
 /*!
  * \param fIgnoreSubParam Undocumented
@@ -711,7 +711,7 @@ bool NFmiParamBag::Next(bool fIgnoreSubParam)
       else
       {
         fIsSubParamUsed = false;
-        itsUsedSubParam = 0;
+        itsUsedSubParam = nullptr;
         return true;
       }
     }
@@ -725,7 +725,7 @@ bool NFmiParamBag::Next(bool fIgnoreSubParam)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamBag::Previous(void) { return Previous(true); }
+bool NFmiParamBag::Previous() { return Previous(true); }
 // ----------------------------------------------------------------------
 /*!
  * \param fIgnoreSubParam Undocumented
@@ -760,7 +760,7 @@ bool NFmiParamBag::Previous(bool fIgnoreSubParam)
       else
       {
         fIsSubParamUsed = false;
-        itsUsedSubParam = 0;
+        itsUsedSubParam = nullptr;
         return true;
       }
     }
@@ -783,7 +783,7 @@ bool NFmiParamBag::IsActive(bool fIgnoreSubParam) const
   unsigned long size = GetSize();
   if (size > 0 && CurrentIndex() < static_cast<long>(size))
     return itsParamsVector[CurrentIndex()].IsActive();
-  return 0;
+  return false;
 }
 
 // ----------------------------------------------------------------------
@@ -801,7 +801,7 @@ bool NFmiParamBag::IsActive(unsigned long index, bool fIgnoreSubParam) const
 
   unsigned long size = GetSize();
   if (size && index < size) return itsParamsVector[index].IsActive();
-  return 0;
+  return false;
 }
 
 // ----------------------------------------------------------------------
@@ -862,7 +862,7 @@ bool NFmiParamBag::FindSubParam(const NFmiDataIdent& theDataIdent)
 void NFmiParamBag::Reset(FmiDirection directionToIter)
 {
   NFmiSize::Reset(directionToIter);
-  itsUsedSubParam = 0;
+  itsUsedSubParam = nullptr;
   fIsSubParamUsed = false;
 }
 
@@ -893,13 +893,13 @@ bool NFmiParamBag::Add(const NFmiDataIdent& theParam, bool fCheckNoDuplicatePara
  * \return True if remove succeeded, false if there was no current parameter.
  */
 
-bool NFmiParamBag::Remove(void)
+bool NFmiParamBag::Remove()
 {
   if (itsIndex < 0 || static_cast<unsigned long>(itsIndex) >= itsSize)
     return false;
   else
   {
-    checkedVector<NFmiDataIdent>::iterator it = itsParamsVector.begin();
+    auto it = itsParamsVector.begin();
     it += itsIndex;
     itsParamsVector.erase(it);
     SetSize(itsParamsVector.size());

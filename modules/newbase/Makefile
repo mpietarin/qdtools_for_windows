@@ -44,7 +44,7 @@ ifeq ($(CXX), clang++)
 
 else
 
- FLAGS = -std=c++0x -fPIC -MD -Wall -W -Wno-unused-parameter
+ FLAGS = -std=c++11 -fPIC -MD -Wall -W -Wno-unused-parameter
 
  FLAGS_DEBUG = \
 	-Wcast-align \
@@ -166,6 +166,9 @@ rpm: clean
 	fi;
 
 .SUFFIXES: $(SUFFIXES) .cpp
+
+modernize:
+	for F in newbase/*.cpp; do echo $$F; clang-tidy $$F -fix -checks=-*,modernize-* -- $(CFLAGS) $(DEFINES) $(INCLUDES); done
 
 obj/%.o: %.cpp
 	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<

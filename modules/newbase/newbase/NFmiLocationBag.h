@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMILOCATIONBAG_H
-#define NFMILOCATIONBAG_H
+#pragma once
 
 #include "NFmiDataMatrix.h"
 #include "NFmiGeoTools.h"
@@ -16,8 +15,8 @@
 #include "NFmiSaveBaseFactory.h"
 #include "NFmiSize.h"
 #include <boost/math/constants/constants.hpp>
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 #include <set>
 
 class NFmiStation;
@@ -152,6 +151,5 @@ inline NFmiLocationBag *NFmiLocationBag::Clone(void) const { return new NFmiLoca
 // ----------------------------------------------------------------------
 
 inline bool NFmiLocationBag::IsLocations(void) const { return (!itsLocations.empty()); }
-#endif  // NFMILOCATIONBAG_H
 
 // ======================================================================

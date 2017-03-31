@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIAZIMUTHALAREA_H
-#define NFMIAZIMUTHALAREA_H
+#pragma once
 
-#include "NFmiArea.h"
 #include "NFmiAngle.h"
+#include "NFmiArea.h"
 
 //! Undocumented
 class _FMI_DLL NFmiAzimuthalArea : public NFmiArea
@@ -183,6 +182,5 @@ inline double NFmiAzimuthalArea::YScaleFactor(void) const { return itsYScaleFact
 // ----------------------------------------------------------------------
 
 inline const char* NFmiAzimuthalArea::ClassName(void) const { return "NFmiAzimuthalArea"; }
-#endif  // NFMIAZIMUTHALAREA_H
 
 // ======================================================================

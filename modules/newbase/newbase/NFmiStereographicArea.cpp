@@ -77,7 +77,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiStereographicArea::NFmiStereographicArea(void) {}
+NFmiStereographicArea::NFmiStereographicArea() = default;
 // ----------------------------------------------------------------------
 /*!
  * Copy constructor
@@ -87,9 +87,8 @@ NFmiStereographicArea::NFmiStereographicArea(void) {}
 // ----------------------------------------------------------------------
 
 NFmiStereographicArea::NFmiStereographicArea(const NFmiStereographicArea &theStereographicArea)
-    : NFmiAzimuthalArea(theStereographicArea)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -300,7 +299,7 @@ double NFmiStereographicArea::CalcDelta(const double xyDistance) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiStereographicArea::DistanceFromPerspectivePointToCenterOfEarth(void) const
+double NFmiStereographicArea::DistanceFromPerspectivePointToCenterOfEarth() const
 {
   // Distance (in world-coordinate meters) for stereographic projection.
   // See details in ref. [2] p. 13.
@@ -352,7 +351,7 @@ NFmiArea *NFmiStereographicArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiStereographicArea::Clone(void) const { return new NFmiStereographicArea(*this); }
+NFmiArea *NFmiStereographicArea::Clone() const { return new NFmiStereographicArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -364,11 +363,8 @@ NFmiArea *NFmiStereographicArea::Clone(void) const { return new NFmiStereographi
  */
 // ----------------------------------------------------------------------
 
-NFmiStereographicArea &NFmiStereographicArea::operator=(const NFmiStereographicArea &theArea)
-{
-  NFmiAzimuthalArea::operator=(theArea);
-  return *this;
-}
+NFmiStereographicArea &NFmiStereographicArea::operator=(const NFmiStereographicArea &theArea) =
+    default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -465,7 +461,7 @@ NFmiArea *NFmiStereographicArea::CreateNewArea(const NFmiRect &theRect) const
   return area;
 }
 
-const std::string NFmiStereographicArea::AreaStr(void) const
+const std::string NFmiStereographicArea::AreaStr() const
 {
   std::ostringstream out;
   out << "stereographic," << CentralLongitude() << ',' << CentralLatitude() << ','
@@ -514,27 +510,27 @@ const std::string NFmiStereographicArea::WKT() const
 
   if (itsCentralLatitude.Value() != 90)
   {
-    ret << std::setprecision(16) << "PROJCS[\"FMI_Stereographic\","
-        << "GEOGCS[\"FMI_Sphere\","
-        << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-        << "PRIMEM[\"Greenwich\",0],"
-        << "UNIT[\"Degree\",0.0174532925199433]],"
-        << "PROJECTION[\"Stereographic\"],"
-        << "PARAMETER[\"latitude_of_origin\"," << itsCentralLatitude.Value() << "],"
-        << "PARAMETER[\"central_meridian\"," << itsCentralLongitude << "],"
-        << "UNIT[\"Metre\",1.0]]";
+    ret << std::setprecision(16) << R"(PROJCS["FMI_Stereographic",)"
+        << R"(GEOGCS["FMI_Sphere",)"
+        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+        << R"(PRIMEM["Greenwich",0],)"
+        << R"(UNIT["Degree",0.0174532925199433]],)"
+        << R"(PROJECTION["Stereographic"],)"
+        << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
+        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+        << R"(UNIT["Metre",1.0]])";
   }
   else
   {
-    ret << std::setprecision(16) << "PROJCS[\"FMI_Polar_Stereographic\","
-        << "GEOGCS[\"FMI_Sphere\","
-        << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-        << "PRIMEM[\"Greenwich\",0],"
-        << "UNIT[\"Degree\",0.0174532925199433]],"
-        << "PROJECTION[\"Polar_Stereographic\"],"
-        << "PARAMETER[\"latitude_of_origin\"," << itsTrueLatitude.Value() << "],"
-        << "PARAMETER[\"central_meridian\"," << itsCentralLongitude << "],"
-        << "UNIT[\"Metre\",1.0]]";
+    ret << std::setprecision(16) << R"(PROJCS["FMI_Polar_Stereographic",)"
+        << R"(GEOGCS["FMI_Sphere",)"
+        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+        << R"(PRIMEM["Greenwich",0],)"
+        << R"(UNIT["Degree",0.0174532925199433]],)"
+        << R"(PROJECTION["Polar_Stereographic"],)"
+        << R"(PARAMETER["latitude_of_origin",)" << itsTrueLatitude.Value() << "],"
+        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+        << R"(UNIT["Metre",1.0]])";
   }
   return ret.str();
 }

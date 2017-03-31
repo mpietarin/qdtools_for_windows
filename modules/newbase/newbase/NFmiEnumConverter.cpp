@@ -48,10 +48,10 @@
  */
 // ======================================================================
 
-#include "NFmiDef.h"
 #include "NFmiEnumConverter.h"
-#include "NFmiTiesaaAlueet.h"
+#include "NFmiDef.h"
 #include "NFmiPressMasks.h"
+#include "NFmiTiesaaAlueet.h"
 
 #define PARAMINSERT(A, B) theData[A] = (B)
 
@@ -65,7 +65,7 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiEnumConverter::~NFmiEnumConverter() {}
+NFmiEnumConverter::~NFmiEnumConverter() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -101,7 +101,7 @@ int NFmiEnumConverter::ToEnum(const char *s)
 {
   EnumTableInit();
 
-  storage_type::iterator iter = itsData.find(s);
+  auto iter = itsData.find(s);
 
   if (iter == itsData.end())
     return itsBadEnum;
@@ -118,7 +118,7 @@ int NFmiEnumConverter::ToEnum(const char *s)
 const std::string NFmiEnumConverter::ToString(int theValue)
 {
   const char *ptr = ToCharPtr(theValue);
-  if (ptr == NULL)
+  if (ptr == nullptr)
     return "";
   else
     return ptr;
@@ -144,11 +144,11 @@ const char *NFmiEnumConverter::ToCharPtr(int theName)
 {
   EnumTableInit();
 
-  for (storage_type::iterator iter = itsData.begin(); iter != itsData.end(); ++iter)
+  for (auto &iter : itsData)
   {
-    if (iter->second == theName) return iter->first;
+    if (iter.second == theName) return iter.first;
   }
-  return NULL;
+  return nullptr;
 }
 
 /* Was (AKa 9-Apr-09):
@@ -189,7 +189,7 @@ list<string> NFmiEnumConverter::Names()
   storage_type::const_iterator iter;
 
   for (iter = itsData.begin(); iter != itsData.end(); ++iter)
-    out.push_back(iter->first);
+    out.emplace_back(iter->first);
 
   return out;
 }
@@ -385,6 +385,8 @@ static void InitParamNames(NFmiEnumConverter::storage_type &theData)
   PARAMINSERT("DewPointF97.5", kFmiDewPointF97_5);
   PARAMINSERT("DewPointF99", kFmiDewPointF99);
   PARAMINSERT("DewPointF100", kFmiDewPointF100);
+  PARAMINSERT("DifferentialPhase", kFmiDifferentialPhase);
+  PARAMINSERT("DifferentialReflectivity", kFmiDifferentialReflectivity);
   PARAMINSERT("DivergenceAbsolute", kFmiDivergenceAbsolute);
   PARAMINSERT("DivergenceRelative", kFmiDivergenceRelative);
   PARAMINSERT("DragCoefficient", kFmiDragCoefficient);
@@ -848,12 +850,18 @@ static void InitParamNames(NFmiEnumConverter::storage_type &theData)
   PARAMINSERT("ProbabilityOfColdLimit3", kFmiProbabilityOfColdLimit3);
   PARAMINSERT("ProbabilityOfColdLimit4", kFmiProbabilityOfColdLimit4);
   PARAMINSERT("ProbabilityOfColdLimit5", kFmiProbabilityOfColdLimit5);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit1", kFmiProbabilityOfConvectivePrecipitationLimit1);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit2", kFmiProbabilityOfConvectivePrecipitationLimit2);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit3", kFmiProbabilityOfConvectivePrecipitationLimit3);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit4", kFmiProbabilityOfConvectivePrecipitationLimit4);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit5", kFmiProbabilityOfConvectivePrecipitationLimit5);
-  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit6", kFmiProbabilityOfConvectivePrecipitationLimit6);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit1",
+              kFmiProbabilityOfConvectivePrecipitationLimit1);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit2",
+              kFmiProbabilityOfConvectivePrecipitationLimit2);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit3",
+              kFmiProbabilityOfConvectivePrecipitationLimit3);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit4",
+              kFmiProbabilityOfConvectivePrecipitationLimit4);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit5",
+              kFmiProbabilityOfConvectivePrecipitationLimit5);
+  PARAMINSERT("ProbabilityOfConvectivePrecipitationLimit6",
+              kFmiProbabilityOfConvectivePrecipitationLimit6);
   PARAMINSERT("ProbabilityOfGustLimit1", kFmiProbabilityOfGustLimit1);
   PARAMINSERT("ProbabilityOfGustLimit2", kFmiProbabilityOfGustLimit2);
   PARAMINSERT("ProbabilityOfGustLimit3", kFmiProbabilityOfGustLimit3);
@@ -996,6 +1004,7 @@ static void InitParamNames(NFmiEnumConverter::storage_type &theData)
   PARAMINSERT("RainWaterMixingRatio", kFmiRainWaterMixingRatio);
   PARAMINSERT("RawRadarData", kFmiRawRadarData);
   PARAMINSERT("Reflectivity", kFmiReflectivity);
+  PARAMINSERT("ReflectivityCorrelation", kFmiReflectivityCorrelation);
   PARAMINSERT("RidgeIceConcentration", kFmiRidgeIceConcentration);
   PARAMINSERT("RoadCondition", kFmiRoadCondition);
   PARAMINSERT("RoadConditionAlternative", kFmiRoadConditionAlternative);
@@ -1065,6 +1074,7 @@ static void InitParamNames(NFmiEnumConverter::storage_type &theData)
   PARAMINSERT("SevereFrostProbability", kFmiSevereFrostProbability);
   PARAMINSERT("ShipDirection", kFmiShipDirection);
   PARAMINSERT("ShipSpeed", kFmiShipSpeed);
+  PARAMINSERT("SignalQualityIndex", kFmiSignalQualityIndex);
   PARAMINSERT("SigWaveHeight", kFmiSigWaveHeight);
   PARAMINSERT("SigWaveHeightBandB", kFmiSigWaveHeightBandB);
   PARAMINSERT("SigWaveHeightBandC", kFmiSigWaveHeightBandC);
@@ -1164,6 +1174,7 @@ static void InitParamNames(NFmiEnumConverter::storage_type &theData)
   PARAMINSERT("SoundingStormRelativeHelicity1km", kFmiSoundingSRH0_1km);
   PARAMINSERT("SoundingWindSpeed1500m", kFmiSoundingWS1500m);
   PARAMINSERT("SoundingThetaE3km", kFmiSoundingThetaE0_3km);
+  PARAMINSERT("SpecificDifferentialPhase", kFmiSpecificDifferentialPhase);
   PARAMINSERT("SpecificHumidity", kFmiSpecificHumidity);
   PARAMINSERT("SpecificHumidityF0", kFmiSpecificHumidityF0);
   PARAMINSERT("SpecificHumidityF1", kFmiSpecificHumidityF1);

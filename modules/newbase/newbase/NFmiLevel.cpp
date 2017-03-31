@@ -23,28 +23,28 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiLevel::~NFmiLevel(void) {}
+NFmiLevel::~NFmiLevel() = default;
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiLevel::LevelTypeId(void) const { return GetIdent(); }
+unsigned long NFmiLevel::LevelTypeId() const { return GetIdent(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-float NFmiLevel::LevelValue(void) const { return itsLevelValue; }
+float NFmiLevel::LevelValue() const { return itsLevelValue; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-FmiLevelType NFmiLevel::LevelType(void) const { return FmiLevelType(GetIdent()); }
+FmiLevelType NFmiLevel::LevelType() const { return FmiLevelType(GetIdent()); }
 // ----------------------------------------------------------------------
 /*!
  * Equality comparison
@@ -73,14 +73,14 @@ bool NFmiLevel::operator<(const NFmiLevel& theLevel) const
  */
 // ----------------------------------------------------------------------
 
-const char* NFmiLevel::ClassName(void) const { return "NFmiLevel"; }
+const char* NFmiLevel::ClassName() const { return "NFmiLevel"; }
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiLevel::NFmiLevel(void) : NFmiIndividual(), itsLevelValue(kFloatMissing) {}
+NFmiLevel::NFmiLevel() : NFmiIndividual(), itsLevelValue(kFloatMissing) {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -135,13 +135,7 @@ NFmiLevel::NFmiLevel(const NFmiLevel& theLevel)
  */
 // ----------------------------------------------------------------------
 
-NFmiLevel& NFmiLevel::operator=(const NFmiLevel& theLevel)
-{
-  NFmiIndividual::operator=(theLevel);
-  itsLevelValue = theLevel.itsLevelValue;
-
-  return *this;
-}
+NFmiLevel& NFmiLevel::operator=(const NFmiLevel& theLevel) = default;
 
 // ----------------------------------------------------------------------
 /*!

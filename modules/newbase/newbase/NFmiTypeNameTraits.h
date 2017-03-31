@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMITYPENAMETRAITS_H
-#define NFMITYPENAMETRAITS_H
+#pragma once
 
 #include <string>
 
@@ -39,7 +38,5 @@ SPECIALIZE(bool, "bool")
 SPECIALIZE(float, "float")
 SPECIALIZE(double, "double")
 }
-
-#endif  // NFMITYPENAMETRAITS_H
 
 // ======================================================================

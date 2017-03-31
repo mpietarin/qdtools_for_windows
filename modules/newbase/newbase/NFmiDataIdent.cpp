@@ -54,10 +54,10 @@ NFmiDataIdent::NFmiDataIdent(const NFmiParam &theParam,
       fContainsIndividualParams(containsIndividualParams),
       fIsDataParam(isDataParam),
       fHasDataParams(hasDataParam),
-      itsDataParams(theSubParamBag ? new NFmiParamBag(*theSubParamBag) : 0),
-      itsSecondaryProducers(0),
-      itsSecondaryProducerIterator(0),
-      itsCurrentSecondaryProducer(0)
+      itsDataParams(theSubParamBag ? new NFmiParamBag(*theSubParamBag) : nullptr),
+      itsSecondaryProducers(nullptr),
+      itsSecondaryProducerIterator(nullptr),
+      itsCurrentSecondaryProducer(nullptr)
 {
   if (theSecondaryProducerList && theSecondaryProducerList->NumberOfItems() > 0)
   {
@@ -90,10 +90,10 @@ NFmiDataIdent::NFmiDataIdent(const NFmiDataIdent &theDataIdent)
       fIsDataParam(theDataIdent.fIsDataParam),
       fHasDataParams(theDataIdent.fHasDataParams),
       itsDataParams(theDataIdent.itsDataParams ? new NFmiParamBag(*(theDataIdent.itsDataParams))
-                                               : 0),
-      itsSecondaryProducers(0),
-      itsSecondaryProducerIterator(0),
-      itsCurrentSecondaryProducer(0)
+                                               : nullptr),
+      itsSecondaryProducers(nullptr),
+      itsSecondaryProducerIterator(nullptr),
+      itsCurrentSecondaryProducer(nullptr)
 {
   if (theDataIdent.itsSecondaryProducers && theDataIdent.itsSecondaryProducers->NumberOfItems() > 0)
   {
@@ -114,7 +114,7 @@ NFmiDataIdent::NFmiDataIdent(const NFmiDataIdent &theDataIdent)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataIdent::Destroy(void)
+void NFmiDataIdent::Destroy()
 {
   delete itsParam;
   delete itsProducer;
@@ -211,7 +211,8 @@ NFmiDataIdent &NFmiDataIdent::operator=(const NFmiDataIdent &theDataIdent)
   fContainsIndividualParams = theDataIdent.fContainsIndividualParams;
   fIsDataParam = theDataIdent.fIsDataParam;
   fHasDataParams = theDataIdent.fHasDataParams;
-  itsDataParams = theDataIdent.itsDataParams ? new NFmiParamBag(*(theDataIdent.itsDataParams)) : 0;
+  itsDataParams =
+      theDataIdent.itsDataParams ? new NFmiParamBag(*(theDataIdent.itsDataParams)) : nullptr;
   if (theDataIdent.itsSecondaryProducers && theDataIdent.itsSecondaryProducers->NumberOfItems() > 0)
   {
     itsSecondaryProducers = new NFmiVoidPtrList;
@@ -226,9 +227,9 @@ NFmiDataIdent &NFmiDataIdent::operator=(const NFmiDataIdent &theDataIdent)
   else  // 24.2.1999/Marko Lisäsin else haaran, koska muuten kaatuu jos on ensin ollut
         // dataparamsseja ja sitten sijoitetaan identti missä ei ole dataparamsseja
   {
-    itsSecondaryProducers = 0;
-    itsSecondaryProducerIterator = 0;
-    itsCurrentSecondaryProducer = 0;
+    itsSecondaryProducers = nullptr;
+    itsSecondaryProducerIterator = nullptr;
+    itsCurrentSecondaryProducer = nullptr;
   }
   return *this;
 }
@@ -349,10 +350,7 @@ std::istream &NFmiDataIdent::Read(std::istream &file)
 // seuraavia metodeja ei saa inline:ksi, koska NFmiDataIdent ja NFmiParamBag
 // eivät voi include:oida toisiaan ristiin ja NFmiParambag includoi jo NFmiDataIdent:in
 
-const NFmiDataIdent &NFmiDataIdent::FirstDataParam(void) const
-{
-  return *itsDataParams->GetFirst();
-}
+const NFmiDataIdent &NFmiDataIdent::FirstDataParam() const { return *itsDataParams->GetFirst(); }
 
 // ----------------------------------------------------------------------
 /*!
@@ -360,21 +358,21 @@ const NFmiDataIdent &NFmiDataIdent::FirstDataParam(void) const
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataIdent::ResetDataParams(void) { itsDataParams->Reset(); }
+void NFmiDataIdent::ResetDataParams() { itsDataParams->Reset(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-NFmiDataIdent &NFmiDataIdent::CurrentDataParam(void) { return *(itsDataParams->Current()); }
+NFmiDataIdent &NFmiDataIdent::CurrentDataParam() { return *(itsDataParams->Current()); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataIdent::NextDataParam(void) { return itsDataParams->Next(); }
+bool NFmiDataIdent::NextDataParam() { return itsDataParams->Next(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
@@ -383,7 +381,7 @@ bool NFmiDataIdent::NextDataParam(void) { return itsDataParams->Next(); }
 
 // HUOM!! ei mene yli viimeisen vaan menee viimeiseen
 
-bool NFmiDataIdent::ResetLastDataParams(void)
+bool NFmiDataIdent::ResetLastDataParams()
 {
   return itsDataParams->SetCurrentIndex(itsDataParams->GetSize() - 1);
 }
@@ -394,7 +392,7 @@ bool NFmiDataIdent::ResetLastDataParams(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataIdent::PreviousDataParam(void) { return itsDataParams->Previous(); }
+bool NFmiDataIdent::PreviousDataParam() { return itsDataParams->Previous(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
@@ -420,7 +418,7 @@ void NFmiDataIdent::SetActiveDataParam(const NFmiParam &theParam, bool isActive)
  */
 // ----------------------------------------------------------------------
 
-NFmiDataIdent &NFmiDataIdent::CurrentActiveDataParam(void) { return *(itsDataParams->Current()); }
+NFmiDataIdent &NFmiDataIdent::CurrentActiveDataParam() { return *(itsDataParams->Current()); }
 // ----------------------------------------------------------------------
 /*!
  * \param theParam Undocumented
@@ -471,14 +469,14 @@ void NFmiDataIdent::SetIncrementalType(bool newState)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataIdent::ResetSecondaryProducer(void) { itsSecondaryProducerIterator->Reset(); }
+void NFmiDataIdent::ResetSecondaryProducer() { itsSecondaryProducerIterator->Reset(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-NFmiProducer *NFmiDataIdent::CurrentSecondaryProducer(void) const
+NFmiProducer *NFmiDataIdent::CurrentSecondaryProducer() const
 {
   return static_cast<NFmiProducer *>(itsCurrentSecondaryProducer->GetVoidPtr());
 }
@@ -489,7 +487,7 @@ NFmiProducer *NFmiDataIdent::CurrentSecondaryProducer(void) const
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataIdent::NextSecondaryProducer(void)
+bool NFmiDataIdent::NextSecondaryProducer()
 {
   return itsSecondaryProducerIterator->NextPtr(itsCurrentSecondaryProducer);
 }

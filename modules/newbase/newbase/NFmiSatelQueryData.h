@@ -12,8 +12,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISATELQUERYDATA_H
-#define NFMISATELQUERYDATA_H
+#pragma once
 
 #include "NFmiQueryData.h"
 #include "NFmiSatel.h"
@@ -175,7 +174,5 @@ inline NFmiQueryData *NFmiSatelQueryData::Clone(void)
 
   return static_cast<NFmiQueryData *>(data);
 }
-
-#endif  // NFMISATELQUERYDATA_H
 
 // ======================================================================

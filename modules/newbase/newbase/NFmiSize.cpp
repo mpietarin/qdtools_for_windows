@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiSize::NFmiSize(void) : itsSize(0), itsIndex(-1) {}
+NFmiSize::NFmiSize() : itsSize(0), itsIndex(-1) {}
 // ----------------------------------------------------------------------
 /*!
  * Constructor
@@ -54,9 +54,7 @@ NFmiSize::NFmiSize(unsigned long theIndex, unsigned long theSize)
  */
 // ----------------------------------------------------------------------
 
-NFmiSize::NFmiSize(const NFmiSize& theSize) : itsSize(theSize.itsSize), itsIndex(theSize.itsIndex)
-{
-}
+NFmiSize::NFmiSize(const NFmiSize& theSize) = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -64,7 +62,7 @@ NFmiSize::NFmiSize(const NFmiSize& theSize) : itsSize(theSize.itsSize), itsIndex
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSize::First(void)
+bool NFmiSize::First()
 {
   Reset();
   return Next();
@@ -76,21 +74,21 @@ bool NFmiSize::First(void)
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiSize::GetSize(void) const { return itsSize; }
+unsigned long NFmiSize::GetSize() const { return itsSize; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-long NFmiSize::CurrentIndex(void) const { return itsIndex; }
+long NFmiSize::CurrentIndex() const { return itsIndex; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSize::Previous(void) { return --itsIndex >= 0; }
+bool NFmiSize::Previous() { return --itsIndex >= 0; }
 // ----------------------------------------------------------------------
 /*!
  * \param newSize Undocumented
@@ -104,14 +102,14 @@ void NFmiSize::SetSize(unsigned long newSize) { itsSize = newSize; }
  */
 // ----------------------------------------------------------------------
 
-const char* NFmiSize::ClassName(void) const { return "NFmiSize"; }
+const char* NFmiSize::ClassName() const { return "NFmiSize"; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiSize::Next(void)
+bool NFmiSize::Next()
 {
   if (itsIndex + 1 < static_cast<long>(itsSize))
   {

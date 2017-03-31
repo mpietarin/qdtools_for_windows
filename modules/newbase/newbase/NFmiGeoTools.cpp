@@ -13,8 +13,8 @@
 
 #include "NFmiGeoTools.h"
 #include "NFmiGlobals.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace NFmiGeoTools
 {

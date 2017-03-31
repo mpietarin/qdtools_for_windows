@@ -21,7 +21,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierDescriptor::~NFmiDataModifierDescriptor(void)
+NFmiDataModifierDescriptor::~NFmiDataModifierDescriptor()
 {
   delete itsSystematicModifiers;  // Omistaa listan
   delete itsVarianceModifiers;    // Omistaa listan
@@ -33,8 +33,8 @@ NFmiDataModifierDescriptor::~NFmiDataModifierDescriptor(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierDescriptor::NFmiDataModifierDescriptor(void)
-    : NFmiDataDescriptor(), itsSystematicModifiers(0), itsVarianceModifiers(0)
+NFmiDataModifierDescriptor::NFmiDataModifierDescriptor()
+    : NFmiDataDescriptor(), itsSystematicModifiers(nullptr), itsVarianceModifiers(nullptr)
 {
 }
 
@@ -49,7 +49,7 @@ NFmiDataModifierDescriptor::NFmiDataModifierDescriptor(void)
 NFmiParamDataModifier* NFmiDataModifierDescriptor::VarianceModifier(const NFmiDataIdent& theParam,
                                                                     const NFmiLevel* theLevel)
 {
-  NFmiParamDataModifier* modifier = 0;
+  NFmiParamDataModifier* modifier = nullptr;
   if (itsVarianceModifiers)
     if (itsVarianceModifiers->Find(theParam, theLevel)) modifier = itsVarianceModifiers->Current();
   return modifier;
@@ -74,7 +74,7 @@ void NFmiDataModifierDescriptor::SetVarianceModifiers(NFmiParamDataModifierList*
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDataModifierList* NFmiDataModifierDescriptor::GetVarianceModifiers(void)
+NFmiParamDataModifierList* NFmiDataModifierDescriptor::GetVarianceModifiers()
 {
   return itsVarianceModifiers;
 }
@@ -85,21 +85,21 @@ NFmiParamDataModifierList* NFmiDataModifierDescriptor::GetVarianceModifiers(void
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiDataModifierDescriptor::Index(void) const { return 0; }
+unsigned long NFmiDataModifierDescriptor::Index() const { return 0; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-unsigned long NFmiDataModifierDescriptor::Size(void) const { return 0; }
+unsigned long NFmiDataModifierDescriptor::Size() const { return 0; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataModifierDescriptor::IsActive(void) const { return false; }
+bool NFmiDataModifierDescriptor::IsActive() const { return false; }
 // ----------------------------------------------------------------------
 /*!
  * \param theActivityState Undocumented
@@ -114,7 +114,7 @@ bool NFmiDataModifierDescriptor::SetActivity(bool /* theActivityState*/) { retur
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataModifierDescriptor::NextActive(void) { return false; }
+bool NFmiDataModifierDescriptor::NextActive() { return false; }
 // ----------------------------------------------------------------------
 /*!
  * \param file Undocumented

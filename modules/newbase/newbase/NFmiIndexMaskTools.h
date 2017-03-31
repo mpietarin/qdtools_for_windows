@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIINDEXMASKTOOLS_H
-#define NFMIINDEXMASKTOOLS_H
+#pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 class NFmiIndexMask;
 class NFmiPoint;
 class NFmiGrid;
@@ -62,7 +61,5 @@ const std::string MaskString(const NFmiIndexMask &theMask,
                              unsigned long theHeight);
 
 }  // namespace NFmiIndexMaskTools
-
-#endif  // NFMIINDEXMASKTOOLS_H
 
 // ======================================================================

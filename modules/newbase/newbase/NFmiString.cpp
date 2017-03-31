@@ -22,16 +22,16 @@
 
 #include <boost/functional/hash.hpp>
 
-#include <cstdlib>
-#include <string>
-#include <cstdio>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
+#include <string>
 
 #ifdef UNIX
-#include <locale.h>
+#include <clocale>
 #endif
 
 using namespace std;
@@ -72,7 +72,7 @@ NFmiString::NFmiString(const char *aText, unsigned long len)
  */
 // ----------------------------------------------------------------------
 
-NFmiString::NFmiString(void) : NFmiSortable(), fChar(), fLength(), fReservedLength(-1)
+NFmiString::NFmiString() : NFmiSortable(), fChar(), fLength(), fReservedLength(-1)
 {
   Set(reinterpret_cast<const unsigned char *>(""), 0);
 }
@@ -155,7 +155,7 @@ NFmiString::NFmiString(const std::string &str)
  */
 // ----------------------------------------------------------------------
 
-NFmiString::~NFmiString(void) { delete[] fChar; }
+NFmiString::~NFmiString() { delete[] fChar; }
 // ----------------------------------------------------------------------
 /*!
  * \param fFmi Undocumented
@@ -218,7 +218,7 @@ NFmiString &NFmiString::Add(const unsigned char *aChar)
   if (fReservedLength <= static_cast<long>(fLength + strlen(reinterpret_cast<const char *>(aChar))))
   {
     fReservedLength = fLength + strlen(reinterpret_cast<const char *>(aChar)) + 1;
-    unsigned char *aHelp = new unsigned char[fReservedLength];
+    auto *aHelp = new unsigned char[fReservedLength];
     strcpy(reinterpret_cast<char *>(aHelp), reinterpret_cast<char *>(fChar));
     delete[] static_cast<unsigned char *>(fChar);
     fChar = aHelp;
@@ -385,7 +385,7 @@ char *NFmiString::GetCharsPtr(unsigned long firstChar, unsigned long length) con
   SizeCheck(firstChar);
   SizeCheck(firstChar + length - 1);
 
-  NFmiString *back = new NFmiString(length);
+  auto *back = new NFmiString(length);
 
   firstChar--;
   for (unsigned long i = 0; i < back->fLength; i++)
@@ -477,7 +477,7 @@ unsigned long NFmiString::Search(const unsigned char *searChar, unsigned long fr
   findChar = reinterpret_cast<unsigned char *>(strstr(reinterpret_cast<char *>(fChar + fromPos - 1),
                                                       reinterpret_cast<const char *>(searChar)));
 
-  if (findChar == NULL) return 0;
+  if (findChar == nullptr) return 0;
 
   return static_cast<unsigned long>(findChar - fChar + 1);
 }
@@ -492,7 +492,7 @@ unsigned long NFmiString::Search(const unsigned char *searChar, unsigned long fr
 unsigned long NFmiString::SearchLast(const unsigned char *searChar) const
 {
   unsigned char *findChar;
-  unsigned char *lastChar = NULL;
+  unsigned char *lastChar = nullptr;
 
   findChar = reinterpret_cast<unsigned char *>(
       strstr(reinterpret_cast<char *>(fChar), reinterpret_cast<const char *>(searChar)));
@@ -504,7 +504,7 @@ unsigned long NFmiString::SearchLast(const unsigned char *searChar) const
         strstr(reinterpret_cast<char *>(findChar + 1), reinterpret_cast<const char *>(searChar)));
   }
 
-  if (lastChar == NULL)
+  if (lastChar == nullptr)
   {
     return 0;
   }
@@ -639,7 +639,7 @@ void NFmiString::UpperCase(void)
   setlocale(LC_ALL, "C");
 }
 #else
-void NFmiString::UpperCase(void)
+void NFmiString::UpperCase()
 {
   char *p;
   setlocale(LC_ALL, "Finnish");
@@ -666,7 +666,7 @@ void NFmiString::LowerCase(void)
   setlocale(LC_ALL, "C");
 }
 #else
-void NFmiString::LowerCase(void)
+void NFmiString::LowerCase()
 {
   char *p;
   setlocale(LC_ALL, "Finnish");
@@ -696,7 +696,7 @@ void NFmiString::FirstCharToUpper(unsigned long theUpperIndex)
     char *theChar = ::_strupr((char *)theLetter);
 
 #else
-    char *theChar = static_cast<char *>(theLetter);
+    auto *theChar = static_cast<char *>(theLetter);
     *theChar = toupper(*theChar);
 #endif
     fChar[theUpperIndex] = theChar[theUpperIndex];
@@ -710,7 +710,7 @@ void NFmiString::FirstCharToUpper(unsigned long theUpperIndex)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiString::FirstCharIsUpper(void) const
+bool NFmiString::FirstCharIsUpper() const
 {
   char c = fChar[0];
   if ((c >= 'A' && c <= 'Z') || c == '\304' || c == '\326' || c == '\305') return true;
@@ -772,7 +772,7 @@ bool NFmiString::Replace(const NFmiString &newChars, unsigned long fromIndex)
  */
 // ----------------------------------------------------------------------
 
-void NFmiString::RemoveExtraSpaces(void)
+void NFmiString::RemoveExtraSpaces()
 {
   NFmiString tmpStr;
   TrimR();
@@ -791,7 +791,7 @@ void NFmiString::RemoveExtraSpaces(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiString::FirstInWordToUpper(void)
+void NFmiString::FirstInWordToUpper()
 {
   LowerCase();
   FirstCharToUpper();

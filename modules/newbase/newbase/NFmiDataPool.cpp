@@ -13,15 +13,15 @@
 // ======================================================================
 
 #include "NFmiDataPool.h"
-#include "NFmiTransformList.h"
 #include "NFmiString.h"
+#include "NFmiTransformList.h"
 
-#include <stdexcept>
-#include <memory>
-#include <cmath>
 #include <algorithm>
-#include <fstream>
+#include <cmath>
 #include <cstring>
+#include <fstream>
+#include <memory>
+#include <stdexcept>
 // memcpy()
 
 using namespace std;
@@ -34,12 +34,12 @@ using namespace std;
  */
 // ----------------------------------------------------------------------
 
-NFmiDataPool::NFmiDataPool(void)
+NFmiDataPool::NFmiDataPool()
     : itsSize(0),
       itsIndex(-1),
-      itsData(0),
-      fFirst(0),
-      fLast(0),
+      itsData(nullptr),
+      fFirst(false),
+      fLast(false),
       itsMinValue(kFloatMissing),
       itsMaxValue(kFloatMissing),
       itsMissingValueIndex(),
@@ -61,9 +61,9 @@ NFmiDataPool::NFmiDataPool(void)
 NFmiDataPool::NFmiDataPool(const NFmiDataPool &theDataPool)
     : itsSize(theDataPool.itsSize),
       itsIndex(theDataPool.itsIndex),
-      itsData(0),
-      fFirst(0),
-      fLast(0),
+      itsData(nullptr),
+      fFirst(false),
+      fLast(false),
       itsMinValue(theDataPool.itsMinValue),
       itsMaxValue(theDataPool.itsMaxValue),
       itsMissingValueIndex(),
@@ -81,12 +81,12 @@ NFmiDataPool::NFmiDataPool(const NFmiDataPool &theDataPool)
  *
  */
 // ----------------------------------------------------------------------
-void NFmiDataPool::Destroy(void)
+void NFmiDataPool::Destroy()
 {
   if (itsData)
   {
     delete[] itsData;
-    itsData = 0;
+    itsData = nullptr;
   }
 }
 
@@ -344,7 +344,7 @@ bool NFmiDataPool::IsMissingValue(double theMissingValue)
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataPool::MinValue(void)
+double NFmiDataPool::MinValue()
 {
   if (fabs(itsMinValue) == kFloatMissing)  // Min and max have not been calculated yet
     CalcMinMaxValues();
@@ -356,7 +356,7 @@ double NFmiDataPool::MinValue(void)
  */
 // ----------------------------------------------------------------------
 
-double NFmiDataPool::MaxValue(void)
+double NFmiDataPool::MaxValue()
 {
   if (fabs(itsMaxValue) == kFloatMissing)  // Min and max have not been calculated yet
     CalcMinMaxValues();
@@ -369,7 +369,7 @@ double NFmiDataPool::MaxValue(void)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiDataPool::CalcMinMaxValues(void)
+bool NFmiDataPool::CalcMinMaxValues()
 {
   unsigned long saveIndex = itsIndex;
   double value;
@@ -513,7 +513,7 @@ const float *NFmiDataPool::Data(unsigned long theBeginIndex, unsigned long theNu
   // Also checks that at least 'theNumberOfItems' items can be safely read
   // starting from this location.
 
-  if (!IsInside(theBeginIndex) || !IsInside(theBeginIndex + theNumberOfItems - 1)) return 0;
+  if (!IsInside(theBeginIndex) || !IsInside(theBeginIndex + theNumberOfItems - 1)) return nullptr;
 
   return &(itsData[theBeginIndex]);
 }
@@ -536,7 +536,7 @@ bool NFmiDataPool::ReadBinaryData(unsigned long theNumber, const char *theFileNa
 
   itsSize = theNumber;
 
-  float *floatdata = new float[theNumber];
+  auto *floatdata = new float[theNumber];
 
   in.read(reinterpret_cast<char *>(floatdata), theNumber * sizeof(float));
 
@@ -593,7 +593,7 @@ bool NFmiDataPool::ReadTextData(unsigned long theNumber, const char *theFileName
   itsSize = theNumber;
   unsigned long i;
 
-  float *floatdata = new float[theNumber];
+  auto *floatdata = new float[theNumber];
 
   for (i = 0; i < theNumber; i++)
     in >> floatdata[i];
@@ -823,7 +823,7 @@ std::istream &NFmiDataPool::Read(std::istream &file)
  *
  */
 // ----------------------------------------------------------------------
-void NFmiDataPool::DoEndianByteSwap(void)
+void NFmiDataPool::DoEndianByteSwap()
 {
   if (fDoEndianByteSwap)  // tämä tieto on annettu ulkoa (qdata on kysynyt qinfolta, tarvitaanko
                           // swappaus)

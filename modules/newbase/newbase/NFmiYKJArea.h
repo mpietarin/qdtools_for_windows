@@ -5,11 +5,10 @@
  */
 // ======================================================================
 
-#ifndef NFMIYKJAREA_H
-#define NFMIYKJAREA_H
+#pragma once
 
-#include "NFmiKKJArea.h"
 #include "NFmiAngle.h"
+#include "NFmiKKJArea.h"
 
 //! Undocumented
 class _FMI_DLL NFmiYKJArea : public NFmiKKJArea
@@ -100,4 +99,3 @@ inline unsigned long NFmiYKJArea::ClassId(void) const { return kNFmiYKJArea; }
 // ----------------------------------------------------------------------
 
 inline const char* NFmiYKJArea::ClassName(void) const { return "NFmiYKJArea"; }
-#endif  //__NYKJ_H__

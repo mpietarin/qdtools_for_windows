@@ -5,8 +5,8 @@
  */
 // ======================================================================
 
-#include "NFmiTime.h"
 #include "NFmiStringTools.h"
+#include "NFmiTime.h"
 #include <regression/tframe.h>
 
 using namespace std;

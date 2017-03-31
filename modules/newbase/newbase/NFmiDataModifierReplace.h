@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERREPLACE_H
-#define NFMIDATAMODIFIERREPLACE_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 
@@ -22,7 +21,5 @@ class _FMI_DLL NFmiDataModifierReplace : public NFmiDataModifier
   float itsNewValue;
 
 };  // class NFmiDataModifierReplace
-
-#endif  // NFMIDATAMODIFIERREPLACE_H
 
 // ======================================================================

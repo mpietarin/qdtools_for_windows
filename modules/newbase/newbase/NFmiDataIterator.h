@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAITERATOR_H
-#define NFMIDATAITERATOR_H
+#pragma once
 
 #include "NFmiPoint.h"
 
@@ -76,6 +75,5 @@ inline void NFmiDataIterator::Mask(NFmiAreaMask* newMask) { itsMask = newMask; }
 // ----------------------------------------------------------------------
 
 inline bool NFmiDataIterator::MaskInUse(void) const { return fMaskInUse; }
-#endif  // NFMIDATAITERATOR_H
 
 // ======================================================================

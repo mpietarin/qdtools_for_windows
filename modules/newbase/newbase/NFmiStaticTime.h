@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMISTATICTIME_H
-#define NFMISTATICTIME_H
+#pragma once
 
 #include "NFmiSortable.h"
 #include "NFmiString.h"
@@ -178,6 +177,5 @@ inline const char* NFmiStaticTime::ClassName(void) const { return "NFmiStaticTim
 // ----------------------------------------------------------------------
 
 inline std::ostream& operator<<(std::ostream& os, const NFmiStaticTime& ob) { return ob.Write(os); }
-#endif  // NFMISTATICTIME_H
 
 // ======================================================================

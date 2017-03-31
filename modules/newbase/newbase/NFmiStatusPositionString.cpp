@@ -24,14 +24,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiStatusPositionString::~NFmiStatusPositionString(void) {}
+NFmiStatusPositionString::~NFmiStatusPositionString() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiStatusPositionString::NFmiStatusPositionString(void)
+NFmiStatusPositionString::NFmiStatusPositionString()
     : NFmiStatusString(), itsStartPosition(0), itsEndPosition(0)
 {
 }
@@ -84,11 +84,8 @@ NFmiStatusPositionString::NFmiStatusPositionString(const NFmiStatusString& theSt
 
 NFmiStatusPositionString::NFmiStatusPositionString(
     const NFmiStatusPositionString& theStatusPositionString)
-    : NFmiStatusString(theStatusPositionString),
-      itsStartPosition(theStatusPositionString.itsStartPosition),
-      itsEndPosition(theStatusPositionString.itsEndPosition)
-{
-}
+
+    = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -96,24 +93,21 @@ NFmiStatusPositionString::NFmiStatusPositionString(
  */
 // ----------------------------------------------------------------------
 
-long NFmiStatusPositionString::StartPosition(void) { return itsStartPosition; }
+long NFmiStatusPositionString::StartPosition() { return itsStartPosition; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-long NFmiStatusPositionString::EndPosition(void) { return itsEndPosition; }
+long NFmiStatusPositionString::EndPosition() { return itsEndPosition; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-NFmiString* NFmiStatusPositionString::Clone(void) const
-{
-  return new NFmiStatusPositionString(*this);
-}
+NFmiString* NFmiStatusPositionString::Clone() const { return new NFmiStatusPositionString(*this); }
 
 // ----------------------------------------------------------------------
 /*!
@@ -128,13 +122,7 @@ NFmiString* NFmiStatusPositionString::Clone(void) const
 // ----------------------------------------------------------------------
 
 NFmiStatusPositionString& NFmiStatusPositionString::operator=(
-    const NFmiStatusPositionString& theStatusPositionString)
-{
-  NFmiStatusString::operator=(theStatusPositionString);
-  itsStartPosition = theStatusPositionString.itsStartPosition;
-  itsEndPosition = theStatusPositionString.itsEndPosition;
-  return *this;
-}
+    const NFmiStatusPositionString& theStatusPositionString) = default;
 
 // ----------------------------------------------------------------------
 /*!

@@ -178,24 +178,24 @@
 // ======================================================================
 
 #include "NFmiSettingsImpl.h"
-#include "NFmiPreProcessor.h"
 #include "NFmiFileSystem.h"
+#include "NFmiPreProcessor.h"
 #include "NFmiStringTools.h"
 
 #include <boost/algorithm/string/trim.hpp>
 
-#include <list>
-#include <stdexcept>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <list>
 #include <sstream>
+#include <stdexcept>
 
 #define DEFAULT_FILE "smartmet.conf"
 
 using namespace std;
 
 // Static variable initializations
-NFmiSettingsImpl* NFmiSettingsImpl::itsInstance = 0;
+NFmiSettingsImpl* NFmiSettingsImpl::itsInstance = nullptr;
 bool NFmiSettingsImpl::itIsDestroyed = false;
 
 // Hidden internal methods and variables
@@ -309,12 +309,12 @@ std::string expand(const std::string& value,
       throw runtime_error("Missing " + delim2 + " while expanding value " + value);
     const string name = ret.substr(pos1 + delim1.size(), pos2 - pos1 - delim2.size() - 1);
 
-    map<string, string>::const_iterator it = data.find(name);
+    auto it = data.find(name);
     if (it == data.end())
     {
-      for (list<string>::const_iterator iter = namespaces.begin(); iter != namespaces.end(); ++iter)
+      for (const auto& iter : namespaces)
       {
-        const string newname = *iter + "::" + name;
+        const string newname = iter + "::" + name;
         it = data.find(newname);
         if (it != data.end()) break;
       }
@@ -343,14 +343,14 @@ std::string expand(const std::string& value,
  */
 // ----------------------------------------------------------------------
 
-NFmiSettingsImpl::NFmiSettingsImpl(void)
+NFmiSettingsImpl::NFmiSettingsImpl()
     : itsFilename(DEFAULT_FILE), itsData(), itIsInitialized(false), itsNamespaces()
 {
 #ifdef UNIX
-  itsSearchPath.push_back("/smartmet/cnf");
-  itsSearchPath.push_back("/fmi/conf");
-  itsSearchPath.push_back("/var/www/share/conf");
-  itsSearchPath.push_back(".");
+  itsSearchPath.emplace_back("/smartmet/cnf");
+  itsSearchPath.emplace_back("/fmi/conf");
+  itsSearchPath.emplace_back("/var/www/share/conf");
+  itsSearchPath.emplace_back(".");
 
 #else
   itsSearchPath.push_back("conf");
@@ -365,9 +365,9 @@ NFmiSettingsImpl::NFmiSettingsImpl(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiSettingsImpl::~NFmiSettingsImpl(void)
+NFmiSettingsImpl::~NFmiSettingsImpl()
 {
-  itsInstance = 0;  // the pointer is address of static, not by new()
+  itsInstance = nullptr;  // the pointer is address of static, not by new()
   itIsDestroyed = true;
 }
 
@@ -383,7 +383,7 @@ NFmiSettingsImpl::~NFmiSettingsImpl(void)
  */
 // ----------------------------------------------------------------------
 
-NFmiSettingsImpl& NFmiSettingsImpl::Instance(void)
+NFmiSettingsImpl& NFmiSettingsImpl::Instance()
 {
   if (!itsInstance)
   {
@@ -406,7 +406,7 @@ NFmiSettingsImpl& NFmiSettingsImpl::Instance(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiSettingsImpl::Create(void)
+void NFmiSettingsImpl::Create()
 {
   static NFmiSettingsImpl theSettings;
   NFmiSettingsImpl::itsInstance = &theSettings;
@@ -422,7 +422,7 @@ void NFmiSettingsImpl::Create(void)
  */
 // ----------------------------------------------------------------------
 
-void NFmiSettingsImpl::Die(void)
+void NFmiSettingsImpl::Die()
 {
   throw runtime_error("NFmiSettingsImpl detected a dead reference problem");
 }
@@ -506,7 +506,7 @@ void NFmiSettingsImpl::Set(const std::string& theName,
   const list<string> nonamespaces;
   const string expanded = expand(theValue, itsData, "$(", ")", nonamespaces);
 
-  DataType::iterator foundIter = itsData.find(theName);
+  auto foundIter = itsData.find(theName);
   if ((modifyOnlyExisting && foundIter == itsData.end()) ||
       (foundIter != itsData.end() && theValue == foundIter->second))
     return;  // Jos asetettavaa arvoa ei löydy asetuksista TAI sen arvo ei muutu, ei tehdä mitään
@@ -761,11 +761,9 @@ void NFmiSettingsImpl::Save() const
   // collect all files to be modified
 
   std::set<string> modified_files;
-  for (std::set<std::string>::iterator it = itsChangedVariables.begin();
-       it != itsChangedVariables.end();
-       ++it)
+  for (const auto& itsChangedVariable : itsChangedVariables)
   {
-    FileMap::iterator foundIter = itsFilenames.find(*it);
+    auto foundIter = itsFilenames.find(itsChangedVariable);
     if (foundIter != itsFilenames.end())
       modified_files.insert(foundIter->second);  // laitetaan vain niiden tiedostojen nimet mukaan,
                                                  // missä oli muuttuneita muuttujia
@@ -777,27 +775,24 @@ void NFmiSettingsImpl::Save() const
   */
 
   // then process the files one by one
-  for (std::set<string>::const_iterator it = modified_files.begin(); it != modified_files.end();
-       ++it)
+  for (const auto& modified_file : modified_files)
   {
     // collect all modified variables in this file
     std::set<string> modified_variables;
     for (FileMap::const_iterator jt = itsFilenames.begin(); jt != itsFilenames.end(); ++jt)
-      if (*it == jt->second)
+      if (modified_file == jt->second)
         if (itsChangedVariables.find(jt->first) != itsChangedVariables.end())
           modified_variables.insert(jt->first);
 
     // read old contents
-    string contents = readfile(*it);
+    string contents = readfile(modified_file);
 
     // perform replacements
-    for (std::set<string>::const_iterator vt = modified_variables.begin();
-         vt != modified_variables.end();
-         ++vt)
-      replace_assignment(contents, *vt, Value(*vt));
+    for (const auto& modified_variable : modified_variables)
+      replace_assignment(contents, modified_variable, Value(modified_variable));
 
     // save new contents
-    savefile(*it, contents);
+    savefile(modified_file, contents);
   }
 
   // indicate that all variables now have unchanged state compared to file

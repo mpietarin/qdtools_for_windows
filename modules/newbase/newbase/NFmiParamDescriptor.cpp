@@ -13,8 +13,8 @@
 // ======================================================================
 
 #include "NFmiParamDescriptor.h"
-#include "NFmiParamBag.h"
 #include "NFmiDataDescriptor.h"
+#include "NFmiParamBag.h"
 #include <cassert>
 
 #include "NFmiVersion.h"
@@ -25,7 +25,8 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDescriptor::NFmiParamDescriptor(void) : itsParamBag(0), itsActivity(0), fInterpolate(false)
+NFmiParamDescriptor::NFmiParamDescriptor()
+    : itsParamBag(nullptr), itsActivity(nullptr), fInterpolate(false)
 {
 }
 
@@ -39,7 +40,7 @@ NFmiParamDescriptor::NFmiParamDescriptor(void) : itsParamBag(0), itsActivity(0),
 // ----------------------------------------------------------------------
 
 NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamBag &theParamBag, bool interpolate)
-    : itsParamBag(new NFmiParamBag(theParamBag)), itsActivity(0), fInterpolate(interpolate)
+    : itsParamBag(new NFmiParamBag(theParamBag)), itsActivity(nullptr), fInterpolate(interpolate)
 {
   itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];
   for (int i = 0; i < static_cast<int>(itsParamBag->GetSize()); i++)
@@ -56,9 +57,10 @@ NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamBag &theParamBag, bool i
 
 NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamDescriptor &theParamDescriptor)
     : NFmiDataDescriptor(),
-      itsParamBag(
-          theParamDescriptor.itsParamBag ? new NFmiParamBag(*(theParamDescriptor.itsParamBag)) : 0),
-      itsActivity(0),
+      itsParamBag(theParamDescriptor.itsParamBag
+                      ? new NFmiParamBag(*(theParamDescriptor.itsParamBag))
+                      : nullptr),
+      itsActivity(nullptr),
       fInterpolate(theParamDescriptor.fInterpolate)
 {
   itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];  // 5.3.1997/Marko
@@ -72,17 +74,17 @@ NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamDescriptor &theParamDesc
  */
 // ----------------------------------------------------------------------
 
-void NFmiParamDescriptor::Destroy(void)
+void NFmiParamDescriptor::Destroy()
 {
-  if (itsActivity != 0)
+  if (itsActivity != nullptr)
   {
     delete[] static_cast<bool *>(itsActivity);
-    itsActivity = 0;
+    itsActivity = nullptr;
   }
-  if (itsParamBag != 0)
+  if (itsParamBag != nullptr)
   {
     delete itsParamBag;
-    itsParamBag = 0;
+    itsParamBag = nullptr;
   }
 }
 
@@ -131,7 +133,7 @@ bool NFmiParamDescriptor::Param(FmiParameterName theParam)
 
 // TÄMÄ PITÄÄ KORJATA KÄYTTÄMÄÄN PARAMBAGIN VASTAAVAA METODIA?!?!?!
 
-unsigned long NFmiParamDescriptor::SizeActive(void) const
+unsigned long NFmiParamDescriptor::SizeActive() const
 {
   unsigned long theActiveSize = 0;
 
@@ -190,7 +192,7 @@ bool NFmiParamDescriptor::SetActivity(bool theActivityState,
  */
 // ----------------------------------------------------------------------
 
-bool NFmiParamDescriptor::NextActive(void)
+bool NFmiParamDescriptor::NextActive()
 {
   while (Next())
     if (IsActive()) return true;
@@ -227,7 +229,7 @@ NFmiParamDescriptor &NFmiParamDescriptor::operator=(const NFmiParamDescriptor &t
   Destroy();
 
   itsParamBag =
-      theParamDescriptor.itsParamBag ? new NFmiParamBag(*theParamDescriptor.itsParamBag) : 0;
+      theParamDescriptor.itsParamBag ? new NFmiParamBag(*theParamDescriptor.itsParamBag) : nullptr;
 
   if (itsParamBag)
   {

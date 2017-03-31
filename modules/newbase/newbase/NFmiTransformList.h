@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMITRANSFORMLIST_H
-#define NFMITRANSFORMLIST_H
+#pragma once
 
 #include "NFmiAngle.h"
 #include "NFmiPoint.h"
@@ -215,6 +214,5 @@ inline std::ostream& operator<<(std::ostream& os, const NFmiTransformList& item)
  */
 // ----------------------------------------------------------------------
 inline std::istream& operator>>(std::istream& is, NFmiTransformList& item) { return item.Read(is); }
-#endif  // NFMITRANSFORMLIST_H
 
 // ======================================================================

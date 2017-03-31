@@ -5,10 +5,10 @@
  */
 // ======================================================================
 
-#include "NFmiQueryData.h"
 #include "NFmiFastQueryInfo.h"
-#include "NFmiStringTools.h"
 #include "NFmiProducerName.h"
+#include "NFmiQueryData.h"
+#include "NFmiStringTools.h"
 #include <regression/tframe.h>
 #include <fstream>
 #include <stdexcept>

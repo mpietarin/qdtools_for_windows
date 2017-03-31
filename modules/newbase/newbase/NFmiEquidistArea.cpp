@@ -85,9 +85,8 @@ using namespace std;
 // ----------------------------------------------------------------------
 
 NFmiEquidistArea::NFmiEquidistArea(const NFmiEquidistArea &theEquidistArea)
-    : NFmiAzimuthalArea(theEquidistArea)
-{
-}
+
+    = default;
 
 /*!
 * Constructor
@@ -277,7 +276,7 @@ double NFmiEquidistArea::CalcDelta(const double xyDistance) const
  */
 // ----------------------------------------------------------------------
 
-double NFmiEquidistArea::DistanceFromPerspectivePointToCenterOfEarth(void) const
+double NFmiEquidistArea::DistanceFromPerspectivePointToCenterOfEarth() const
 {
   return 0.0;  // This is a non-perspective projection
 }
@@ -324,7 +323,7 @@ NFmiArea *NFmiEquidistArea::NewArea(const NFmiPoint &theBottomLeftLatLon,
  */
 // ----------------------------------------------------------------------
 
-NFmiArea *NFmiEquidistArea::Clone(void) const { return new NFmiEquidistArea(*this); }
+NFmiArea *NFmiEquidistArea::Clone() const { return new NFmiEquidistArea(*this); }
 // ----------------------------------------------------------------------
 /*!
  * Assignment operator
@@ -336,11 +335,7 @@ NFmiArea *NFmiEquidistArea::Clone(void) const { return new NFmiEquidistArea(*thi
  */
 // ----------------------------------------------------------------------
 
-NFmiEquidistArea &NFmiEquidistArea::operator=(const NFmiEquidistArea &theArea)
-{
-  NFmiAzimuthalArea::operator=(theArea);
-  return *this;
-}
+NFmiEquidistArea &NFmiEquidistArea::operator=(const NFmiEquidistArea &theArea) = default;
 
 // ----------------------------------------------------------------------
 /*!
@@ -415,7 +410,7 @@ void NFmiEquidistArea::Init(bool fKeepWorldRect)
   NFmiAzimuthalArea::Init(fKeepWorldRect);
 }
 
-const std::string NFmiEquidistArea::AreaStr(void) const
+const std::string NFmiEquidistArea::AreaStr() const
 {
   // Todo: use cppformat instead
   std::ostringstream out;
@@ -445,15 +440,15 @@ const std::string NFmiEquidistArea::AreaStr(void) const
 const std::string NFmiEquidistArea::WKT() const
 {
   std::ostringstream ret;
-  ret << std::setprecision(16) << "PROJCS[\"FMI_Azimuthal_Equidistant\","
-      << "GEOGCS[\"FMI_Sphere\","
-      << "DATUM[\"FMI_2007\",SPHEROID[\"FMI_Sphere\",6371220,0]],"
-      << "PRIMEM[\"Greenwich\",0],"
-      << "UNIT[\"Degree\",0.0174532925199433]],"
-      << "PROJECTION[\"Azimuthal_Equidistant\"],"
-      << "PARAMETER[\"latitude_of_center\"," << itsCentralLatitude.Value() << "],"
-      << "PARAMETER[\"longitude_of_center\"," << itsCentralLongitude << "],"
-      << "UNIT[\"Metre\",1.0]]";
+  ret << std::setprecision(16) << R"(PROJCS["FMI_Azimuthal_Equidistant",)"
+      << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Azimuthal_Equidistant"],)"
+      << R"(PARAMETER["latitude_of_center",)" << itsCentralLatitude.Value() << "],"
+      << R"(PARAMETER["longitude_of_center",)" << itsCentralLongitude << "],"
+      << R"(UNIT["Metre",1.0]])";
   return ret.str();
 }
 

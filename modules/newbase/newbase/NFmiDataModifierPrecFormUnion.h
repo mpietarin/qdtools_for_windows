@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERPRECFORMUNION_H
-#define NFMIDATAMODIFIERPRECFORMUNION_H
+#pragma once
 
 #include "NFmiDataModifier.h"
 #include "NFmiWeatherAndCloudiness.h"
@@ -34,7 +33,5 @@ class _FMI_DLL NFmiDataModifierPrecFormUnion : public NFmiDataModifier
   bool fIsFreezing;
 
 };  // class NFmiDataModifierPrecFormUnion
-
-#endif  // NFMIDATAMODIFIERPRECFORMUNION_H
 
 // ======================================================================

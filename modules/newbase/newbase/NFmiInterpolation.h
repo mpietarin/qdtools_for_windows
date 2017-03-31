@@ -4,8 +4,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIINTERPOLATION_H
-#define NFMIINTERPOLATION_H
+#pragma once
 
 class NFmiPoint;
 
@@ -94,7 +93,5 @@ class WindInterpolator
 };
 
 }  // namespace NFmiInterpolation
-
-#endif  // NFMIINTERPOLATION_H
 
 // ======================================================================

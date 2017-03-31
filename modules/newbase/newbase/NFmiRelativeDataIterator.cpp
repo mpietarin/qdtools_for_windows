@@ -22,7 +22,7 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiRelativeDataIterator::~NFmiRelativeDataIterator(void) {}
+NFmiRelativeDataIterator::~NFmiRelativeDataIterator() = default;
 // ----------------------------------------------------------------------
 /*!
  * Constructor

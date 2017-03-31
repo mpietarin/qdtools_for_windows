@@ -21,14 +21,14 @@
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierStandardDeviation::~NFmiDataModifierStandardDeviation(void) {}
+NFmiDataModifierStandardDeviation::~NFmiDataModifierStandardDeviation() = default;
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiDataModifierStandardDeviation::NFmiDataModifierStandardDeviation(void)
+NFmiDataModifierStandardDeviation::NFmiDataModifierStandardDeviation()
     : NFmiDataModifier(), itsCounter(0), itsSum(0), itsSquaredSum(0)
 {
   fCalculationResultOk = false;
@@ -57,7 +57,7 @@ void NFmiDataModifierStandardDeviation::Calculate(float theValue)
  */
 // ----------------------------------------------------------------------
 
-void NFmiDataModifierStandardDeviation::Clear(void)
+void NFmiDataModifierStandardDeviation::Clear()
 {
   itsCounter = 0;
   itsSum = 0;
@@ -71,7 +71,7 @@ void NFmiDataModifierStandardDeviation::Clear(void)
  */
 // ----------------------------------------------------------------------
 
-float NFmiDataModifierStandardDeviation::CalculationResult(void)
+float NFmiDataModifierStandardDeviation::CalculationResult()
 {
   if (fCalculationResultOk)
     return (itsSquaredSum - itsSum * itsSum / itsCounter) / (itsCounter - 1);

@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIDATAMODIFIERSINGLEEXTREMEVALUESFILTER_H
-#define NFMIDATAMODIFIERSINGLEEXTREMEVALUESFILTER_H
+#pragma once
 
 #include "NFmiDataModifierAvg.h"
 
@@ -28,7 +27,5 @@ class _FMI_DLL NFmiDataModifierSingleExtremeValuesFilter : public NFmiDataModifi
   float itsLimit;
 
 };  // class NFmiDataModifierSingleExtremeValuesFilter
-
-#endif  // NFMIDATAMODIFIERSINGLEEXTREMEVALUESFILTER_H
 
 // ======================================================================

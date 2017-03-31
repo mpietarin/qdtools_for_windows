@@ -5,8 +5,7 @@
  */
 // ======================================================================
 
-#ifndef NFMIREGRESSIONITEM_H
-#define NFMIREGRESSIONITEM_H
+#pragma once
 
 #include "NFmiInfoModifier.h"
 
@@ -37,7 +36,5 @@ class _FMI_DLL NFmiRegressionItem : public NFmiInfoModifier
   double itsConstant;
 
 };  // class NFmiRegressionItem
-
-#endif  // NFMIREGRESSIONITEM_H
 
 // ======================================================================
