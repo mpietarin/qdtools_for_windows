@@ -6,6 +6,6 @@
 [subrepo]
 	remote = git@github.com:fmidev/smartmet-qdtools.git
 	branch = master
-	commit = d1c1babfd11f6970f0e8f6c72bc042979512701d
-	parent = e56c4f6df573a4d221b34c31cd2620db83334439
+	commit = 0772d931a982056761648e7f6cfa70aeaa815331
+	parent = 01489461f86ce76ec9a50b7c3c8edf942d05163c
 	cmdver = 0.3.1
