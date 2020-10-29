@@ -33,7 +33,6 @@ RJTT 242030Z 36010KT 6000 -RA FEW007 SCT010 BKN015 12/11 Q1008 RMK
 #include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
 
-#include <smarttools/NFmiAviationStationInfoSystem.h>
 #include <newbase/NFmiCmdLine.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiFileString.h>
@@ -43,12 +42,12 @@ RJTT 242030Z 36010KT 6000 -RA FEW007 SCT010 BKN015 12/11 Q1008 RMK
 #include <newbase/NFmiQueryDataUtil.h>
 #include <newbase/NFmiStreamQueryData.h>
 #include <newbase/NFmiTimeList.h>
+#include <smarttools/NFmiAviationStationInfoSystem.h>
 
+extern "C"
+{
 #include "metar_structs.h"
-
-extern "C" {
-void prtDMETR(Decoded_METAR *);
-int DcdMETAR(char *, Decoded_METAR *);
+  void print_decoded_metar(Decoded_METAR *);
 }
 
 using namespace std;
@@ -221,8 +220,8 @@ struct MetarData
     itsParamIds[itsClType4Index] = kFmi4CloudType;
   }
 
-  checkedVector<float> itsValues;
-  checkedVector<FmiParameterName> itsParamIds;
+  std::vector<float> itsValues;
+  std::vector<FmiParameterName> itsParamIds;
   string itsIcaoName;
   NFmiMetTime itsTime;
   string itsOriginalStr;
@@ -530,6 +529,7 @@ void Usage(const std::string &theExecutableName)
        << "\t-r <round_time_in_minutes>\tUse messages time rounding, default value is 30 minutes."
        << endl
        << "\t-n <NOAA-format=false>\tTry reading NOAA metar format files." << endl
+       << "\t-W \tDon't create Wind combined parameter to result data." << endl
        << endl;
 }
 
@@ -638,8 +638,29 @@ static NFmiMetTime GetTime2(const Decoded_METAR &theMetarStruct,
                             const NFmiMetTime &theHeaderTime,
                             int theTimeRoundingResolution)
 {
-  NFmiMetTime aTime(theHeaderTime);  // otetaan pohjat t‰st‰ ja loput metarStructista. Periaatteessa
-                                     // headertimen pit‰isi olla jo oikea aika
+  NFmiMetTime aTime;
+
+  if (theHeaderTime != missingTime)
+  {
+    NFmiMetTime aTime(theHeaderTime);  // otetaan pohjat tasta ja loput metarStructista.
+                                       // Periaatteessa headertimen pitaisi olla jo oikea aika
+  }
+  else
+  {
+    // header time was not found; use the metar time and assume current month and year
+    // (as metar does not contain them)
+    aTime = NFmiMetTime::now();
+    aTime.SetSec(0);
+
+    // If metar day is bigger than current day, it must come from last month so
+    // subtract our current time by one month. The actual *day* that we have after month
+    // change doesn't matter, as the day is set later in this function anyway.
+    if (theMetarStruct.ob_date > aTime.GetDay())
+    {
+      aTime.ChangeByDays(-aTime.GetDay());
+    }
+  }
+
   if (theMetarStruct.ob_date != MDSP_missing_int)
     aTime.SetDay(static_cast<short>(theMetarStruct.ob_date));
   if (theMetarStruct.ob_hour != MDSP_missing_int)
@@ -667,8 +688,8 @@ static void InitWWSymbols(map<string, float> &ww_symbols)
   ww_symbols.insert(make_pair(string("BCFG"), 11.f));
   ww_symbols.insert(make_pair(string("PRFG"), 41.f));
   ww_symbols.insert(make_pair(string("VCFG"), 40.f));
-  ww_symbols.insert(make_pair(string("FG"), 49.f));
-  ww_symbols.insert(make_pair(string("+FG"), 49.f));
+  ww_symbols.insert(make_pair(string("FG"), 45.f));
+  ww_symbols.insert(make_pair(string("+FG"), 45.f));
   ww_symbols.insert(make_pair(string("FZFG"), 49.f));
   ww_symbols.insert(make_pair(string("-DRRASN"), 68.f));
   ww_symbols.insert(make_pair(string("DRRASN"), 68.f));
@@ -1261,7 +1282,7 @@ static void FillMetarDataCloudSection(MetarData &data,
   ::FillMetarDataCloudSection2(data,
                                cloudCover_symbols,
                                cloudType_symbols,
-                               metarStruct.cldTypHgt[0],
+                               metarStruct.cloudGroup[0],
                                data.itsClCover1Index,
                                data.itsClBase1Index,
                                data.itsClType1Index,
@@ -1271,7 +1292,7 @@ static void FillMetarDataCloudSection(MetarData &data,
   ::FillMetarDataCloudSection2(data,
                                cloudCover_symbols,
                                cloudType_symbols,
-                               metarStruct.cldTypHgt[1],
+                               metarStruct.cloudGroup[1],
                                data.itsClCover2Index,
                                data.itsClBase2Index,
                                data.itsClType2Index,
@@ -1281,7 +1302,7 @@ static void FillMetarDataCloudSection(MetarData &data,
   ::FillMetarDataCloudSection2(data,
                                cloudCover_symbols,
                                cloudType_symbols,
-                               metarStruct.cldTypHgt[2],
+                               metarStruct.cloudGroup[2],
                                data.itsClCover3Index,
                                data.itsClBase3Index,
                                data.itsClType3Index,
@@ -1291,7 +1312,7 @@ static void FillMetarDataCloudSection(MetarData &data,
   ::FillMetarDataCloudSection2(data,
                                cloudCover_symbols,
                                cloudType_symbols,
-                               metarStruct.cldTypHgt[3],
+                               metarStruct.cloudGroup[3],
                                data.itsClCover4Index,
                                data.itsClBase4Index,
                                data.itsClType4Index,
@@ -1320,7 +1341,7 @@ static void DecodeMetar(NFmiAviationStationInfoSystem &theStationInfoSystem,
     return;
 
   Decoded_METAR metarStruct;
-  if (::DcdMETAR(const_cast<char *>(theMetarStr.c_str()), &metarStruct) ==
+  if (decode_metar(const_cast<char *>(theMetarStr.c_str()), &metarStruct) ==
       0)  // DcdMETAR palauttaa 0:n jos ok
   {
     string icaoStr = metarStruct.stnid;
@@ -1739,6 +1760,14 @@ list<string> SortMetarFiles(const list<string> &metarfiles)
   return outfiles;
 }
 
+static void WriteMetarDataToCout(NFmiQueryData *metarData)
+{
+  cerr << "\nStoring data to file." << endl;
+  NFmiStreamQueryData sQOutData(metarData);  // t‰m‰ myˆs tuhoaa qdatan
+  if (!sQOutData.WriteCout())
+    throw runtime_error("Error: Couldn't write combined qdata to stdout.");
+}
+
 // ----------------------------------------------------------------------
 /*!
  * \brief Main program without error catching
@@ -1750,7 +1779,7 @@ void run(int argc, const char *argv[])
   // HUOM!! VC++ 2012 (Update 3) -versiolla x64-debug versio toimii debuggerissa ihan oudosti,
   // ohjelman steppaus ei mene oikein (win32 debug k‰ytt‰ytyy oikein).
   // Ohjelma tuottaa kuitenkin oikean tuloksen kaikilla kombinaatioilla win32/x64 + debug/release
-  NFmiCmdLine cmdline(argc, argv, "s!vFr!n");
+  NFmiCmdLine cmdline(argc, argv, "s!vFr!nW");
 
   // Tarkistetaan optioiden oikeus:
   if (cmdline.Status().IsError())
@@ -1812,6 +1841,9 @@ void run(int argc, const char *argv[])
   if (cmdline.isOption('r'))
     timeRoundingResolution = NFmiStringTools::Convert<int>(cmdline.OptionValue('r'));
 
+  bool makeTotalWindParameter = true;  // Oletuksena luodaan TotalWind parametri
+  if (cmdline.isOption('W')) makeTotalWindParameter = false;
+
   //	1. Lue n kpl filefiltereit‰ listaan
   vector<string> fileFilterList;
   for (int i = 1; i <= numOfParams; i++)
@@ -1861,22 +1893,24 @@ void run(int argc, const char *argv[])
   // Build querydata from the contents
 
   NFmiQueryData *newQData = ::MakeQueryDataFromBlocks(params, stationInfoSystem, dataBlocks);
-  auto_ptr<NFmiQueryData> newQDataPtr(newQData);
+
   if (newQData == 0)
     throw runtime_error("Error: Unable to create querydata from METAR data, stopping program...");
 
-  // tehd‰‰n dataan viel‰ totalwind parametri WS, WD ja WGustin avulla
-  NFmiFastQueryInfo tempInfo(newQData);
-  NFmiQueryData *newQDataWithTotalWind = NFmiQueryDataUtil::MakeCombineParams(
-      tempInfo, 7, false, true, false, kFmiWindGust, std::vector<int>(), false, 0, false, false);
-  if (newQDataWithTotalWind == 0)
-    throw runtime_error(
-        "Error: Unable to create querydata with totalWind-parameter, stopping program...");
-
-  cerr << "\nStoring data to file." << endl;
-  NFmiStreamQueryData sQOutData(newQDataWithTotalWind);  // t‰m‰ myˆs tuhoaa qdatan
-  if (!sQOutData.WriteCout())
-    throw runtime_error("Error: Couldn't write combined qdata to stdout.");
+  if (makeTotalWindParameter)
+  {
+    // tehd‰‰n dataan viel‰ totalwind parametri WS, WD ja WGustin avulla
+    NFmiFastQueryInfo tempInfo(newQData);
+    NFmiQueryData *newQDataWithTotalWind = NFmiQueryDataUtil::MakeCombineParams(
+        tempInfo, 7, false, true, false, kFmiWindGust, std::vector<int>(), false, 0, false, false);
+    if (newQDataWithTotalWind == 0)
+      throw runtime_error(
+          "Error: Unable to create querydata with totalWind-parameter, stopping program...");
+    ::WriteMetarDataToCout(newQDataWithTotalWind);
+    delete newQData;
+  }
+  else
+    ::WriteMetarDataToCout(newQData);
 
   if (fVerboseMode && icaoIdUnknownSet.size())
   {

@@ -5,7 +5,7 @@
  */
 // ======================================================================
 
-#ifdef UNIX
+#ifndef DISABLED_GDAL
 
 #pragma once
 
@@ -15,7 +15,7 @@
 class OGRSpatialReference;
 class OGRCoordinateTransformation;
 
-class _FMI_DLL NFmiGdalArea : public NFmiArea
+class NFmiGdalArea : public NFmiArea
 {
  public:
   virtual ~NFmiGdalArea();
@@ -82,6 +82,8 @@ class _FMI_DLL NFmiGdalArea : public NFmiArea
   virtual double WorldXYHeight() const;
   virtual double WorldXYWidth() const;
 
+  std::size_t HashValue() const;
+
  private:
   void init();
 
@@ -99,6 +101,6 @@ class _FMI_DLL NFmiGdalArea : public NFmiArea
 
 };  // class NFmiGdalArea
 
-#endif  // NFMIGDALAREA_H
+#endif  // DISABLED_GDAL
 
 // ======================================================================

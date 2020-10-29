@@ -231,8 +231,7 @@ void NFmiSuperSmartInfo::CopyHelperBinaryMasksAndInfo(const NFmiSuperSmartInfo& 
   fUseHelperBinaryMasks = theSSInfo.fUseHelperBinaryMasks;
   itsXYMaskBoundingBox = theSSInfo.itsXYMaskBoundingBox;
 
-  const checkedVector<NFmiBitmapAreaMask*>& helperBinaryMaskList =
-      theSSInfo.itsHelperBinaryMaskList;
+  const std::vector<NFmiBitmapAreaMask*>& helperBinaryMaskList = theSSInfo.itsHelperBinaryMaskList;
   size_t size = helperBinaryMaskList.size();
   itsHelperBinaryMaskList.resize(size);
 
@@ -392,11 +391,11 @@ float NFmiSuperSmartInfo::FloatValue() const
 
 NFmiCombinedParam* NFmiSuperSmartInfo::CombinedValue()
 {
-// Käyttäjä on etukäteen määrännyt millä tasolla haluaa dataa
-// määrämällä itsFloatValueAccessLevel.
-// kommenteissa on oikea käyntijärjestys. Jos joku lisää jonkun
-// haaran käyttöön (esim. TimeIntegrationCombinedValue:n), pitää
-// se kommentoida esiin että 'vesiputous' toimisi oikeassa järjestyksessä.
+  // Käyttäjä on etukäteen määrännyt millä tasolla haluaa dataa
+  // määrämällä itsFloatValueAccessLevel.
+  // kommenteissa on oikea käyntijärjestys. Jos joku lisää jonkun
+  // haaran käyttöön (esim. TimeIntegrationCombinedValue:n), pitää
+  // se kommentoida esiin että 'vesiputous' toimisi oikeassa järjestyksessä.
 
 #if 0
   if(itsFloatValueAccessLevel == kNormalAccess)
@@ -1263,8 +1262,8 @@ NFmiBitmapAreaMask* NFmiSuperSmartInfo::CreateHelperBinaryMask(int theUsedVariat
 {
   if (theUsedVariationFactor == 0) return CreateZeroVariationHelperBinaryMask();
 
-  auto* helperMask =
-      new NFmiBitmapAreaMask(itsGridXNumber, itsGridYNumber, Area(), &Param(), Level());
+  auto* helperMask = new NFmiBitmapAreaMask(
+      itsGridXNumber, itsGridYNumber, Area(), &Param(), Level(), NFmiAreaMask::kNoValue);
   if (!helperMask) return nullptr;
 
   int moveByX = theUsedVariationFactor * 2 + 1;
@@ -1326,6 +1325,7 @@ NFmiBitmapAreaMask* NFmiSuperSmartInfo::CreateZeroVariationHelperBinaryMask()
 
     return helperMask;
   }
+  delete helperMask;
   return nullptr;
 }
 
@@ -1411,7 +1411,7 @@ NFmiString NFmiSuperSmartInfo::HelperBinaryMaskTestString(int theUsedVariationFa
     int locIndex = 0;
     int i = 0;
     string rowStr;
-    checkedVector<string> lines;
+    std::vector<string> lines;
     int x = 0, y = 0;
     for (ResetLocation(); NextLocation();)
     {
@@ -1507,7 +1507,7 @@ void NFmiSuperSmartInfo::InitEmptyAreaMask()
   NFmiDataIdent dummyParam;
   NFmiLevel dummyLevel;
   delete itsAreaMask;
-  itsAreaMask = new NFmiBitmapAreaMask(*Grid(), &dummyParam, &dummyLevel);
+  itsAreaMask = new NFmiBitmapAreaMask(*Grid(), &dummyParam, &dummyLevel, NFmiAreaMask::kNoValue);
 }
 
 // ----------------------------------------------------------------------

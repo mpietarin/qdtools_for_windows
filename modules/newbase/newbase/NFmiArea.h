@@ -30,7 +30,7 @@ struct PacificPointFixerData
 };
 
 //! Undocumented
-class _FMI_DLL NFmiArea
+class NFmiArea
 {
  public:
   virtual ~NFmiArea();
@@ -128,6 +128,9 @@ class _FMI_DLL NFmiArea
   NFmiArea *DoForcePacificFix(void) const;
 
   std::size_t HashValue() const;
+
+  // Temporary fix until the above method is fixed to be virtual
+  std::size_t HashValueKludge() const;
 
  protected:
   int Sign(double theValue) const;

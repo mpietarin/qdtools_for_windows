@@ -24,7 +24,7 @@ typedef unsigned char FmiByte;
 const int kMaxNumberOfDifferentMissingValues = 10;
 
 //! Undocumented
-class _FMI_DLL NFmiDataPool
+class NFmiDataPool
 {
  public:
   virtual ~NFmiDataPool();
@@ -130,7 +130,7 @@ class _FMI_DLL NFmiDataPool
  */
 // ----------------------------------------------------------------------
 
-inline NFmiDataPool::~NFmiDataPool() { Destroy(); }
+inline NFmiDataPool::~NFmiDataPool() { NFmiDataPool::Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented

@@ -10,11 +10,12 @@
 #include "NFmiCombinedParam.h"
 
 #include <cmath>
-extern "C" {
+extern "C"
+{
 #if defined(_MSC_VER) && \
     (_MSC_VER <          \
      1600)  // stdint.h -headeria ei ole MSVC++ kääntäjissä ennen VC++ 2010 eli _MSC_VER < 1600
-typedef unsigned long uint32_t;
+  typedef unsigned long uint32_t;
 #else
 #include <stdint.h>
 #endif
@@ -28,7 +29,7 @@ class NFmiQueryInfo;
 class NFmiIntegrationSelector;
 
 //! Undocumented
-class _FMI_DLL NFmiWeatherAndCloudiness : public NFmiCombinedParam
+class NFmiWeatherAndCloudiness : public NFmiCombinedParam
 {
  public:
   virtual ~NFmiWeatherAndCloudiness(void);
@@ -290,7 +291,8 @@ class _FMI_DLL NFmiWeatherAndCloudiness : public NFmiCombinedParam
     unsigned long TotalPrecipitation : 6;  // Marko testaa
     // lauran ehdotus: y=0.6*value^1.5
     unsigned long PrecipitationType : 2;  // 1=LargeScale, 2=Convective, (3 = missing?)
-    unsigned long PrecipitationForm : 3;  // 0=drizzle, 1=rain, 2=sleet, 3=snow, 4=freezing
+    unsigned long PrecipitationForm : 3;  // 0=drizzle, 1=rain, 2=sleet, 3=snow, 4=freezing drizzle,
+                                          // 5=freezing rain, 6=hail, 7=no rain
     unsigned long FogIntensity : 2;       // 0=noFog, 1=moderateFog, 2=denseFog, 3=missing
 
     // ukkosen missing-arvo on 14 eikä 15 siksi, että kaikki bitit

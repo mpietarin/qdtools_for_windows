@@ -937,7 +937,7 @@ bool NFmiHPlaceDescriptor::First()
  */
 // ----------------------------------------------------------------------
 
-const checkedVector<std::pair<int, double> > NFmiHPlaceDescriptor::NearestLocations(
+const std::vector<std::pair<int, double> > NFmiHPlaceDescriptor::NearestLocations(
     const NFmiLocation &theLocation, int theMaxWantedLocations, double theMaxDistance) const
 {
   if (IsLocation())
@@ -1004,6 +1004,7 @@ bool NFmiHPlaceDescriptor::IsInside(const NFmiPoint &theLatLon, double theRadius
 std::size_t NFmiHPlaceDescriptor::HashValue() const
 {
   std::size_t hash = 0;
+  if (Area() != nullptr) hash = Area()->HashValueKludge();
 
   if (itsLocationBag != nullptr) boost::hash_combine(hash, itsLocationBag->HashValue());
 

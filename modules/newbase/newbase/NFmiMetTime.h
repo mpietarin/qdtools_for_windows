@@ -13,7 +13,7 @@
 class NFmiLocation;
 
 //! Undocumented
-class _FMI_DLL NFmiMetTime : public NFmiTime
+class NFmiMetTime : public NFmiTime
 {
  public:
   static const NFmiMetTime gMissingTime;  // Tätä missing aikaa voi käyttää, jos haluaa ilmaista
@@ -280,7 +280,7 @@ inline void NFmiMetTime::PreviousMetTime(void) { PreviousMetTime(GetTimeStep());
 
 inline void NFmiMetTime::NearestMetTime(const NFmiTimePerioid& thePerioid, FmiDirection theDirect)
 {
-  NearestMetTime(thePerioid, theDirect);
+  NearestMetTime(static_cast<long>(thePerioid), theDirect);
 }
 
 // ----------------------------------------------------------------------

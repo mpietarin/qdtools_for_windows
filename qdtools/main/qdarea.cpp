@@ -10,19 +10,19 @@
 #include <calculator/GridForecaster.h>
 #include <calculator/HourPeriodGenerator.h>
 #include <calculator/IntervalPeriodGenerator.h>
-#include <calculator/NullPeriodGenerator.h>
 #include <calculator/LatestWeatherSource.h>
 #include <calculator/ListedPeriodGenerator.h>
 #include <calculator/MaximumCalculator.h>
 #include <calculator/MinimumCalculator.h>
+#include <calculator/NullPeriodGenerator.h>
 #include <calculator/RangeAcceptor.h>
 #include <calculator/RegularMaskSource.h>
+#include <calculator/Settings.h>
 #include <calculator/WeatherArea.h>
 #include <calculator/WeatherFunction.h>
 #include <calculator/WeatherParameter.h>
 #include <calculator/WeatherPeriod.h>
 #include <calculator/WeatherResult.h>
-#include <calculator/Settings.h>
 
 #include <newbase/NFmiArea.h>
 #include <newbase/NFmiCmdLine.h>
@@ -386,6 +386,7 @@ void usage()
        << "   -S [namelist]\tPrint results as a PHP hash table with named data fields" << endl
        << "   -E\t\t\tPrint times in Epoch seconds" << endl
        << "   -v\t\t\tVerbose mode on" << endl
+       << "   -Q\t\t\tQuiet mode on - do not print mere warnings" << endl
        << endl
        << "For example:" << endl
        << endl
@@ -408,6 +409,7 @@ struct options_list
   vector<string> querydata;
   string coordinatefile;
   bool verbose;
+  bool quiet;
   bool php;
   bool epoch_time;
   vector<string> php_names;
@@ -655,17 +657,18 @@ void parse_command_line(int argc, const char* argv[])
 
   // Establish the defaults
 
+  options.quiet = false;
   options.verbose = false;
   options.php = false;
   options.epoch_time = false;
   options.timezone = Settings::optional_string("qdarea::timezone", "local");
-  options.querydata = NFmiStringTools::Split(Settings::require("qdarea::querydata"));
+  options.querydata = NFmiStringTools::Split(Settings::optional_string("qdarea::querydata", ""));
   options.coordinatefile =
       Settings::optional_string("qdarea::coordinates", "/smartmet/share/coordinates/default.txt");
 
   // Parse the command line
 
-  NFmiCmdLine cmdline(argc, argv, "P!p!T!t!q!c!S!Esvh");
+  NFmiCmdLine cmdline(argc, argv, "P!p!T!t!q!c!S!EsvhQ");
 
   if (cmdline.Status().IsError()) throw runtime_error(cmdline.Status().ErrorLog().CharPtr());
 
@@ -682,11 +685,16 @@ void parse_command_line(int argc, const char* argv[])
 
   if (cmdline.isOption('v')) options.verbose = true;
 
+  if (cmdline.isOption('Q')) options.quiet = true;
+
   if (cmdline.isOption('E')) options.epoch_time = true;
 
   // -q option must be parsed before -T option
   if (cmdline.isOption('q'))
     options.querydata = NFmiStringTools::Split<vector<string> >(cmdline.OptionValue('q'));
+
+  if (options.querydata.empty())
+    throw runtime_error("No querydata specified via -q or via qdarea::querydata");
 
   // must initialize data sources right after -q
 
@@ -709,22 +717,17 @@ void parse_command_line(int argc, const char* argv[])
   // This must be done after the timezone has been set and data has been read
   establish_time_period();
 
-  if (cmdline.isOption('P'))
-    parse_parameter_option(cmdline.OptionValue('P'));
-  else
-    throw runtime_error("Option -P must be given");
-
-  if (cmdline.isOption('p'))
-    parse_area_option(cmdline.OptionValue('p'));
-  else
-    throw runtime_error("Option -p must be given");
-
   if (cmdline.isOption('T'))
     parse_interval_option(cmdline.OptionValue('T'));
   else
     parse_interval_option("24");
 
-  // -S must be parsed after the -P option
+  if (cmdline.isOption('P'))
+    parse_parameter_option(cmdline.OptionValue('P'));
+  else
+    throw runtime_error("Option -P must be given");
+
+  // NOTE: -S must be parsed after the -P option
 
   if (cmdline.isOption('s')) options.php = true;
 
@@ -752,6 +755,15 @@ void parse_command_line(int argc, const char* argv[])
 
   if (!NFmiFileSystem::FileExists(options.coordinatefile))
     throw runtime_error("The coordinatefile '" + options.coordinatefile + "' does not exist");
+
+  Settings::set("textgen::coordinates", options.coordinatefile);
+
+  // NOTE: Must be done after coordinate source has been defined
+
+  if (cmdline.isOption('p'))
+    parse_area_option(cmdline.OptionValue('p'));
+  else
+    throw runtime_error("Option -p must be given");
 }
 
 // ----------------------------------------------------------------------
@@ -815,10 +827,19 @@ AnalysisSources find_source(const WeatherArea& theArea)
 
   if (idx >= options.querydata.size())
   {
-    if (theArea.isNamed())
-      throw runtime_error(theArea.name() + " is not contained in any querydata");
+    // If only one querystring option was given, leave the responsibility
+    // to the user that not all of the polygon is inside the data.
+
+    if (options.querydata.size() == 1)
+    {
+      idx = 0;
+      if (!options.quiet)
+        cerr << "Warning: The area is not fully contained in the querydata" << endl;
+    }
+    else if (theArea.isNamed())
+      throw runtime_error(theArea.name() + " is not fully contained in any querydata");
     else
-      throw runtime_error("The area is not contained in any querydata");
+      throw runtime_error("The area is not fully contained in any querydata");
   }
 
   Settings::set("textgen::default_forecast", options.querydata[idx]);

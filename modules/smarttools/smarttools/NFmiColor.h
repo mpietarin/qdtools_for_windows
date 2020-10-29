@@ -144,24 +144,13 @@ inline void NFmiColor::SetRGBA(const FmiRGBColor &aColor)
   itsColor.alpha = (aColor.alpha >= 0.0f) ? ((aColor.alpha <= 1.0f) ? aColor.alpha : 1.0f) : 0.0f;
 }
 
-inline NFmiColor::NFmiColor(const NFmiColor &aColor) : itsColor(aColor.itsColor)
-{
-}
+inline NFmiColor::NFmiColor(const NFmiColor &aColor) : itsColor(aColor.itsColor) {}
 
-inline NFmiColor::NFmiColor(const FmiRGBColor &aColor) : itsColor()
-{
-  SetRGBA(aColor);
-}
+inline NFmiColor::NFmiColor(const FmiRGBColor &aColor) : itsColor() { SetRGBA(aColor); }
 
-inline std::ostream &operator<<(std::ostream &os, const NFmiColor &ob)
-{
-  return ob.Write(os);
-}
+inline std::ostream &operator<<(std::ostream &os, const NFmiColor &ob) { return ob.Write(os); }
 
-inline std::istream &operator>>(std::istream &os, NFmiColor &ob)
-{
-  return ob.Read(os);
-}
+inline std::istream &operator>>(std::istream &os, NFmiColor &ob) { return ob.Read(os); }
 
 inline void NFmiColor::SetRGBA(float aRedValue,
                                float aGreenValue,
@@ -238,6 +227,5 @@ inline void NFmiColor::Mix(const NFmiColor &anOtherColor, float mixingRatio)
       (1.F - mixingRatio) * static_cast<float>(itsColor.green) + mixingRatio * anOtherColor.Green(),
       (1.F - mixingRatio) * static_cast<float>(itsColor.blue) + mixingRatio * anOtherColor.Blue());
 }
-
 
 // ======================================================================

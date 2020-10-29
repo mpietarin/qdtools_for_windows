@@ -21,7 +21,7 @@
 class NFmiQueryInfo;
 
 //! Undocumented
-class _FMI_DLL NFmiQueryData
+class NFmiQueryData
 {
  public:
  public:
@@ -154,11 +154,6 @@ class _FMI_DLL NFmiQueryData
 
   // THIS IS NOT THREAD SAFE!!
   void SetHPlaceDescriptor(const NFmiHPlaceDescriptor &newDesc);
-
-  //#ifndef  NDEBUG
-  static int itsConstructorCalls;  // tämä on yritys tutkia mahdollisia vuotoja ohjelmissä
-  static int itsDestructorCalls;   // kuinka monta oliota on luotu ja tuhottu
-                                   //#endif // NDEBUG
 
   // Advise memory mapping
   bool Advise(FmiAdvice theAdvice);

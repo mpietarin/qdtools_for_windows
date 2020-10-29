@@ -88,6 +88,8 @@
 // ======================================================================
 
 #include "NFmiMercatorArea.h"
+#include <boost/functional/hash.hpp>
+#include <fmt/format.h>
 #include <limits>
 
 using namespace std;
@@ -347,7 +349,7 @@ std::ostream& NFmiMercatorArea::Write(std::ostream& file) const
  *
  * \param file The input stream to read from
  * \return The input stream read from
-*/
+ */
 // ----------------------------------------------------------------------
 
 std::istream& NFmiMercatorArea::Read(std::istream& file)
@@ -405,15 +407,14 @@ const std::string NFmiMercatorArea::AreaStr() const
 
 const std::string NFmiMercatorArea::WKT() const
 {
-  std::ostringstream ret;
-  ret << R"(PROJCS["FMI_Transverse_Mercator",)"
-      << R"(GEOGCS["FMI_Sphere",)"
-      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
-      << R"(PRIMEM["Greenwich",0],)"
-      << R"(UNIT["Degree",0.0174532925199433]],)"
-      << R"(PROJECTION["Transverse_Mercator"],)"
-      << R"(UNIT["Metre",1.0]])";
-  return ret.str();
+  const char* fmt = R"(PROJCS["FMI_Transverse_Mercator",)"
+                    R"(GEOGCS["FMI_Sphere",)"
+                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
+                    R"(PRIMEM["Greenwich",0],)"
+                    R"(UNIT["Degree",0.0174532925199433]],)"
+                    R"(PROJECTION["Transverse_Mercator"],)"
+                    R"(UNIT["Metre",1.0]])";
+  return fmt::format(fmt, kRearth);
 }
 
 // ----------------------------------------------------------------------
@@ -450,6 +451,23 @@ bool NFmiMercatorArea::operator==(const NFmiMercatorArea& theArea) const
     return true;
 
   return false;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Hash value
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiMercatorArea::HashValue() const
+{
+  std::size_t hash = NFmiArea::HashValue();
+  boost::hash_combine(hash, itsBottomLeftLatLon.HashValue());
+  boost::hash_combine(hash, itsTopRightLatLon.HashValue());
+  boost::hash_combine(hash, boost::hash_value(itsXScaleFactor));
+  boost::hash_combine(hash, boost::hash_value(itsYScaleFactor));
+  boost::hash_combine(hash, itsWorldRect.HashValue());
+  return hash;
 }
 
 // ======================================================================

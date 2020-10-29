@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7.1)
+cmake_minimum_required(VERSION 3.14.4)
 project(qdsignificantlevelfilter)
 
 file( 
@@ -18,6 +18,7 @@ add_executable(
 target_link_libraries(
     ${PROJECT_NAME}
     Newbase
+    ${FMT_TARGET_LINK_LIBRARIES}
     )
 
 target_include_directories( 

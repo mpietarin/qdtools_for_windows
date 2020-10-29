@@ -11,7 +11,7 @@
 #include "NFmiAzimuthalArea.h"
 
 //! Undocumened
-class _FMI_DLL NFmiStereographicArea : public NFmiAzimuthalArea
+class NFmiStereographicArea : public NFmiAzimuthalArea
 {
  public:
   virtual ~NFmiStereographicArea(void);
@@ -77,6 +77,8 @@ class _FMI_DLL NFmiStereographicArea : public NFmiAzimuthalArea
 
   virtual std::ostream& Write(std::ostream& file) const;
   virtual std::istream& Read(std::istream& file);
+
+  std::size_t HashValue() const;
 
  protected:
   virtual double K(const double delta) const;

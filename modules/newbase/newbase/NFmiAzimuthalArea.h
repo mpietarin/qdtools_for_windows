@@ -11,7 +11,7 @@
 #include "NFmiArea.h"
 
 //! Undocumented
-class _FMI_DLL NFmiAzimuthalArea : public NFmiArea
+class NFmiAzimuthalArea : public NFmiArea
 {
  public:
   virtual ~NFmiAzimuthalArea(void);
@@ -89,6 +89,8 @@ class _FMI_DLL NFmiAzimuthalArea : public NFmiArea
 
   virtual const char* ClassName(void) const;
   const std::string AreaStr(void) const = 0;
+
+  std::size_t HashValue() const;
 
  protected:
   NFmiPoint itsTopRightLatLon;

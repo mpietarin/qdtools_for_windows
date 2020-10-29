@@ -28,41 +28,45 @@
 #include "MoonPhase.h"
 #include "QueryDataManager.h"
 #include "TimeTools.h"
-
-#include <newbase/NFmiStringTools.h>
-#include <newbase/NFmiCmdLine.h>
-#include <newbase/NFmiDataIntegrator.h>
-#include <newbase/NFmiDataModifierProb.h>
-#include <newbase/NFmiEnumConverter.h>
-#include <newbase/NFmiIndexMask.h>
-#include <newbase/NFmiIndexMaskTools.h>
-#include <newbase/NFmiFileSystem.h>
-#include <newbase/NFmiLocation.h>
-#include <newbase/NFmiLocationFinder.h>
-#include <newbase/NFmiMetMath.h>
-#include <newbase/NFmiPreProcessor.h>
-#include <newbase/NFmiSettings.h>
-#include <newbase/NFmiValueString.h>
-
-#include <macgyver/StringConversion.h>
-#include <macgyver/WorldTimeZones.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
-
+#include <ogr_geometry.h>
+#include <macgyver/StringConversion.h>
+#include <macgyver/WorldTimeZones.h>
+#include <newbase/NFmiCmdLine.h>
+#include <newbase/NFmiDataIntegrator.h>
+#include <newbase/NFmiDataModifierProb.h>
+#include <newbase/NFmiEnumConverter.h>
+#include <newbase/NFmiFileSystem.h>
+#include <newbase/NFmiIndexMask.h>
+#include <newbase/NFmiIndexMaskTools.h>
+#include <newbase/NFmiLocation.h>
+#include <newbase/NFmiLocationFinder.h>
+#include <newbase/NFmiMetMath.h>
+#include <newbase/NFmiPreProcessor.h>
+#include <newbase/NFmiSettings.h>
+#include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiValueString.h>
 #include <list>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
+
 using namespace std;
 
 //! Must be one single global instance for speed, constructing is expensive
 static NFmiEnumConverter converter;
+
+// WGS84 to FMI sphere conversion
+std::unique_ptr<OGRCoordinateTransformation> wgs84_to_latlon;
 
 // ----------------------------------------------------------------------
 // -l optiolla annetut sijainnit
@@ -126,72 +130,36 @@ LocationList read_locationlist(const string& theFile)
 
 struct Options
 {
-  Options();
-
-  bool verbose;
-  string timezonefile;
-  string timezone;
-  string queryfile;
-  string coordinatefile;
-  double longitude;
-  double latitude;
-  int rows;
-  int max_missing_gap;
+  bool verbose = false;
+  string timezonefile = NFmiSettings::Optional<string>(
+      "qdpoint::tzfile", "/usr/share/smartmet/timezones/timezone.shz");
+  string timezone = NFmiSettings::Optional<string>("qdpoint::timezone", "local");
+  string queryfile = NFmiSettings::Optional<string>("qdpoint::querydata_file", "");
+  string coordinatefile = NFmiSettings::Optional<string>("qdpoint::coordinates",
+                                                         "/smartmet/share/coordinates/default.txt");
+  double longitude = kFloatMissing;
+  double latitude = kFloatMissing;
+  int rows = -1;
+  int max_missing_gap = -1;
   vector<string> params;
   vector<string> places;
   vector<int> stations;
-  bool all_stations;
-  bool list_stations;
-  bool force;
-  bool validate;
-  bool future;
-  bool multimode;
-  double max_distance;
-  int nearest_stations;
-  string locationfile;
+  bool all_stations = false;
+  bool list_stations = false;
+  bool force = false;
+  bool validate = false;
+  bool future = false;
+  bool multimode = false;
+  bool wgs84 = false;
+  double max_distance = 100;  // km
+  int nearest_stations = 1;
+  string locationfile = "";
   LocationList locations;
-  string missingvalue;
+  string missingvalue = "-";
   string uid;
 };
 
 Options options;
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Default options
- */
-// ----------------------------------------------------------------------
-
-Options::Options()
-    : verbose(false),
-      timezonefile(NFmiSettings::Optional<string>("qdpoint::tzfile",
-                                                  "/usr/share/smartmet/timezones/timezone.shz")),
-      timezone(NFmiSettings::Optional<string>("qdpoint::timezone", "local")),
-      queryfile(NFmiSettings::Optional<string>("qdpoint::querydata_file", "")),
-      coordinatefile(NFmiSettings::Optional<string>("qdpoint::coordinates",
-                                                    "/smartmet/share/coordinates/default.txt")),
-      longitude(kFloatMissing),
-      latitude(kFloatMissing),
-      rows(-1),
-      max_missing_gap(-1),
-      params(),
-      places(),
-      stations(),
-      all_stations(false),
-      list_stations(false),
-      force(false),
-      validate(false),
-      future(false),
-      multimode(false),
-      max_distance(100)  // km
-      ,
-      nearest_stations(1),
-      locationfile(""),
-      locations(),
-      missingvalue("-"),
-      uid()
-{
-}
 
 // ----------------------------------------------------------------------
 /*!
@@ -231,7 +199,15 @@ bool parse_options(int argc, char* argv[])
   string opt_places;
   string opt_params;
 
-  po::options_description desc("Available options");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Available options", desc_width);
   desc.add_options()("help,h", "print out help message")(
       "verbose,v", po::bool_switch(&options.verbose), "verbose mode")("version,V",
                                                                       "display version number")(
@@ -248,6 +224,7 @@ bool parse_options(int argc, char* argv[])
       "places,p", po::value(&opt_places), "place name list")(
       "longitude,x", po::value(&options.longitude), "longitude")(
       "latitude,y", po::value(&options.latitude), "latitude")(
+      "wgs84", po::bool_switch(&options.wgs84), "coordinates are in WGS84")(
       "rows,n",
       po::value(&options.rows)->default_value(-1)->implicit_value(1),
       "number of data rows for each location")(
@@ -292,7 +269,26 @@ bool parse_options(int argc, char* argv[])
               << std::endl
               << "Extract a timeseries from the input data" << std::endl
               << std::endl
-              << desc << std::endl;
+              << desc << std::endl
+              << std::endl
+              << "Available meta parameters:" << std::endl
+              << std::endl
+              << " * MetaDST - 1/0 depending on whether daylight savings is on or not" << std::endl
+              << " * MetaElevationAngle - sun elevation angle" << std::endl
+              << " * MetaFeelsLike - feels like temperature" << std::endl
+              << " * MetaIsDark - 1/0 depending on the sun elevation angle" << std::endl
+              << " * MetaMoonIlluminatedFraction - fraction of moon visible to earth" << std::endl
+              << " * MetaN - total cloudiness in 8ths" << std::endl
+              << " * MetaNN - bottom/middle level cloudiness in 8ths" << std::endl
+              << " * MetaNorth - grid north direction" << std::endl
+              << " * MetaRainProbability - crude estimate of probability of precipitation"
+              << std::endl
+              << " * MetaSnowProb - crude estimate of probability of snow" << std::endl
+              << " * MetaSummerSimmer - the summer simmer index" << std::endl
+              << " * MetaSurfaceRadiation - estimated solar radiation" << std::endl
+              << " * MetaThetaE - theta-E from temperature, pressure and humidity" << std::endl
+              << " * MetaWindChill - wind chill factor" << std::endl
+              << std::endl;
   }
 
   if (!options.locationfile.empty()) options.locations = read_locationlist(options.locationfile);
@@ -305,6 +301,29 @@ bool parse_options(int argc, char* argv[])
   options.params = NFmiStringTools::Split(opt_params);
   options.places = NFmiStringTools::Split(opt_places);
 
+  // Create WGS84 to latlon conversion only if necessary
+  if (options.wgs84)
+  {
+    std::unique_ptr<OGRSpatialReference> wgs84_crs;
+    std::unique_ptr<OGRSpatialReference> fmi_crs;
+
+    wgs84_crs.reset(new OGRSpatialReference);
+    OGRErr err = wgs84_crs->SetFromUserInput("+proj=longlat +ellps=WGS84 +towgs84=0,0,0");
+    if (err != OGRERR_NONE) throw std::runtime_error("Failed to setup WGS84 spatial reference");
+
+    // TODO: WGS84 center may be 100 meters off, according to Wikipedia. Perhaps should not have
+    // zeros here?
+    fmi_crs.reset(new OGRSpatialReference);
+    err = fmi_crs->SetFromUserInput("+proj=longlat +a=6371220 +b=6371220 +towgs84=0,0,0 +no_defs");
+    if (err != OGRERR_NONE)
+      throw std::runtime_error("Failed to setup FMI sphere spatial reference");
+
+    // copies crs's
+    wgs84_to_latlon.reset(OGRCreateCoordinateTransformation(wgs84_crs.get(), fmi_crs.get()));
+    if (!wgs84_to_latlon)
+      throw std::runtime_error("Failed to create WGS84 to FMI Sphere coordinate conversion");
+  }
+
   return true;
 }
 
@@ -315,6 +334,27 @@ bool parse_options(int argc, char* argv[])
 bool IsBad(const NFmiPoint& thePoint)
 {
   return (thePoint.X() == kFloatMissing || thePoint.Y() == kFloatMissing);
+}
+
+// ----------------------------------------------------------------------
+// Convert from WGS84 to FMi Sphere if necessary
+// ----------------------------------------------------------------------
+
+NFmiPoint FixCoordinate(const NFmiPoint& thePoint)
+{
+  if (!options.wgs84) return thePoint;
+
+  double x = thePoint.X();
+  double y = thePoint.Y();
+  if (!wgs84_to_latlon->Transform(1, &x, &y))
+    throw std::runtime_error("Failed to transform input coordinate from WGS84 to FMI Sphere");
+
+  if (options.verbose)
+    std::cout << "# Converted from " << thePoint.X() << "," << thePoint.Y() << " to " << x << ","
+              << y << " distance = "
+              << NFmiGeoTools::GeoDistance(thePoint.X(), thePoint.Y(), x, y) / 1000 << " km\n";
+
+  return NFmiPoint(x, y);
 }
 
 // ----------------------------------------------------------------------
@@ -686,6 +726,20 @@ float MoonIlluminatedFraction(const NFmiTime& theTime)
 }
 
 // ----------------------------------------------------------------------
+/*!
+ * \brief North adjustment
+ */
+// ----------------------------------------------------------------------
+
+float North(NFmiFastQueryInfo& qd, const NFmiPoint& theLatLon)
+{
+  auto area = qd.Area();
+  if (!area) return kFloatMissing;
+
+  return qd.Area()->TrueNorthAzimuth(theLatLon).ToDeg();
+}
+
+// ----------------------------------------------------------------------
 // Keskimääräinen säteily pinnalla
 // ----------------------------------------------------------------------
 
@@ -736,6 +790,8 @@ float MetaFunction(NFmiFastQueryInfo& qd, const string& name, NFmiPoint lonlat)
     return FeelsLike(qd, lonlat);
   else if (name == "MetaSummerSimmer")
     return SummerSimmer(qd, lonlat);
+  else if (name == "MetaNorth")
+    return North(qd, lonlat);
   else
     return kFloatMissing;
 }
@@ -770,6 +826,8 @@ const char* MetaPrecision(const string& name)
     return "%.1f";
   else if (name == "MetaDST")
     return "%g";
+  else if (name == "MetaNorth")
+    return "%.1f";
   else
     return "%f";
 }
@@ -1363,7 +1421,7 @@ int run(int argc, char* argv[])
 
       if (!qi->Location(*iter)) continue;
 
-      NFmiPoint lonlat = qi->Location()->GetLocation();
+      NFmiPoint lonlat = FixCoordinate(qi->Location()->GetLocation());
 
       if (options.rows < 0)
       {
@@ -1404,7 +1462,7 @@ int run(int argc, char* argv[])
     for (LocationList::const_iterator it = options.locations.begin(); it != options.locations.end();
          ++it)
     {
-      NFmiPoint lonlat = it->latlon;
+      NFmiPoint lonlat = FixCoordinate(it->latlon);
       try
       {
         qmgr.setpoint(lonlat, 1000 * options.max_distance);
@@ -1454,7 +1512,7 @@ int run(int argc, char* argv[])
     {
       if (places.size() > 1) cout << "Location: " << it->first << endl;
 
-      NFmiPoint lonlat = it->second;
+      NFmiPoint lonlat = FixCoordinate(it->second);
       try
       {
         qmgr.setpoint(lonlat, 1000 * options.max_distance);

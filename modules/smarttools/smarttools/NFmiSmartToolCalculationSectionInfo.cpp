@@ -14,29 +14,29 @@
 //--------------------------------------------------------
 // Constructor/Destructor
 //--------------------------------------------------------
-NFmiSmartToolCalculationSectionInfo::NFmiSmartToolCalculationSectionInfo(void)
-{
-}
-NFmiSmartToolCalculationSectionInfo::~NFmiSmartToolCalculationSectionInfo(void)
-{
-}
+NFmiSmartToolCalculationSectionInfo::NFmiSmartToolCalculationSectionInfo(void) {}
+NFmiSmartToolCalculationSectionInfo::~NFmiSmartToolCalculationSectionInfo(void) {}
 
 void NFmiSmartToolCalculationSectionInfo::AddCalculationInfo(
     boost::shared_ptr<NFmiSmartToolCalculationInfo> &value)
 {
-  if (value)
-    itsSmartToolCalculationInfoVector.push_back(value);
+  if (value) itsSmartToolCalculationInfoVector.push_back(value);
 }
 
 // Lisätään set:iin kaikki parametrit, joita tässä sectioniossa voidaan muokata.
-// talteen otetaan vain identti, koska muu ei kiinnosta (ainakaan nyt)
-void NFmiSmartToolCalculationSectionInfo::AddModifiedParams(std::set<int> &theModifiedParams)
+void NFmiSmartToolCalculationSectionInfo::AddModifiedParams(
+    std::map<int, std::string> &theModifiedParams)
 {
-  checkedVector<boost::shared_ptr<NFmiSmartToolCalculationInfo> >::size_type ssize =
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculationInfo> >::size_type ssize =
       itsSmartToolCalculationInfoVector.size();
   for (size_t i = 0; i < ssize; i++)
   {
-    theModifiedParams.insert(
-        itsSmartToolCalculationInfoVector[i]->GetResultDataInfo()->GetDataIdent().GetParamIdent());
+    theModifiedParams.emplace(
+        itsSmartToolCalculationInfoVector[i]->GetResultDataInfo()->GetDataIdent().GetParamIdent(),
+        itsSmartToolCalculationInfoVector[i]
+            ->GetResultDataInfo()
+            ->GetDataIdent()
+            .GetParamName()
+            .CharPtr());
   }
 }

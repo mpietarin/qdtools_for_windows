@@ -11,7 +11,7 @@
 #include "NFmiSize.h"
 
 //! Undocumented
-class _FMI_DLL NFmiTimeBag : public NFmiSize
+class NFmiTimeBag : public NFmiSize
 {
  public:
   NFmiTimeBag(void);
@@ -78,7 +78,7 @@ inline NFmiTimeBag::NFmiTimeBag(void)
       itsLastTime(itsFirstTime),
       itsResolution(0)
 {
-  Reset();
+  NFmiTimeBag::Reset();
 }
 
 // ----------------------------------------------------------------------
@@ -96,7 +96,7 @@ inline NFmiTimeBag::NFmiTimeBag(const NFmiMetTime &theFirstTime,
       itsLastTime(theLastTime),
       itsResolution(theTimeResolution)
 {
-  Reset();
+  NFmiTimeBag::Reset();
 }
 
 // ----------------------------------------------------------------------

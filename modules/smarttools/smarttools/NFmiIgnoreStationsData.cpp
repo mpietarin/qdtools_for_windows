@@ -6,8 +6,8 @@
 // ======================================================================
 
 #include "NFmiIgnoreStationsData.h"
-#include <newbase/NFmiSettings.h>
 #include <newbase/NFmiLocation.h>
+#include <newbase/NFmiSettings.h>
 
 NFmiIgnoreStation::NFmiIgnoreStation(void)
     : itsId(0), itsId2(0), itsName(), itsLastLocationIndex(-1), fEnabled(false)
@@ -48,22 +48,18 @@ std::string NFmiIgnoreStation::MakeStationString(void)
                                           // jos se on tyhjä, laitetaan nimeksi "?"
   usedStationName = NFmiStringTools::ReplaceChars(usedStationName, ';', ',');
   usedStationName = NFmiStringTools::ReplaceChars(usedStationName, ':', '.');
-  if (usedStationName.empty())
-    usedStationName = "?";
-  if (IsRange())
-    usedStationName = "...";
+  if (usedStationName.empty()) usedStationName = "?";
+  if (IsRange()) usedStationName = "...";
   std::stringstream out;
   out << itsId;
-  if (IsRange())
-    out << "-" << itsId2;
+  if (IsRange()) out << "-" << itsId2;
   out << ":" << usedStationName << ":" << fEnabled;  // ':' on erotin aseman tiedoissa
   return out.str();
 }
 
 bool NFmiIgnoreStation::IsRange(void) const
 {
-  if (itsId < itsId2)
-    return true;
+  if (itsId < itsId2) return true;
   return false;
 }
 
@@ -77,10 +73,7 @@ NFmiIgnoreStationsData::NFmiIgnoreStationsData(void)
 {
 }
 
-void NFmiIgnoreStationsData::Clear(void)
-{
-  itsStationList.clear();
-}
+void NFmiIgnoreStationsData::Clear(void) { itsStationList.clear(); }
 
 void NFmiIgnoreStationsData::Add(const NFmiIgnoreStation &theStation)
 {
@@ -149,8 +142,7 @@ std::string NFmiIgnoreStationsData::MakeStationListString(void)
          it != itsStationList.end();
          ++it)
     {
-      if (counter != 0)
-        stationsStr += ";";  // tämä on asemien erotin merkki listassa
+      if (counter != 0) stationsStr += ";";  // tämä on asemien erotin merkki listassa
       stationsStr += (*it).MakeStationString();
       counter++;
     }
@@ -214,8 +206,7 @@ bool NFmiIgnoreStationsData::IsIdInList(unsigned long theStationId)
   {
     if ((*it).IsRange())
     {
-      if (theStationId >= (*it).itsId && theStationId <= (*it).itsId2)
-        return (*it).fEnabled;
+      if (theStationId >= (*it).itsId && theStationId <= (*it).itsId2) return (*it).fEnabled;
     }
     else if ((*it).itsId == theStationId)
       return (*it).fEnabled;

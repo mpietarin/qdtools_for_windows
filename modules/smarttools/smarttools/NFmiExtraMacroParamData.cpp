@@ -1,6 +1,6 @@
 #include "NFmiExtraMacroParamData.h"
-#include <newbase/NFmiFastQueryInfo.h>
 #include "NFmiInfoOrganizer.h"
+#include <newbase/NFmiFastQueryInfo.h>
 
 #include <boost/math/special_functions/round.hpp>
 
@@ -14,7 +14,9 @@ NFmiExtraMacroParamData::NFmiExtraMacroParamData()
       itsCalculationPoints(),
       itsCalculationPointProducer(),
       itsObservationRadiusInKm(kFloatMissing),
-      itsObservationRadiusRelative(kFloatMissing)
+      itsObservationRadiusRelative(kFloatMissing),
+      itsSymbolTooltipFile(),
+      itsMacroParamDescription()
 {
 }
 
@@ -145,7 +147,7 @@ static bool IsPrimaryLevelDataType(boost::shared_ptr<NFmiFastQueryInfo> &info)
 }
 
 static boost::shared_ptr<NFmiFastQueryInfo> FindWantedInfo(
-    checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfos, FmiLevelType theLevelType)
+    std::vector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfos, FmiLevelType theLevelType)
 {
   boost::shared_ptr<NFmiFastQueryInfo>
       backupData;  // T‰h‰n laitetaan talteen ei prim‰‰ri datatyyppi varmuuden varalle
@@ -237,7 +239,7 @@ void NFmiExtraMacroParamData::InitializeDataBasedResolutionData(NFmiInfoOrganize
                                                                 const NFmiProducer &theProducer,
                                                                 FmiLevelType theLevelType)
 {
-  checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > infos =
+  std::vector<boost::shared_ptr<NFmiFastQueryInfo> > infos =
       theInfoOrganizer.GetInfos(theProducer.GetIdent());
   boost::shared_ptr<NFmiFastQueryInfo> info = ::FindWantedInfo(infos, theLevelType);
   if (info)
@@ -272,7 +274,7 @@ static void AddCalculationPoints(boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
   }
 }
 
-static void AddCalculationPoints(checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfos,
+static void AddCalculationPoints(std::vector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfos,
                                  const NFmiArea *theArea,
                                  std::vector<NFmiPoint> &theCalculationPoints)
 {
@@ -285,7 +287,7 @@ static void AddCalculationPoints(checkedVector<boost::shared_ptr<NFmiFastQueryIn
 void NFmiExtraMacroParamData::AddCalculationPointsFromData(NFmiInfoOrganizer &theInfoOrganizer,
                                                            const NFmiProducer &theProducer)
 {
-  checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > infos =
+  std::vector<boost::shared_ptr<NFmiFastQueryInfo> > infos =
       theInfoOrganizer.GetInfos(theProducer.GetIdent());
   const NFmiArea *usedArea = theInfoOrganizer.MacroParamData()->Area();
 

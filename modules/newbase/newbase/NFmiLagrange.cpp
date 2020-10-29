@@ -219,8 +219,8 @@ double *NFmiLagrange::Yij()
  */
 // ----------------------------------------------------------------------
 
-void NFmiLagrange::Denominator(const checkedVector<double> &xi,
-                               checkedVector<double> &denominator,
+void NFmiLagrange::Denominator(const std::vector<double> &xi,
+                               std::vector<double> &denominator,
                                int n)
 {
   // Pre-compute the denominator product of the independent variables xi
@@ -267,7 +267,7 @@ void NFmiLagrange::TiDenominator() { Denominator(itsTi, itsTiDenominator, itsTn)
 // ----------------------------------------------------------------------
 
 double NFmiLagrange::L(
-    const checkedVector<double> &xi, double x, checkedVector<double> &denominator, int i, int n)
+    const std::vector<double> &xi, double x, std::vector<double> &denominator, int i, int n)
 {
   // Computes the i:th term of the Lagrange polynom.
   // xi :			array of known INDEPENDENT variables
@@ -589,7 +589,7 @@ int main(int argc, char *argv[])
       out.width(8);
       out << " (" << i << "," << j << ")= " << zInterpolated;
 
-// Normalized (t = [0..1], x = [0..1]) POV-RAY output:
+      // Normalized (t = [0..1], x = [0..1]) POV-RAY output:
 
 #endif
     }

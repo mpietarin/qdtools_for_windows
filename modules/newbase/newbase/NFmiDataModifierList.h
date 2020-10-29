@@ -11,7 +11,7 @@
 #include "NFmiPtrList.h"
 
 //! Undocumented
-class _FMI_DLL NFmiDataModifierList : public NFmiDataModifier
+class NFmiDataModifierList : public NFmiDataModifier
 {
  public:
   virtual ~NFmiDataModifierList(void);
@@ -26,8 +26,8 @@ class _FMI_DLL NFmiDataModifierList : public NFmiDataModifier
   bool BoolOperation(float);
   virtual float FloatOperation(float theValue);
 
-  using NFmiDataModifier::CalculationResult;
   using NFmiDataModifier::Calculate;
+  using NFmiDataModifier::CalculationResult;
   using NFmiDataModifier::WriteExpressionBody;
   virtual float CalculationResult(void);
   virtual void Calculate(float NotInUse);

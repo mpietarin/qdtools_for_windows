@@ -51,6 +51,13 @@ double NearestNonMissing(double theX,
                          double theBottomLeft,
                          double theBottomRight);
 
+double NearestPoint(double theX,
+                    double theY,
+                    double theTopLeft,
+                    double theTopRight,
+                    double theBottomLeft,
+                    double theBottomRight);
+
 // 2D linear interpolation of a coordinate inside a rectangle
 
 NFmiPoint BiLinear(double theX,

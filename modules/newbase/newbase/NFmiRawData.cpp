@@ -23,7 +23,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread.hpp>
-
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -69,6 +68,15 @@ class NFmiRawData::Pimple
             bool fInitialize);
   size_t Size() const;
   float GetValue(size_t index) const;
+
+  bool GetValues(size_t startIndex, size_t step, size_t count, std::vector<float> &values) const;
+  bool GetValuesPartial(size_t startIndex,
+                        size_t rowCount,
+                        size_t columnCount,
+                        size_t step,
+                        size_t rowSkip,
+                        std::vector<float> &values) const;
+
   bool SetValue(size_t index, float value);
   void SetBinaryStorage(bool flag) const;
   bool IsBinaryStorageUsed() const;
@@ -78,18 +86,18 @@ class NFmiRawData::Pimple
   bool Advise(FmiAdvice advice);
 
  private:
-#if NFMIRAWDATA_ENABLE_UNDO_REDO
+#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
   void Unmap() const;
 #endif
 
   mutable MutexType itsMutex;
-  mutable float *itsData{nullptr};                      // non-memory mapped data
-  mutable boost::scoped_ptr<MappedFile> itsMappedFile;  // memory mapped data
-  size_t itsOffset{0};                                  // offset to raw data
-
+  mutable float *itsData{nullptr};                               // non-memory mapped data
+  mutable boost::scoped_ptr<MappedFile> itsMappedFile{nullptr};  // memory mapped data
+  size_t itsOffset{0};                                           // offset to raw data
   size_t itsSize{0};
   mutable bool itsSaveAsBinaryFlag{true};
   bool itsEndianSwapFlag{false};
+  std::string itsFileName{};  // to ease examining core dumps
 };
 
 // ----------------------------------------------------------------------
@@ -99,19 +107,14 @@ class NFmiRawData::Pimple
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::~Pimple() { delete[] itsData; }
+
 // ----------------------------------------------------------------------
 /*!
  * \brief Default constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiRawData::Pimple::Pimple()
-    : itsMutex(),
-
-      itsMappedFile(nullptr)
-
-{
-}
+NFmiRawData::Pimple::Pimple() : itsMutex(), itsMappedFile(nullptr) {}
 
 // ----------------------------------------------------------------------
 /*!
@@ -120,12 +123,7 @@ NFmiRawData::Pimple::Pimple()
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::Pimple(const Pimple &other)
-    : itsMutex(),
-      itsData(nullptr),
-      itsMappedFile(nullptr),
-      itsOffset(0),
-      itsSize(other.itsSize),
-      itsSaveAsBinaryFlag(other.itsSaveAsBinaryFlag)
+    : itsMutex(), itsSize(other.itsSize), itsSaveAsBinaryFlag(other.itsSaveAsBinaryFlag)
 
 {
   // We assume copied data will be changed so that copying mmapping would
@@ -153,7 +151,7 @@ NFmiRawData::Pimple::Pimple(const Pimple &other)
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::Pimple(const string &filename, istream &file, size_t size)
-    : itsMutex(), itsData(nullptr), itsMappedFile(nullptr), itsOffset(0), itsSize(size)
+    : itsMutex(), itsSize(size), itsFileName(filename)
 
 {
   WriteLock lock(itsMutex);
@@ -236,7 +234,8 @@ NFmiRawData::Pimple::Pimple(istream &file, size_t size, bool endianswap)
   long datatype;
   file >> datatype;
 
-  if (FmiInfoVersion >= 6)
+  // We trust everything to be at least version 6 by now
+  if (DefaultFmiInfoVersion >= 6)
     file >> itsSaveAsBinaryFlag;
   else
     itsSaveAsBinaryFlag = false;
@@ -399,7 +398,7 @@ bool NFmiRawData::Pimple::IsBinaryStorageUsed() const
  */
 // ----------------------------------------------------------------------
 
-#if NFMIRAWDATA_ENABLE_UNDO_REDO
+#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
 void NFmiRawData::Pimple::Unmap() const
 {
   if (itsData) return;  // oli jo alustettu
@@ -429,8 +428,87 @@ float NFmiRawData::Pimple::GetValue(size_t index) const
 
   if (itsData) return itsData[index];
 
-  const auto *ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
-  return ptr[index];
+  auto *addr = itsMappedFile->const_data() + itsOffset + index * sizeof(float);
+  float value;
+  memcpy(&value, addr, sizeof(float));
+  return value;
+
+  // ASAN does not like the reinterpret_cast here due to bad float alignment:
+  // const auto *ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
+  // return ptr[index];
+}
+
+bool NFmiRawData::Pimple::GetValues(size_t startIndex,
+                                    size_t step,
+                                    size_t count,
+                                    std::vector<float> &values) const
+{
+  if (startIndex + step * (count - 1) >= itsSize) return false;
+
+  values.resize(count);
+
+  const float *ptr;
+
+  if (itsData)
+    ptr = itsData;
+  else
+    ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
+
+  {
+    ReadLock lock(itsMutex);
+
+    size_t i = 0;
+    std::generate(values.begin(), values.end(), [&] { return ptr[startIndex + (i++) * step]; });
+
+    // C++17 (not supported yet), might enable additional compiler optimization
+
+    // std::generate(values.begin(), values.end(), [&] { return i++; });
+    // std::transform(std::execution::par_unseq,values.begin(),values.end(),
+    // [=] (const float &i)
+    // {
+    // 	return ptr[startIndex + i*step];
+    // });
+  }
+
+  return true;
+}
+
+bool NFmiRawData::Pimple::GetValuesPartial(size_t startIndex,
+                                           size_t rowCount,
+                                           size_t rowStep,
+                                           size_t columnCount,
+                                           size_t columnStep,
+                                           std::vector<float> &values) const
+{
+  if (startIndex + rowStep * (rowCount - 1) + columnStep * (columnCount - 1) >= itsSize)
+    return false;
+
+  values.resize(rowCount * columnCount);
+
+  const float *ptr;
+
+  if (itsData)
+    ptr = itsData;
+  else
+    ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
+
+  {
+    ReadLock lock(itsMutex);
+
+    size_t i = 0;
+
+    for (size_t row = 0; row < rowCount; row++)
+    {
+      for (size_t column = 0; column < columnCount; column++)
+      {
+        values[column + row * columnCount] = ptr[startIndex + i];
+        i += columnStep;
+      }
+      i += rowStep;
+    }
+  }
+
+  return true;
 }
 
 // ----------------------------------------------------------------------
@@ -452,13 +530,16 @@ bool NFmiRawData::Pimple::SetValue(size_t index, float value)
   }
   else if (itsOffset > 0)
   {
+    if (itsMappedFile->flags() == boost::iostreams::mapped_file::readonly)
+      throw std::runtime_error("Can't modify read-only memory-mapped data");
+
     // We have mmapped output data
     auto *ptr = reinterpret_cast<float *>(itsMappedFile->data() + itsOffset);
     ptr[index] = value;
     return true;
   }
 
-// copy-on-write semantics: switch to memory buffer on a write
+  // copy-on-write semantics: switch to memory buffer on a write
 
 #if 0
   Unmap();
@@ -482,11 +563,11 @@ ostream &NFmiRawData::Pimple::Write(ostream &file) const
   const int kFloat = 6;
   file << kFloat << endl;
 
-  if (FmiInfoVersion >= 6) file << itsSaveAsBinaryFlag << endl;
+  if (DefaultFmiInfoVersion >= 6) file << itsSaveAsBinaryFlag << endl;
 
   file << itsSize * sizeof(float) << endl;
 
-  if (itsSaveAsBinaryFlag && FmiInfoVersion >= 6)
+  if (itsSaveAsBinaryFlag && DefaultFmiInfoVersion >= 6)
   {
     if (itsData != nullptr)
     {
@@ -518,15 +599,18 @@ ostream &NFmiRawData::Pimple::Write(ostream &file) const
 
 void NFmiRawData::Pimple::Backup(char *ptr) const
 {
-  ReadLock lock(itsMutex);
+  if (itsData)
+  {
+    ReadLock lock(itsMutex);
 
 // we assume data which is backed up is edited, so might as well unmap
-#if NFMIRAWDATA_ENABLE_UNDO_REDO
-  Unmap();
+#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+    Unmap();
 #endif
 
-  auto *src = reinterpret_cast<char *>(itsData);
-  memcpy(ptr, src, itsSize * sizeof(float));
+    auto *src = reinterpret_cast<char *>(itsData);
+    memcpy(ptr, src, itsSize * sizeof(float));
+  }
 }
 
 // ----------------------------------------------------------------------
@@ -537,16 +621,19 @@ void NFmiRawData::Pimple::Backup(char *ptr) const
 
 void NFmiRawData::Pimple::Undo(char *ptr)
 {
-  WriteLock lock(itsMutex);
+  if (itsData)
+  {
+    WriteLock lock(itsMutex);
 
-// This may be slower than necessary when mmapped, but since Backup
-// unmaps this really should never actually unmap
+    // This may be slower than necessary when mmapped, but since Backup
+    // unmaps this really should never actually unmap
 
-#if NFMIRAWDATA_ENABLE_UNDO_REDO
-  Unmap();
+#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+    Unmap();
 #endif
-  auto *src = reinterpret_cast<char *>(itsData);
-  memcpy(src, ptr, itsSize * sizeof(float));
+    auto *src = reinterpret_cast<char *>(itsData);
+    memcpy(src, ptr, itsSize * sizeof(float));
+  }
 }
 
 // ----------------------------------------------------------------------
@@ -639,6 +726,42 @@ size_t NFmiRawData::Size() const { return itsPimple->Size(); }
 // ----------------------------------------------------------------------
 
 float NFmiRawData::GetValue(size_t index) const { return itsPimple->GetValue(index); }
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Resizes values (invalidates iterators!!) to count and populates it with values at
+ * startIndex, startIndex+step, startIndex+step*2, ..., startIndex+step*count. Returns false if
+ * out-of-range, true otherwise.
+ */
+// ----------------------------------------------------------------------
+
+bool NFmiRawData::GetValues(size_t startIndex,
+                            size_t step,
+                            size_t count,
+                            std::vector<float> &values) const
+{
+  return itsPimple->GetValues(startIndex, step, count, values);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Resizes values (invalidates iterators!!) to count and populates it with values at
+ * startIndex, startIndex+step, startIndex+step*2, ..., startIndex+step*count. Returns false if
+ * out-of-range, true otherwise.
+ */
+// ----------------------------------------------------------------------
+
+bool NFmiRawData::GetValuesPartial(size_t startIndex,
+                                   size_t rowCount,
+                                   size_t rowStep,
+                                   size_t columnCount,
+                                   size_t columnStep,
+                                   std::vector<float> &values) const
+{
+  return itsPimple->GetValuesPartial(
+      startIndex, rowCount, rowStep, columnCount, columnStep, values);
+}
+
 // ----------------------------------------------------------------------
 /*!
  * \brief Set value at given index

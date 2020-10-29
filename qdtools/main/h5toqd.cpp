@@ -8,10 +8,18 @@
 
 #include <MXA/HDF5/H5Lite.h>
 #include <MXA/HDF5/H5Utilities.h>
-
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
+#include <boost/program_options.hpp>
+#include <boost/shared_ptr.hpp>
 #include <macgyver/StringConversion.h>
 #include <macgyver/TimeParser.h>
-
 #include <newbase/NFmiAreaFactory.h>
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiEquidistArea.h>
@@ -27,21 +35,14 @@
 #include <newbase/NFmiTimeDescriptor.h>
 #include <newbase/NFmiTimeList.h>
 #include <newbase/NFmiVPlaceDescriptor.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
-#include <boost/program_options.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
+
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
 
 // Global to get better error messages outside param descriptor builder
 
@@ -55,35 +56,27 @@ NFmiEnumConverter converter;
 
 struct Options
 {
-  Options();
-
-  bool verbose;              // -v --verbose
-  std::string projection;    // -P --projection
-  std::string infile;        // -i --infile
-  std::string outfile;       // -o --outfile
-  std::string datasetname;   // --datasetname
-  std::string producername;  // --producername
-  long producernumber;       // --producernumber
+  bool verbose = false;                 // -v --verbose
+  bool prodparfix = false;              // --prodparfix
+  bool lowercase = false;               // --lowercase
+  bool uppercase = false;               // --uppercase
+  bool startepochs = false;             // --startepochs
+  std::string projection;               // -P --projection
+  std::string infile = "-";             // -i --infile
+  std::string outfile = "-";            // -o --outfile
+  std::string datasetname = "dataset";  // --datasetname
+  std::string producername = "RADAR";   // --producername
+  long producernumber = 1014;           // --producernumber
+  std::string default_wmo;              // --default-wmo
+  std::string default_rad;              // --default-rad
+  std::string default_plc;              // --default-plc
+  std::string default_nod;              // --default-nod
+  std::string default_org;              // --default-org
+  std::string default_cty;              // --default-cty
 };
 
 Options options;
 
-// ----------------------------------------------------------------------
-/*!
- * \brief Default options
- */
-// ----------------------------------------------------------------------
-
-Options::Options()
-    : verbose(false),
-      projection(""),
-      infile("-"),
-      outfile("-"),
-      datasetname("dataset"),
-      producername("RADAR"),
-      producernumber(1014)
-{
-}
 // ----------------------------------------------------------------------
 /*!
  * \brief Parse command line options
@@ -99,17 +92,37 @@ bool parse_options(int argc, char *argv[])
 
   std::string producerinfo;
 
-  po::options_description desc("Allowed options");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Allowed options", desc_width);
+  // clang-format off
   desc.add_options()("help,h", "print out help message")(
       "verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")(
       "version,V", "display version number")(
       "projection,P", po::value(&options.projection), "projection")(
       "infile,i", po::value(&options.infile), "input HDF5 file")(
       "outfile,o", po::value(&options.outfile), "output querydata file")(
+      "prodparfix", po::bool_switch(&options.prodparfix), "take last number from prodpar array")(
+      "lowercase", po::bool_switch(&options.lowercase), "convert output filename to lower case")(
+      "uppercase", po::bool_switch(&options.uppercase), "convert output filename to upper case")(
       "datasetname", po::value(&options.datasetname), "dataset name prefix (default=dataset)")(
       "producer,p", po::value(&producerinfo), "producer number,name")(
       "producernumber", po::value(&options.producernumber), "producer number (default: 1014)")(
-      "producername", po::value(&options.producername), "producer name (default: RADAR)");
+      "producername", po::value(&options.producername), "producer name (default: RADAR)")(
+      "startepochs", po::bool_switch(&options.startepochs), "store HDF5 startepochs as the valid time")(
+      "default-plc", po::value(&options.default_plc)->default_value("comp"), "default replacement for %PLC")(
+      "default-wmo", po::value(&options.default_wmo)->default_value("wmo"), "default replacement for %WMO")(
+      "default-rad", po::value(&options.default_rad)->default_value("rad"), "default replacement for %RAD")(
+      "default-nod", po::value(&options.default_nod)->default_value("nod"), "default replacement for %NOD")(
+      "default-org", po::value(&options.default_org)->default_value("org"), "default replacement for %ORG")(
+      "default-cty", po::value(&options.default_cty)->default_value("cty"), "default replacement for %CTY");
+  // clang-format on
 
   po::positional_options_description p;
   p.add("infile", 1);
@@ -122,17 +135,36 @@ bool parse_options(int argc, char *argv[])
 
   if (opt.count("version") != 0)
   {
-    std::cout << "h52qd v1.2 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
+    std::cout << "h52qd v1.3 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
   }
 
   if (opt.count("help"))
   {
-    std::cout << "Usage: h5toqd [options] infile outfile" << std::endl
-              << std::endl
-              << "Converts EUMETNET OPERA radar files to querydata." << std::endl
-              << "Only features in known use are supported." << std::endl
-              << std::endl
-              << desc << std::endl;
+    std::cout
+        << "Usage: h5toqd [options] infile outfile\n\n"
+           "Converts EUMETNET OPERA radar files to querydata.\n"
+           "Only features in known use are supported.\n\n"
+        << desc
+        << "\n"
+           "The output filename may contain the following strings, which will be replaced by\n"
+           "the respective settings according to ODIM specs:\n\n"
+           "   - %ORIGINTIME\n"
+           "   - %PRODUCT     - taken from product\n"
+           "   - %QUANTITY    - taken from quantity\n"
+           "   - %WMO         - taken from source WMO component (Opera v2.2 table 3)\n"
+           "   - %RAD         - taken from source RAD component\n"
+           "   - %PLC         - taken from source PLC component\n"
+           "   - %NOD         - taken from source NOD component\n"
+           "   - %ORG         - taken from source ORG component\n"
+           "   - %CTY         - taken from source CTY component\n"
+           "   - ... whatever is in the source setting\n"
+           "   - %INTERVAL    - enddate,endtime - starttime,starttime or empty if not available or "
+           "zero\n\n"
+           "If the ODIM setting is missing, a default replacement will be used for the most\n"
+           "important settings. The defaults can be changed using --default-plc and similar\n"
+           "options."
+        << std::endl;
+
     return false;
   }
 
@@ -142,6 +174,9 @@ bool parse_options(int argc, char *argv[])
 
   if (!fs::exists(options.infile))
     throw std::runtime_error("Input file '" + options.infile + "' does not exist");
+
+  if (options.lowercase && options.uppercase)
+    throw std::runtime_error("Cannot use --lowercase and --uppercase simultaneously");
 
   // Handle the alternative ways to define the producer
 
@@ -204,15 +239,24 @@ std::string get_string(const std::string &name, IMXAArray &attr)
 {
   std::ostringstream out;
 
-  hsize_t n = attr.getNumberOfElements();
+  size_t n = attr.getNumberOfElements();
 
-  if (n != 1)
-    throw std::runtime_error("Element " + name + " is not of size 1, but " +
-                             boost::lexical_cast<std::string>(n));
-
-  T *value = static_cast<T *>(attr.getVoidPointer(0));
-
-  out << value[0];
+  if (n == 1)
+  {
+    T *value = static_cast<T *>(attr.getVoidPointer(0));
+    out << value[0];
+  }
+  else if (n > 1)
+  {
+    out << "[ ";
+    for (std::size_t i = 0; i < n; i++)
+    {
+      if (i > 0) out << ", ";
+      T *value = static_cast<T *>(attr.getVoidPointer(i));
+      out << value[0];
+    }
+    out << " ]";
+  }
 
   return out.str();
 }
@@ -253,12 +297,42 @@ std::string get_attribute_string(const std::string &name, IMXAArray &attr)
 template <typename T>
 T get_attribute_value(const hid_t &hid, const std::string &path, const std::string &name)
 {
-  T value;
+  // copied from /usr/include/MXA/HDF5/H5Lite.h readVectorAttribute()
+  H5T_class_t type_class;
+  size_t type_size;
+  std::vector<hsize_t> dims;
+  hid_t attr_type;
+  auto err = H5Lite::getAttributeInfo(hid, path, name, dims, type_class, type_size, attr_type);
+  if (err) throw std::runtime_error("Failed to read attribute info for " + path + "/" + name);
+  // H5Tclose(attr_type); needed??
 
-  if (H5Lite::readScalarAttribute(hid, path, name, value) != 0)
-    throw std::runtime_error("Failed to read attribute " + path + "/" + name);
+  bool is_array = (!dims.empty());
 
-  return value;
+  if (is_array)
+  {
+    // There was a bug in ODIM 2.2 radar data where prodpar is a vector whose
+    // last element was the actually desired value. Also, RaVaKe stores some
+    // scalars into one element vectors.
+
+    std::vector<T> values;
+    if (H5Lite::readVectorAttribute(hid, path, name, values) != 0)
+      throw std::runtime_error("Failed to read vector attributes " + path + "/" + name);
+
+    if (values.empty())
+      throw std::runtime_error("Vector attribute " + path + "/" + name + " is empty");
+
+    if (options.prodparfix || values.size() == 1) return values.back();
+
+    throw std::runtime_error("Expecting " + path + "/" + name +
+                             " to be a scalar, not an array. Consider using --prodparfix");
+  }
+  else
+  {
+    T value;
+    if (H5Lite::readScalarAttribute(hid, path, name, value) != 0)
+      throw std::runtime_error("Failed to read attribute " + path + "/" + name);
+    return value;
+  }
 }
 
 // ----------------------------------------------------------------------
@@ -389,7 +463,7 @@ bool is_group_attribute(const hid_t &hid, const std::string &path, const std::st
 
   H5Lite::closeId(hid_group, H5G_GROUP);
 
-  return ret != 0;
+  return ret == 1;
 }
 
 template <typename T>
@@ -574,7 +648,24 @@ boost::posix_time::ptime extract_origin_time(const hid_t &hid)
 
 boost::posix_time::ptime extract_valid_time(const hid_t &hid, int i)
 {
-  std::string name = dataset(i) + "/what", strdate, strtime;
+  if (options.startepochs)
+  {
+    std::string name = dataset(i) + "/how";
+    try
+    {
+      double epochs = get_attribute_value<double>(hid, name, "startepochs");
+      std::time_t t = static_cast<std::time_t>(epochs);
+      return boost::posix_time::from_time_t(t);
+    }
+    catch (...)
+    {
+      // continue without startepochs setting
+    }
+  }
+
+  std::string name = dataset(i) + "/what";
+  std::string strdate;
+  std::string strtime;
   try
   {
     strdate = get_attribute_value<std::string>(hid, name, "enddate");
@@ -599,7 +690,26 @@ boost::posix_time::ptime extract_valid_time(const hid_t &hid, int i)
 
   boost::posix_time::ptime t = Fmi::TimeParser::parse(stamp);
 
+  if (!options.startepochs) return t;
+
+  // Check whether we must extract an interval
+
   return t;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Extract start time
+ */
+// ----------------------------------------------------------------------
+
+boost::posix_time::ptime extract_start_time(const hid_t &hid, int i)
+{
+  std::string name = dataset(i) + "/what";
+  auto strdate = get_attribute_value<std::string>(hid, name, "startdate");
+  auto strtime = get_attribute_value<std::string>(hid, name, "starttime");
+  auto stamp = (strdate + strtime).substr(0, 12);
+  return Fmi::TimeParser::parse(stamp);
 }
 
 // ----------------------------------------------------------------------
@@ -615,6 +725,8 @@ NFmiTimeDescriptor create_tdesc(const hid_t &hid)
 
   const int n = count_datasets(hid);
 
+  std::set<NFmiMetTime> validtimes;
+
   NFmiTimeList tlist;
 
   if (n > 0)
@@ -622,9 +734,11 @@ NFmiTimeDescriptor create_tdesc(const hid_t &hid)
     // Valid dataset specs
     for (int i = 1; i <= n; i++)
     {
-      t = extract_valid_time(hid, i);
-      tlist.Add(new NFmiMetTime(tomettime(t)));
+      t = tomettime(extract_valid_time(hid, i));
+      validtimes.insert(t);
     }
+    for (const auto &validtime : validtimes)
+      tlist.Add(new NFmiMetTime(validtime));
   }
   else
   {
@@ -676,6 +790,8 @@ FmiParameterName opera_name_to_newbase(const std::string &product,
       return kFmiRadialVelocity;
     else if (quantity == "WRAD" || quantity == "W")  // W is used by Latvians
       return kFmiSpectralWidth;
+    else if (quantity == "RATE")
+      return kFmiPrecipitationRate;
   }
   else if (product == "ETOP")
   {
@@ -1455,7 +1571,7 @@ void copy_dataset(const hid_t &hid, NFmiFastQueryInfo &info, int datanum)
     if (!info.Param(id))
       throw std::runtime_error("Failed to activate product " + product +
                                " in output querydata with id " + converter.ToString(id));
-// Copy the values
+      // Copy the values
 
 #if 0
 	  // Crashes in RHEL6
@@ -1473,9 +1589,9 @@ void copy_dataset(const hid_t &hid, NFmiFastQueryInfo &info, int datanum)
     if (H5Lite::readVectorDataset(hid, prefix + "/data", values) != 0)
       throw std::runtime_error("Failed to read " + prefix + "/data");
 
-// Copy values into querydata. Unfortunately a simple loop
-// will not do, the data would go upside down. Hence we need
-// to index the data directly.
+      // Copy values into querydata. Unfortunately a simple loop
+      // will not do, the data would go upside down. Hence we need
+      // to index the data directly.
 
 #if 1
     const unsigned long width = info.Grid()->XNumber();
@@ -1574,7 +1690,7 @@ void copy_dataset_pvol(const hid_t &hid, NFmiFastQueryInfo &info, int datanum)
   double rscale = get_attribute_value<double>(hid, prefix + "/where", "rscale");
   double rstart = get_attribute_value<double>(hid, prefix + "/where", "rstart");
 
-// Copy the values
+  // Copy the values
 
 #if 0
   // Crashes in RHEL6
@@ -1665,6 +1781,211 @@ void copy_datasets(const hid_t &hid, NFmiFastQueryInfo &info)
 
 // ----------------------------------------------------------------------
 /*!
+ * \brief Collect unique products
+ */
+// ----------------------------------------------------------------------
+
+std::set<std::string> collect_attributes(const hid_t &hid, const std::string &name)
+{
+  std::set<std::string> ret;
+
+  const int n = count_datasets(hid);
+  for (int i = 1; i <= n; i++)
+  {
+    auto product = get_attribute_value<std::string>(hid, dataset(i) + "/what", name);
+    ret.insert(product);
+  }
+
+  return ret;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Get source settings
+ */
+// ----------------------------------------------------------------------
+
+std::map<std::string, std::string> get_source_settings(const hid_t &hid)
+{
+  std::map<std::string, std::string> ret;
+
+  // Collect unique source settings
+  std::string source;
+  try
+  {
+    source = get_attribute_value<std::string>(hid, "/what", "source");
+  }
+  catch (...)
+  {
+    std::cout << "Found no source\n";
+    return {};
+  }
+
+  if (source.empty()) return {};
+
+  // Split for example "WMO:78073,PLC:Nassau,ORG:100" into parts
+  std::vector<std::string> parts;
+  boost::algorithm::split(parts, source, boost::is_any_of(","));
+
+  // Store the key-value pairs into a map
+  for (const auto &part : parts)
+  {
+    auto pos = part.find(':');
+    if (pos != std::string::npos)
+    {
+      auto key = part.substr(0, pos);
+      auto value = part.substr(pos + 1);
+      ret[key] = value;
+    }
+  }
+
+  return ret;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Establish product time interval string
+ */
+// ----------------------------------------------------------------------
+
+std::string get_interval(const hid_t &hid)
+{
+  try
+  {
+    const int n = count_datasets(hid);
+
+    // Extract all intervals
+
+    std::set<boost::posix_time::time_duration> intervals;
+
+    for (int i = 1; i <= n; i++)
+    {
+      auto starttime = extract_start_time(hid, i);
+      auto endtime = extract_valid_time(hid, i);
+      intervals.insert(endtime - starttime);
+    }
+
+    // The interval must be unique
+    if (intervals.empty() || intervals.size() > 1) return {};
+
+    // Interval must be nonzero. Negative is probably a data error, we handle it simultaenously.
+    auto interval = *intervals.begin();
+    auto seconds = interval.total_seconds();
+    if (seconds <= 0) return {};
+
+    // Format the interval
+    if (seconds % 3600 == 0) return std::to_string(seconds / 3600) + "h";
+    if (seconds % 60 == 0) return std::to_string(seconds / 60) + "m";
+    return std::to_string(seconds) + "s";
+  }
+  catch (...)
+  {
+    // Return empty string if required attributes are not available
+    return {};
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Join set of strings with a separator
+ */
+// ----------------------------------------------------------------------
+
+std::string join(const std::set<std::string> &strings, const std::string &separator)
+{
+  std::string ret;
+  for (const auto &str : strings)
+  {
+    if (!ret.empty()) ret += separator;
+    ret += str;
+  }
+  return ret;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Expand a name based on HDF5 contents
+ *
+ * Patterns substituted:
+ *
+ *   - %ORIGINTIME
+ *   - %PRODUCT     - taken from "product"
+ *   - %QUANTITY    - taken from "quantity"
+ *   - %WMO         - taken from "source" WMO component (Opera v2.2 table 3)
+ *   - %RAD         - taken from "source" RAD component
+ *   - %PLC         - taken from "source" PLC component
+ *   - %NOD         - taken from "source" NOD component
+ *   - %ORG         - taken from "source" ORG component
+ *   - %CTY         - taken from "source" CTY component
+ *   - ... whatever is in the source setting
+ *   - %INTERVAL    - enddate,endtime - starttime,starttime or empty if not available or zero
+ */
+// ----------------------------------------------------------------------
+
+std::string expand_name(const std::string &theName, const hid_t &hid, NFmiFastQueryInfo &info)
+{
+  auto name = theName;
+  if (name.find("%ORIGINTIME") != std::string::npos)
+  {
+    auto otime = info.OriginTime();
+    std::string stime = otime.ToStr(kYYYYMMDDHHMM).CharPtr();
+    boost::replace_all(name, "%ORIGINTIME", stime);
+  }
+  if (name.find("%PRODUCT") != std::string::npos)
+  {
+    auto tmp = join(collect_attributes(hid, "product"), "_");
+    boost::replace_all(name, "%PRODUCT", tmp);
+  }
+  if (name.find("%QUANTITY") != std::string::npos)
+  {
+    auto tmp = join(collect_attributes(hid, "quantity"), "_");
+    boost::replace_all(name, "%QUANTITY", tmp);
+  }
+  if (name.find("%INTERVAL") != std::string::npos)
+  {
+    auto interval = get_interval(hid);  // may be empty string too
+    boost::replace_all(name, "%INTERVAL", interval);
+  }
+
+  auto source_settings = get_source_settings(hid);
+  for (const auto &name_value : source_settings)
+  {
+    boost::replace_all(name, "%" + name_value.first, name_value.second);
+  }
+
+  // Finally make default changes if some ODIM settings are missing
+
+  boost::replace_all(name, "%WMO", options.default_wmo);
+  boost::replace_all(name, "%RAD", options.default_rad);
+  boost::replace_all(name, "%PLC", options.default_plc);
+  boost::replace_all(name, "%NOD", options.default_nod);
+  boost::replace_all(name, "%ORG", options.default_org);
+  boost::replace_all(name, "%CTY", options.default_cty);
+
+  return name;
+}
+
+std::string expand_name_and_case(const std::string &theName,
+                                 const hid_t &hid,
+                                 NFmiFastQueryInfo &info)
+{
+  auto name = expand_name(theName, hid, info);
+
+  // These must be done last
+  if (options.lowercase)
+  {
+    boost::algorithm::to_lower(name);
+  }
+  if (options.uppercase)
+  {
+    boost::algorithm::to_upper(name);
+  }
+
+  return name;
+}
+
+// ----------------------------------------------------------------------
+/*!
  * \brief Main program without exception handling
  */
 // ----------------------------------------------------------------------
@@ -1705,7 +2026,8 @@ int run(int argc, char *argv[])
 
   if (data.get() == 0) throw std::runtime_error("Could not allocate memory for result data");
 
-  info.SetProducer(NFmiProducer(options.producernumber, options.producername));
+  info.SetProducer(
+      NFmiProducer(options.producernumber, expand_name(options.producername, hid, info)));
 
   copy_datasets(hid, info);
 
@@ -1718,7 +2040,7 @@ int run(int argc, char *argv[])
 
     NFmiGrid grid(area.get(), width, height);
     boost::shared_ptr<NFmiQueryData> tmp(
-        NFmiQueryDataUtil::Interpolate2OtherGrid(data.get(), &grid, NULL));
+        NFmiQueryDataUtil::Interpolate2OtherGrid(data.get(), &grid, nullptr));
     std::swap(data, tmp);
   }
 
@@ -1726,7 +2048,9 @@ int run(int argc, char *argv[])
     std::cout << *data;
   else
   {
-    std::ofstream out(options.outfile.c_str());
+    auto filename = expand_name_and_case(options.outfile, hid, info);
+    if (options.verbose) std::cout << "Writing " << filename << std::endl;
+    std::ofstream out(filename.c_str());
     out << *data;
   }
 

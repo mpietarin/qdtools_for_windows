@@ -34,6 +34,10 @@
  * <dd>
  * Display help on command line options.
  * </dd>
+ * <dt>-Q</dt>
+ * <dd>
+ * Use all files in the directory (newbase multifile)
+ * </dd>
  * <dt>-p [param1,param2,...]</dt>
  * <dd>
  * Define the parameters to be extracted. Normally all parameters
@@ -52,9 +56,9 @@
  * times will be extracted. This differs from -t in the interpretation
  * of the dt parameter, with -t it is local time, with -T it is UTC time
  * </dd>
- * <dt>-i [hour]</dt>
+ * <dt>-i [hour,...]</dt>
  * <dd>Define the hour to be extracted (local time)</dd>
- * <dt>-I [hour]</dt>
+ * <dt>-I [hour,...]</dt>
  * <dd>Define the hour to be extracted (UTC time)</dd>
  * </dd>
  * </dl>
@@ -74,14 +78,15 @@
 #include <newbase/NFmiDataModifierAvgAbs.h>
 #include <newbase/NFmiDataModifierChange.h>
 #include <newbase/NFmiDataModifierMax.h>
-#include <newbase/NFmiDataModifierMin.h>
-#include <newbase/NFmiDataModifierSum.h>
 #include <newbase/NFmiDataModifierMaxMean.h>
 #include <newbase/NFmiDataModifierMedian.h>
+#include <newbase/NFmiDataModifierMin.h>
 #include <newbase/NFmiDataModifierStandardDeviation.h>
+#include <newbase/NFmiDataModifierSum.h>
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiGrid.h>
+#include <newbase/NFmiMultiQueryInfo.h>
 #include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiQueryDataUtil.h>
 #include <newbase/NFmiStringTools.h>
@@ -107,7 +112,7 @@ void usage()
 {
   cout << "Usage: qdfilter [options] startoffset endoffset function querydata" << endl
        << endl
-       << "Qdfilter filters out data from the given querydata." << endl
+       << "qdfilter filters out data from the given querydata." << endl
        << endl
        << "Usage:" << endl
        << endl
@@ -125,6 +130,8 @@ void usage()
        << endl
        << "Available options:" << endl
        << endl
+       << "-Q" << endl
+       << "\tUse all files in the directory (multifile mode)" << endl
        << "-o <outfile>" << endl
        << "\tThe output filename instead of standard output" << endl
        << endl
@@ -216,8 +223,8 @@ NFmiParamDescriptor MakeParamDescriptor(NFmiFastQueryInfo& theQ, const vector<st
  * \param lasttime True, if only the last time is to be kept
  * \param theTimes The time interval to extract, empty if everything
  * \param utc True, if UTC handling is desired
- * \param local_hour 0-23 to extract local hour, -1 otherwise
- * \param utc_hour 0-23 to extract utc hour, -1 otherwise
+ * \param local_hours 0-23 to extract local hour, or empty
+ * \param utc_hours 0-23 to extract utc hours, or empty
  * \param startoffset filter start offset in minutes
  * \param endoffset filter end offset in minutes
  * \return The new descriptor
@@ -228,8 +235,8 @@ NFmiTimeDescriptor MakeTimeDescriptor(NFmiFastQueryInfo& theQ,
                                       bool lasttime,
                                       const list<int>& theTimes,
                                       bool utc,
-                                      int local_hour,
-                                      int utc_hour,
+                                      const std::vector<int>& local_hours,
+                                      const std::vector<int>& utc_hours,
                                       int startoffset,
                                       int endoffset)
 {
@@ -246,14 +253,14 @@ NFmiTimeDescriptor MakeTimeDescriptor(NFmiFastQueryInfo& theQ,
   if (theTimes.size() > 3)
     throw runtime_error("Cannot extract timeinterval containing more than 3 values");
 
-  int dt1, dt2, dt;
-  if (theTimes.size() == 0)
-  {
-    dt1 = -24 * 365 * 100;  // 100 years should be enough for any use
-    dt2 = 24 * 365 * 100;
-    dt = 1;
-  }
-  else if (theTimes.size() == 1)
+  bool has_timestep = (theTimes.size() > 0);
+  bool all_timesteps = (!has_timestep && local_hours.empty() && utc_hours.empty());
+
+  int dt1 = 0;
+  int dt2 = 0;
+  int dt = 0;
+
+  if (theTimes.size() == 1)
   {
     dt1 = 0;
     dt2 = theTimes.front();
@@ -265,15 +272,16 @@ NFmiTimeDescriptor MakeTimeDescriptor(NFmiFastQueryInfo& theQ,
     dt2 = theTimes.back();
     dt = 1;
   }
-  else
+  else if (theTimes.size() == 3)
   {
     dt1 = theTimes.front();
     dt2 = *(++theTimes.begin());
     dt = theTimes.back();
   }
 
-  if (dt < 0 || dt > 24 || 24 % dt != 0)
-    throw runtime_error("Time step dt in option -t must divide 24");
+  if (has_timestep)
+    if (dt < 0 || dt > 24 || 24 % dt != 0)
+      throw runtime_error("Time step dt in option -t must divide 24");
 
   NFmiMetTime origintime = theQ.OriginTime();
   NFmiMetTime starttime = origintime;
@@ -284,47 +292,55 @@ NFmiTimeDescriptor MakeTimeDescriptor(NFmiFastQueryInfo& theQ,
   NFmiTimeList datatimes;
   for (theQ.ResetTime(); theQ.NextTime();)
   {
+    bool ok = all_timesteps;
+
     NFmiMetTime t = theQ.ValidTime();
-    if (t.IsLessThan(starttime)) continue;
-    if (endtime.IsLessThan(t)) continue;
-    if (dt > 1)
+
+    if (has_timestep)
     {
-      if (utc)
-      {
-        if (t.GetHour() % dt != 0) continue;
-      }
+      if (t.IsLessThan(starttime)) continue;
+      if (endtime.IsLessThan(t)) continue;
+    }
+
+    if (!ok && has_timestep)
+    {
+      if (dt == 1)
+        ok = true;
+      else if (utc)
+        ok = (t.GetHour() % dt == 0);
       else
-      {
-        NFmiTime tlocal = t.CorrectLocalTime();
-        if (tlocal.GetHour() % dt != 0) continue;
-      }
+        ok = (t.CorrectLocalTime().GetHour() % dt == 0);
     }
 
     // Accept desired local hours only
-    if (local_hour >= 0)
+
+    if (!ok && !local_hours.empty())
     {
       NFmiTime tlocal = t.CorrectLocalTime();
-      if (tlocal.GetHour() != local_hour) continue;
+      auto pos = find(local_hours.begin(), local_hours.end(), tlocal.GetHour());
+      ok = (pos != local_hours.end());
     }
 
     // Accept desired UTC hours only
-    if (utc_hour >= 0)
+    if (!ok && !utc_hours.empty())
     {
-      if (t.GetHour() != utc_hour) continue;
+      auto pos = find(utc_hours.begin(), utc_hours.end(), t.GetHour());
+      ok = (pos != utc_hours.end());
     }
 
-    // Cannot accept a time for which the filter would go out
-    // of bounds
+    if (!ok) continue;
+
+    // Cannot accept a time for which the filter would go out of bounds
 
     NFmiMetTime t1 = t;
     NFmiMetTime t2 = t;
     t1.ChangeByMinutes(startoffset);
     t2.ChangeByMinutes(endoffset);
 
-    bool status = theQ.TimeDescriptor().IsInside(t1);
-    status &= theQ.TimeDescriptor().IsInside(t2);
+    ok = theQ.IsInside(t1);
+    ok &= theQ.IsInside(t2);
 
-    if (!status) continue;
+    if (!ok) continue;
 
     datatimes.Add(new NFmiMetTime(t));
   }
@@ -372,9 +388,10 @@ int run(int argc, const char* argv[])
   list<int> opt_times;  // the times to extract
   bool opt_utc = false;
 
-  bool opt_lasttime = false;  // option -a
-  int opt_local_hour = -1;    // the local hour to extract
-  int opt_utc_hour = -1;      // the UTC hour to extract
+  bool opt_multifile = false;        // option -Q
+  bool opt_lasttime = false;         // option -a
+  std::vector<int> opt_local_hours;  // the local hours to extract
+  std::vector<int> opt_utc_hours;    // the UTC hours to extract
 
   int opt_startoffset = 0;
   int opt_endoffset = 0;
@@ -383,7 +400,7 @@ int run(int argc, const char* argv[])
 
   // Read command line arguments
 
-  NFmiCmdLine cmdline(argc, argv, "hap!t!T!i!I!o!");
+  NFmiCmdLine cmdline(argc, argv, "hQap!t!T!i!I!o!");
   if (cmdline.Status().IsError()) throw runtime_error(cmdline.Status().ErrorLog().CharPtr());
 
   // help option must be checked before checking the number
@@ -410,6 +427,8 @@ int run(int argc, const char* argv[])
 
   // extract command line options
 
+  if (cmdline.isOption('Q')) opt_multifile = !opt_multifile;
+
   if (cmdline.isOption('p')) opt_parameters = NFmiStringTools::Split(cmdline.OptionValue('p'));
 
   if (cmdline.isOption('t') && cmdline.isOption('T'))
@@ -433,24 +452,17 @@ int run(int argc, const char* argv[])
 
   if (cmdline.isOption('i'))
   {
-    opt_local_hour = NFmiStringTools::Convert<int>(cmdline.OptionValue('i'));
-    if (opt_local_hour < 0 || opt_local_hour > 23)
-      throw runtime_error("Option -i argument must be in the range 0-23");
+    opt_local_hours = NFmiStringTools::Split<vector<int> >(cmdline.OptionValue('i'));
   }
 
   if (cmdline.isOption('I'))
   {
-    opt_utc_hour = NFmiStringTools::Convert<int>(cmdline.OptionValue('I'));
-    if (opt_utc_hour < 0 || opt_utc_hour > 23)
-      throw runtime_error("Option -I argument must be in the range 0-23");
+    opt_utc_hours = NFmiStringTools::Split<vector<int> >(cmdline.OptionValue('I'));
   }
 
   if (cmdline.isOption('o')) opt_outfile = cmdline.OptionValue('o');
 
   if (cmdline.isOption('a')) opt_lasttime = true;
-
-  if (opt_utc_hour >= 0 && opt_local_hour >= 0)
-    throw runtime_error("Cannot use options -i and -I simultaneously");
 
   if (opt_lasttime && (cmdline.isOption('t') || cmdline.isOption('T') || cmdline.isOption('i') ||
                        cmdline.isOption('I')))
@@ -458,20 +470,30 @@ int run(int argc, const char* argv[])
 
   // read the querydata
 
-  NFmiQueryData qd(opt_infile);
-  NFmiFastQueryInfo srcinfo(&qd);
+  std::unique_ptr<NFmiQueryData> qd;
+  std::unique_ptr<NFmiFastQueryInfo> srcinfo;
+
+  if (!opt_multifile)
+  {
+    qd.reset(new NFmiQueryData(opt_infile));
+    srcinfo.reset(new NFmiFastQueryInfo(qd.get()));
+  }
+  else
+  {
+    srcinfo.reset(new NFmiMultiQueryInfo(opt_infile));
+  }
 
   // create new descriptors for the new data
 
-  NFmiHPlaceDescriptor hdesc(srcinfo.HPlaceDescriptor());
-  NFmiVPlaceDescriptor vdesc(srcinfo.VPlaceDescriptor());
-  NFmiParamDescriptor pdesc(MakeParamDescriptor(srcinfo, opt_parameters));
-  NFmiTimeDescriptor tdesc(MakeTimeDescriptor(srcinfo,
+  NFmiHPlaceDescriptor hdesc(srcinfo->HPlaceDescriptor());
+  NFmiVPlaceDescriptor vdesc(srcinfo->VPlaceDescriptor());
+  NFmiParamDescriptor pdesc(MakeParamDescriptor(*srcinfo, opt_parameters));
+  NFmiTimeDescriptor tdesc(MakeTimeDescriptor(*srcinfo,
                                               opt_lasttime,
                                               opt_times,
                                               opt_utc,
-                                              opt_local_hour,
-                                              opt_utc_hour,
+                                              opt_local_hours,
+                                              opt_utc_hours,
                                               opt_startoffset,
                                               opt_endoffset));
 
@@ -496,10 +518,10 @@ int run(int argc, const char* argv[])
 
   if (opt_lasttime)
   {
-    srcinfo.LastTime();
-    NFmiTime t2 = srcinfo.ValidTime();
-    srcinfo.FirstTime();
-    NFmiTime t1 = srcinfo.ValidTime();
+    srcinfo->LastTime();
+    NFmiTime t2 = srcinfo->ValidTime();
+    srcinfo->FirstTime();
+    NFmiTime t1 = srcinfo->ValidTime();
     int minutes = t2.DifferenceInMinutes(t1);
     if (opt_startoffset < -minutes) opt_startoffset = -minutes;
   }
@@ -517,17 +539,17 @@ int run(int argc, const char* argv[])
 
     for (dstinfo.ResetParam(); dstinfo.NextParam();)
     {
-      if (!srcinfo.Param(dstinfo.Param())) throw runtime_error("Internal error in parameter loop");
+      if (!srcinfo->Param(dstinfo.Param())) throw runtime_error("Internal error in parameter loop");
 
       // We assume levels and locations are identical
 
-      for (dstinfo.ResetLocation(), srcinfo.ResetLocation();
-           dstinfo.NextLocation() && srcinfo.NextLocation();)
-        for (dstinfo.ResetLevel(), srcinfo.ResetLevel();
-             dstinfo.NextLevel() && srcinfo.NextLevel();)
+      for (dstinfo.ResetLocation(), srcinfo->ResetLocation();
+           dstinfo.NextLocation() && srcinfo->NextLocation();)
+        for (dstinfo.ResetLevel(), srcinfo->ResetLevel();
+             dstinfo.NextLevel() && srcinfo->NextLevel();)
         {
           modifier->Clear();
-          float value = NFmiDataIntegrator::Integrate(srcinfo, starttime, endtime, *modifier);
+          float value = NFmiDataIntegrator::Integrate(*srcinfo, starttime, endtime, *modifier);
           dstinfo.FloatValue(value);
         }
     }

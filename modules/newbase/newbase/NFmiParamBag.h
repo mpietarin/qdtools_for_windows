@@ -13,7 +13,7 @@
 #include "NFmiSize.h"
 
 //! Undocumented
-class _FMI_DLL NFmiParamBag : public NFmiSize
+class NFmiParamBag : public NFmiSize
 {
  public:
   virtual ~NFmiParamBag(void);
@@ -79,9 +79,10 @@ class _FMI_DLL NFmiParamBag : public NFmiSize
   virtual std::istream &Read(std::istream &file);
 
   virtual const char *ClassName(void) const { return "NFmiParamBag"; }
+  const std::vector<NFmiDataIdent> &ParamsVector() const { return itsParamsVector; }
 
  private:
-  checkedVector<NFmiDataIdent> itsParamsVector;
+  std::vector<NFmiDataIdent> itsParamsVector;
   bool fIsSubParamUsed;
   NFmiDataIdent *itsUsedSubParam;
 

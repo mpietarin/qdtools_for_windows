@@ -7,8 +7,8 @@
 //**********************************************************
 
 #include "NFmiCalculationConstantValue.h"
-#include <newbase/NFmiDataModifier.h>
 #include <newbase/NFmiDataIterator.h>
+#include <newbase/NFmiDataModifier.h>
 #include <newbase/NFmiFastQueryInfo.h>
 
 // ****************************************************************************
@@ -18,12 +18,8 @@
 //--------------------------------------------------------
 // Constructor/Destructor
 //--------------------------------------------------------
-NFmiCalculationConstantValue::NFmiCalculationConstantValue(double value) : itsValue(value)
-{
-}
-NFmiCalculationConstantValue::~NFmiCalculationConstantValue()
-{
-}
+NFmiCalculationConstantValue::NFmiCalculationConstantValue(double value) : itsValue(value) {}
+NFmiCalculationConstantValue::~NFmiCalculationConstantValue() {}
 NFmiCalculationConstantValue::NFmiCalculationConstantValue(
     const NFmiCalculationConstantValue &theOther)
     : NFmiAreaMaskImpl(theOther), itsValue(theOther.itsValue)
@@ -80,14 +76,18 @@ NFmiCalculationRampFuction::NFmiCalculationRampFuction(
     Type theMaskType,
     NFmiInfoData::Type theDataType,
     boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+    unsigned long thePossibleMetaParamId,
     BinaryOperator thePostBinaryOperator)
-    : NFmiInfoAreaMask(theOperation, theMaskType, theDataType, theInfo, thePostBinaryOperator)
+    : NFmiInfoAreaMask(theOperation,
+                       theMaskType,
+                       theDataType,
+                       theInfo,
+                       thePossibleMetaParamId,
+                       thePostBinaryOperator)
 {
 }
 
-NFmiCalculationRampFuction::~NFmiCalculationRampFuction(void)
-{
-}
+NFmiCalculationRampFuction::~NFmiCalculationRampFuction(void) {}
 NFmiCalculationRampFuction::NFmiCalculationRampFuction(const NFmiCalculationRampFuction &theOther)
     : NFmiInfoAreaMask(theOther)
 {
@@ -117,17 +117,20 @@ NFmiCalculationIntegrationFuction::NFmiCalculationIntegrationFuction(
     boost::shared_ptr<NFmiDataModifier> &theDataModifier,
     Type theMaskType,
     NFmiInfoData::Type theDataType,
-    boost::shared_ptr<NFmiFastQueryInfo> &theInfo)
-    : NFmiInfoAreaMask(
-          NFmiCalculationCondition(), theMaskType, theDataType, theInfo, NFmiAreaMask::kNoValue),
+    boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+    unsigned long thePossibleMetaParamId)
+    : NFmiInfoAreaMask(NFmiCalculationCondition(),
+                       theMaskType,
+                       theDataType,
+                       theInfo,
+                       thePossibleMetaParamId,
+                       NFmiAreaMask::kNoValue),
       itsDataModifier(theDataModifier),
       itsDataIterator(theDataIterator)
 {
 }
 
-NFmiCalculationIntegrationFuction::~NFmiCalculationIntegrationFuction(void)
-{
-}
+NFmiCalculationIntegrationFuction::~NFmiCalculationIntegrationFuction(void) {}
 double NFmiCalculationIntegrationFuction::Value(const NFmiCalculationParams &theCalculationParams,
                                                 bool /* fUseTimeInterpolationAlways */)
 {
@@ -170,9 +173,7 @@ NFmiCalculationRampFuctionWithAreaMask::NFmiCalculationRampFuctionWithAreaMask(
 {
 }
 
-NFmiCalculationRampFuctionWithAreaMask::~NFmiCalculationRampFuctionWithAreaMask(void)
-{
-}
+NFmiCalculationRampFuctionWithAreaMask::~NFmiCalculationRampFuctionWithAreaMask(void) {}
 NFmiCalculationRampFuctionWithAreaMask::NFmiCalculationRampFuctionWithAreaMask(
     const NFmiCalculationRampFuctionWithAreaMask &theOther)
     : NFmiAreaMaskImpl(theOther),
@@ -194,9 +195,7 @@ NFmiAreaMask *NFmiCalculationRampFuctionWithAreaMask::Clone(void) const
 // ****************************************************************************
 double NFmiCalculationDeltaZValue::itsHeightValue;
 
-NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue(void) : NFmiAreaMaskImpl()
-{
-}
+NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue(void) : NFmiAreaMaskImpl() {}
 NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue(const NFmiCalculationDeltaZValue &theOther)
     : NFmiAreaMaskImpl(theOther)
 {
@@ -209,55 +208,3 @@ NFmiAreaMask *NFmiCalculationDeltaZValue::Clone(void) const
 // ****************************************************************************
 // **************** NFmiCalculationDeltaZValue ********************************
 // ****************************************************************************
-
-// *********************************************************************
-// *************** NFmiPeekTimeMask ************************************
-// *********************************************************************
-
-NFmiPeekTimeMask::NFmiPeekTimeMask(Type theMaskType,
-                                   NFmiInfoData::Type theDataType,
-                                   boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                                   int theArgumentCount)
-    : NFmiInfoAreaMask(
-          NFmiCalculationCondition(), theMaskType, theDataType, theInfo, NFmiAreaMask::kNoValue),
-      itsTimeOffsetInMinutes(0)
-{
-  itsFunctionArgumentCount = theArgumentCount;
-}
-
-NFmiPeekTimeMask::~NFmiPeekTimeMask(void)
-{
-}
-NFmiPeekTimeMask::NFmiPeekTimeMask(const NFmiPeekTimeMask &theOther)
-    : NFmiInfoAreaMask(theOther), itsTimeOffsetInMinutes(theOther.itsTimeOffsetInMinutes)
-{
-}
-
-NFmiAreaMask *NFmiPeekTimeMask::Clone(void) const
-{
-  return new NFmiPeekTimeMask(*this);
-}
-double NFmiPeekTimeMask::Value(const NFmiCalculationParams &theCalculationParams,
-                               bool /* fUseTimeInterpolationAlways */)
-{
-  NFmiMetTime peekTime(theCalculationParams.itsTime);
-  peekTime.ChangeByMinutes(itsTimeOffsetInMinutes);
-  return itsInfo->InterpolatedValue(theCalculationParams.itsLatlon, peekTime);
-}
-
-void NFmiPeekTimeMask::SetArguments(std::vector<float> &theArgumentVector)
-{
-  // jokaiselle pisteelle ja ajanhetkelle annetaan eri argumentit tässä
-  if (static_cast<long>(theArgumentVector.size()) == itsFunctionArgumentCount - 1)
-  {
-    itsTimeOffsetInMinutes = static_cast<long>(std::round(theArgumentVector[0] * 60));
-  }
-  else
-    throw std::runtime_error(
-        "Internal SmartMet error: PeekTime function was given invalid number of arguments, "
-        "cannot calculate the macro.");
-}
-
-// *********************************************************************
-// *************** NFmiPeekTimeMask ************************************
-// *********************************************************************

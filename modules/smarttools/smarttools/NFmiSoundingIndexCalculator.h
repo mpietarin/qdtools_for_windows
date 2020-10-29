@@ -2,7 +2,7 @@
 /*!
  * \file NFmiSoundingIndexCalculator.h
  *
- * Tämä luokka laskee erilaisia luotausi ndeksejä annettujen querinfojen avulla.
+ * Tämä luokka laskee erilaisia luotausindeksejä annettujen querinfojen avulla.
  * Mm. CAPE, CIN, LCL, BulkShear StormRelatedHellicity jne.
  */
 // ======================================================================
@@ -14,7 +14,6 @@
 class NFmiQueryData;
 class NFmiFastQueryInfo;
 class NFmiSoundingData;
-class NFmiSoundingDataOpt1;
 class NFmiDrawParam;
 class NFmiMetTime;
 class NFmiInfoOrganizer;
@@ -88,7 +87,8 @@ typedef enum
   kSoundingParLCLHeightSurBas,
   kSoundingParLFCHeightSurBas,
   kSoundingParELHeightSurBas,
-  kSoundingParCAPE_TT_SurBas  // cape -10 ja -40 asteen kerroksen läpi
+  kSoundingParCAPE_TT_SurBas,  // cape -10 ja -40 asteen kerroksen läpi
+  kSoundingParGDI = 4790
 } FmiSoundingParameters;
 
 class NFmiSoundingIndexCalculator
@@ -96,23 +96,18 @@ class NFmiSoundingIndexCalculator
  public:
   static bool IsSurfaceBasedSoundingIndex(FmiSoundingParameters theSoundingParameter);
   static bool FillSoundingData(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                               NFmiSoundingData &theSoundingData,
-                               const NFmiMetTime &theTime,
-                               const NFmiLocation &theLocation,
-                               const boost::shared_ptr<NFmiFastQueryInfo> &theGroundDataInfo);
-  static bool FillSoundingDataOpt1(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                                   NFmiSoundingDataOpt1 &theSoundingData,
+                                   NFmiSoundingData &theSoundingData,
                                    const NFmiMetTime &theTime,
                                    const NFmiLocation &theLocation,
                                    const boost::shared_ptr<NFmiFastQueryInfo> &theGroundDataInfo);
   static float Calc(NFmiSoundingData &theSoundingData, FmiSoundingParameters theParam);
-  static float CalcOpt1(NFmiSoundingDataOpt1 &theSoundingDataOpt1, FmiSoundingParameters theParam);
   static float Calc(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                     const NFmiPoint &theLatlon,
                     const NFmiMetTime &theTime,
                     FmiSoundingParameters theParam);
   static void CalculateWholeSoundingData(NFmiQueryData &theSourceData,
                                          NFmiQueryData &theResultData,
+                                         NFmiQueryData *thePossibleGroundData,
                                          bool useFastFill,
                                          bool fDoCerrReporting,
                                          NFmiStopFunctor *theStopFunctor = 0,
@@ -126,11 +121,24 @@ class NFmiSoundingIndexCalculator
       bool fUseOnlyOneThread = true,
       int theMaxThreadCount = 0);
   static boost::shared_ptr<NFmiQueryData> CreateNewSoundingIndexData(
+      const std::string &theSourceFileFilter,
+      const std::string &theProducerName,
+      const std::string &thePossibleGroundDataFileFilter,
+      bool fDoCerrReporting,
+      NFmiStopFunctor *theStopFunctor = 0,
+      bool fUseOnlyOneThread = true,
+      int theMaxThreadCount = 0);
+  static boost::shared_ptr<NFmiQueryData> CreateNewSoundingIndexData(
       boost::shared_ptr<NFmiQueryData> sourceData,
+      boost::shared_ptr<NFmiQueryData> possibleGroundData,
       const std::string &theProducerName,
       bool fDoCerrReporting,
       NFmiStopFunctor *theStopFunctor = 0,
       bool fUseOnlyOneThread = true,
       int theMaxThreadCount = 0);
-};
 
+  // This is used by smartmet to determine the log-level of exception thrown from
+  // CreateNewSoundingIndexData. If exception message contains this string, it's logged with debug
+  // level, otherwise it will be logged with error level.
+  static const std::string itsReadCompatibleGroundData_functionName;
+};

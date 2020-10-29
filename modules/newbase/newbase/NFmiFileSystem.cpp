@@ -52,7 +52,8 @@
 #include <boost/regex.hpp>
 #endif
 
-extern "C" {
+extern "C"
+{
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -178,6 +179,7 @@ string regex_of_msdos_pattern(const string &theMsPattern)
 #endif
 
 #ifndef UNIX
+
 // Tein winkkari puolelle FMI-versiot findfirst, findnext ja findclose -funktioista, koska
 // haluan napata kaikki mahdolliset poikkeukset kiinni ja jatkaa kuten virhetilanteessa normaalisti.
 // Nyt olen törmännyt monesti SmartMetin kanssa että ohjelma on vain kaatunut käydessään läpi jotain
@@ -217,7 +219,7 @@ int FmiFindClose(intptr_t handle)
     return -1;
   }
 }
-#endif
+#endif  // #ifdef UNIX
 
 namespace NFmiFileSystem
 {

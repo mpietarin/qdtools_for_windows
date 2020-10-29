@@ -18,12 +18,12 @@
 // laskut suoritetaan.
 //**********************************************************
 
-#include <newbase/NFmiParamBag.h>
+#include <boost/shared_ptr.hpp>
+#include <newbase/NFmiAreaMask.h>
 #include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiInfoData.h>
 #include <newbase/NFmiLevelType.h>
-#include <newbase/NFmiAreaMask.h>
-#include <boost/shared_ptr.hpp>
+#include <newbase/NFmiParamBag.h>
 #include <string>
 
 class NFmiInfoOrganizer;
@@ -51,11 +51,17 @@ class MyGrid;
 class NFmiThreadCallBacks;
 class NFmiExtraMacroParamData;
 class NFmiGriddingHelperInterface;
+class NFmiBitMask;
+class NFmiSimpleConditionInfo;
+class NFmiSimpleConditionPartInfo;
+class NFmiSimpleConditionPart;
+class NFmiSingleCondition;
+class NFmiSingleConditionInfo;
 
 class NFmiSmartToolCalculationBlockVector
 {
  public:
-  typedef checkedVector<boost::shared_ptr<NFmiSmartToolCalculationBlock> >::iterator Iterator;
+  typedef std::vector<boost::shared_ptr<NFmiSmartToolCalculationBlock>>::iterator Iterator;
 
   NFmiSmartToolCalculationBlockVector(void);
   NFmiSmartToolCalculationBlockVector(const NFmiSmartToolCalculationBlockVector &theOther);
@@ -68,9 +74,10 @@ class NFmiSmartToolCalculationBlockVector
   void Add(const boost::shared_ptr<NFmiSmartToolCalculationBlock> &theBlock);
   Iterator Begin(void) { return itsCalculationBlocks.begin(); }
   Iterator End(void) { return itsCalculationBlocks.end(); }
+
  private:
   // luokka ei omista vektorissa olevia otuksia, Clear pitää kutsua erikseen!!!
-  checkedVector<boost::shared_ptr<NFmiSmartToolCalculationBlock> > itsCalculationBlocks;
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculationBlock>> itsCalculationBlocks;
 };
 
 class NFmiSmartToolCalculationBlock
@@ -103,15 +110,17 @@ class NFmiSmartToolModifier
                   bool fSelectedLocationsOnly,
                   bool isMacroParamCalculation,
                   NFmiThreadCallBacks *theThreadCallBacks);
-  void ModifyData_ver2(NFmiTimeDescriptor *theModifiedTimes,
-                       bool fSelectedLocationsOnly,
-                       bool isMacroParamCalculation,
-                       NFmiThreadCallBacks *theThreadCallBacks);
+  void ModifyData_ver2(
+      NFmiTimeDescriptor *theModifiedTimes,
+      bool fSelectedLocationsOnly,
+      bool isMacroParamCalculation,
+      NFmiThreadCallBacks *theThreadCallBacks,
+      std::vector<NFmiMacroParamValue> *macroParamValuesVectorForCrossSection = nullptr);
   float CalcSmartToolValue(const NFmiMetTime &theTime, const NFmiPoint &theLatlon);
   void CalcCrossSectionSmartToolValues(NFmiDataMatrix<float> &theValues,
-                                       checkedVector<float> &thePressures,
-                                       checkedVector<NFmiPoint> &theLatlonPoints,
-                                       const checkedVector<NFmiMetTime> &thePointTimes);
+                                       std::vector<float> &thePressures,
+                                       std::vector<NFmiPoint> &theLatlonPoints,
+                                       const std::vector<NFmiMetTime> &thePointTimes);
 
   NFmiSmartToolModifier(NFmiInfoOrganizer *theInfoOrganizer);
   ~NFmiSmartToolModifier(void);
@@ -131,8 +140,16 @@ class NFmiSmartToolModifier
 
   void ModifiedLevel(boost::shared_ptr<NFmiLevel> &theLevel);
   void SetGriddingHelper(NFmiGriddingHelperInterface *theGriddingHelper);
+  void SetPossibleSpacedOutMacroInfo(
+      boost::shared_ptr<NFmiFastQueryInfo> &possibleSpacedOutMacroInfo);
+  const NFmiExtraMacroParamData &ExtraMacroParamData() const;
+  const std::string &LastExceptionMessageFromThreads() const
+  {
+    return itsLastExceptionMessageFromThreads;
+  }
 
  private:
+  boost::shared_ptr<NFmiFastQueryInfo> GetUsedEditedInfo();
   void ModifyData(NFmiTimeDescriptor *theModifiedTimes,
                   bool fSelectedLocationsOnly,
                   bool isMacroParamCalculation,
@@ -150,13 +167,29 @@ class NFmiSmartToolModifier
       NFmiThreadCallBacks *theThreadCallBacks);
   void ModifyConditionalData_ver2(
       const boost::shared_ptr<NFmiSmartToolCalculationBlock> &theCalculationBlock,
-      NFmiThreadCallBacks *theThreadCallBacks);
+      NFmiThreadCallBacks *theThreadCallBacks,
+      std::vector<bool> *calculationPointMask,
+      std::vector<NFmiMacroParamValue> *macroParamValuesVectorForCrossSection = nullptr);
+  void DoMultiThreadConditionalBlockCalculations(
+      size_t threadCount,
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector,
+      std::vector<boost::shared_ptr<NFmiSmartToolCalculationBlock>> &calculationBlockVector,
+      NFmiCalculationParams &calculationParams,
+      const NFmiBitMask *usedBitmask,
+      std::vector<bool> *calculationPointMask);
+  void DoMultiThreadConditionalBlockCalculationsForCrossSection(
+      size_t threadCount,
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector,
+      std::vector<boost::shared_ptr<NFmiSmartToolCalculationBlock>> &calculationBlockVector,
+      std::vector<NFmiMacroParamValue> &macroParamValuesVector);
   void ModifyBlockData(const boost::shared_ptr<NFmiSmartToolCalculationBlock> &theCalculationBlock,
                        NFmiMacroParamValue &theMacroParamValue,
                        NFmiThreadCallBacks *theThreadCallBacks);
   void ModifyBlockData_ver2(
       const boost::shared_ptr<NFmiSmartToolCalculationBlock> &theCalculationBlock,
-      NFmiThreadCallBacks *theThreadCallBacks);
+      NFmiThreadCallBacks *theThreadCallBacks,
+      std::vector<bool> *calculationPointMask,
+      std::vector<NFmiMacroParamValue> *macroParamValuesVectorForCrossSection = nullptr);
   boost::shared_ptr<NFmiSmartToolCalculationBlockVector> CreateCalculationBlockVector(
       const boost::shared_ptr<NFmiSmartToolCalculationBlockInfoVector> &theBlockInfoVector);
   boost::shared_ptr<NFmiSmartToolCalculationBlock> CreateCalculationBlock(
@@ -171,16 +204,31 @@ class NFmiSmartToolModifier
                            float *theLowerLimit,
                            float *theUpperLimit,
                            bool *fCheckLimits);
-  boost::shared_ptr<NFmiDataModifier> CreateIntegrationFuction(
-      const NFmiAreaMaskInfo &theAreaMaskInfo);
   boost::shared_ptr<NFmiDataIterator> CreateIterator(
       const NFmiAreaMaskInfo &theAreaMaskInfo, const boost::shared_ptr<NFmiFastQueryInfo> &theInfo);
   void ModifyData2(boost::shared_ptr<NFmiSmartToolCalculationSection> &theCalculationSection,
                    NFmiMacroParamValue &theMacroParamValue,
                    NFmiThreadCallBacks *theThreadCallBacks);
-  void ModifyData2_ver2(boost::shared_ptr<NFmiSmartToolCalculationSection> &theCalculationSection,
-                        NFmiThreadCallBacks *theThreadCallBacks);
+  void ModifyData2_ver2(
+      boost::shared_ptr<NFmiSmartToolCalculationSection> &theCalculationSection,
+      NFmiThreadCallBacks *theThreadCallBacks,
+      std::vector<bool> *calculationPointMask,
+      std::vector<NFmiMacroParamValue> *macroParamValuesVectorForCrossSection = nullptr);
+  void DoMultiThreadCalculations(
+      size_t threadCount,
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector,
+      std::vector<boost::shared_ptr<NFmiSmartToolCalculation>> &calculationVector,
+      NFmiCalculationParams &calculationParams,
+      const NFmiBitMask *usedBitmask,
+      std::vector<bool> *calculationPointMask);
+  void DoMultiThreadCalculationsForCrossSection(
+      size_t threadCount,
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector,
+      std::vector<boost::shared_ptr<NFmiSmartToolCalculation>> &calculationVector,
+      std::vector<NFmiMacroParamValue> &macroParamValuesVector);
   boost::shared_ptr<NFmiAreaMask> CreateAreaMask(const NFmiAreaMaskInfo &theInfo);
+  boost::shared_ptr<NFmiAreaMask> CreateSimpleConditionAreaMask(const NFmiAreaMaskInfo &theInfo,
+                                                                bool usesVerticalData);
   boost::shared_ptr<NFmiAreaMask> CreateEndingAreaMask(void);
   boost::shared_ptr<NFmiFastQueryInfo> CreateInfo(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                   bool &mustUsePressureInterpolation);
@@ -189,8 +237,6 @@ class NFmiSmartToolModifier
                                                   unsigned long theWantedParamId);
   boost::shared_ptr<NFmiFastQueryInfo> GetPossibleLevelInterpolatedInfo(
       const NFmiAreaMaskInfo &theAreaMaskInfo, bool &mustUsePressureInterpolation);
-  void CreateCalculationModifiers(void);
-  void CreateFirstCalculationSection(void);
   boost::shared_ptr<NFmiSmartToolCalculationSection> CreateCalculationSection(
       const boost::shared_ptr<NFmiSmartToolCalculationSectionInfo> &theCalcSectionInfo);
   boost::shared_ptr<NFmiSmartToolCalculation> CreateCalculation(
@@ -239,29 +285,47 @@ class NFmiSmartToolModifier
                                                        bool &mustUsePressureInterpolation);
   boost::shared_ptr<NFmiAreaMask> CreateTimeRangeMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                       bool &mustUsePressureInterpolation);
-  boost::shared_ptr<NFmiAreaMask> CreateProbabilityFunctionMask(
+  boost::shared_ptr<NFmiAreaMask> CreatePreviousFullDaysMask(
+      const NFmiAreaMaskInfo &theAreaMaskInfo, bool &mustUsePressureInterpolation);
+  boost::shared_ptr<NFmiAreaMask> CreateTimeDurationMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
+                                                         bool &mustUsePressureInterpolation);
+  boost::shared_ptr<NFmiAreaMask> CreateLocalExtremeMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
+                                                         bool &mustUsePressureInterpolation);
+  boost::shared_ptr<NFmiAreaMask> CreateAreaRelatedFunctionMask(
       const NFmiAreaMaskInfo &theAreaMaskInfo, bool &mustUsePressureInterpolation);
   boost::shared_ptr<NFmiAreaMask> CreateClosestObsValueMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                             bool &mustUsePressureInterpolation);
+  boost::shared_ptr<NFmiAreaMask> CreateLatestValueMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
+                                                        bool &mustUsePressureInterpolation);
   boost::shared_ptr<NFmiAreaMask> CreateNormalVertFuncMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                            bool &mustUsePressureInterpolation);
   boost::shared_ptr<NFmiAreaMask> CreatePeekTimeMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                      bool &mustUsePressureInterpolation);
   boost::shared_ptr<NFmiAreaMask> CreateVertConditionalMask(const NFmiAreaMaskInfo &theAreaMaskInfo,
                                                             bool &mustUsePressureInterpolation);
+  std::unique_ptr<std::vector<bool>> MakePossibleCalculationPointMask(
+      std::vector<NFmiSmartToolCalculationBlockInfo> &calculationBlockInfoVector,
+      const std::vector<NFmiPoint> &calculationPoints);
+  void DoSimpleConditionInitialization(boost::shared_ptr<NFmiAreaMask> &areaMask,
+                                       const NFmiAreaMaskInfo &theAreaMaskInfo);
+  boost::shared_ptr<NFmiSimpleCondition> CreateSimpleCondition(
+      boost::shared_ptr<NFmiSimpleConditionInfo> &theSimpleConditionInfo, bool usesVerticalData);
+  boost::shared_ptr<NFmiSingleCondition> CreateSingleCondition(
+      boost::shared_ptr<NFmiSingleConditionInfo> &theSingleConditionInfo, bool usesVerticalData);
+  boost::shared_ptr<NFmiSimpleConditionPart> CreateSimpleConditionPart(
+      boost::shared_ptr<NFmiSimpleConditionPartInfo> &theSimpleConditionPartInfo,
+      bool usesVerticalData);
 
   NFmiInfoOrganizer *itsInfoOrganizer;  // eli database, ei omista ei tuhoa
   boost::shared_ptr<NFmiSmartToolIntepreter> itsSmartToolIntepreter;
   bool fMacroRunnable;
   std::string itsErrorText;
-  std::unique_ptr<NFmiExtraMacroParamData> itsExtraMacroParamData;  // Tämä alustetaan
-                                                                    // smarttool-tulkissa
-                                                                    // (itsSmartToolIntepreter), ja
-                                                                    // otetaan omistukseen
-                                                                    // 'suorittajaan'
+  // Tämä alustetaan smarttool-tulkissa (itsSmartToolIntepreter), ja
+  // otetaan omistukseen 'suorittajaan'
+  std::unique_ptr<NFmiExtraMacroParamData> itsExtraMacroParamData;
 
   bool fModifySelectedLocationsOnly;
-  checkedVector<boost::shared_ptr<NFmiFastQueryInfo> >
+  std::vector<boost::shared_ptr<NFmiFastQueryInfo>>
       itsScriptVariableInfos;       // mahdolliset skripti-muuttujat talletetaan tänne
   std::string itsIncludeDirectory;  // mistä ladataan mahd. include filet
 
@@ -287,10 +351,17 @@ class NFmiSmartToolModifier
   boost::shared_ptr<MyGrid> itsWorkingGrid;  // Tähän talletetaan ns. työskentely gidi, eli missä on
   // työskentely alueen area-määritys ja laskennallinen
   // hila koko.
-  boost::shared_ptr<NFmiLevel> itsModifiedLevel;  // Jos ollaan editoimassa level-dataa, tähän on
-                                                  // tarkoitus laittaa kulloinenkin muokattava level
-                                                  // talteen.
-                                                  // Tämä asetetaan nyt vain NFmiSmartToolUtil::ModifyData-funktiosta, jossa käydään levelit läpi.
+  boost::shared_ptr<NFmiLevel>
+      itsModifiedLevel;  // Jos ollaan editoimassa level-dataa, tähän on
+                         // tarkoitus laittaa kulloinenkin muokattava level
+                         // talteen.
+                         // Tämä asetetaan nyt vain NFmiSmartToolUtil::ModifyData-funktiosta, jossa
+                         // käydään levelit läpi.
 
   NFmiGriddingHelperInterface *itsGriddingHelper;
+  // Jos lasketaan macroParam matriisia ja käytössä harvennettu symbolipiirto, halutaan macroParam
+  // data laskea optimoinnin takia harvemmassa hilassa. Tämä voidaan siis antaa ulkoa käsin
+  // optimoituja laskuja varten.
+  boost::shared_ptr<NFmiFastQueryInfo> itsPossibleSpacedOutMacroInfo;
+  std::string itsLastExceptionMessageFromThreads;
 };

@@ -77,6 +77,7 @@
  */
 // ======================================================================
 
+#include <macgyver/StringConversion.h>
 #include <newbase/NFmiCmdLine.h>
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiEquidistArea.h>
@@ -95,33 +96,28 @@
 #include <newbase/NFmiStringList.h>
 #include <newbase/NFmiYKJArea.h>
 
+#ifdef UNIX
+#include <gdal_version.h>
+#include <ogr_spatialref.h>
+#endif
+
 #include <algorithm>
+#include <ctime>
 #include <list>
 #include <string>
-#include <ctime>
 
 using namespace std;
 
 // ----------------------------------------------------------------------
 /*!
- * This pads the given string to the given width, using tab if possible
- *
- * \param theString The string to pad
- * \param theWidth The width to pad to
- * \return The padded string
+ * Convert number to printable form handling missing values
  */
 // ----------------------------------------------------------------------
 
-string TabularPad(const string &theString, unsigned int theWidth)
+std::string ToString(float theValue)
 {
-  string out = theString;
-
-  int tabcount = (theWidth / 8) - theString.size() / 8;
-  for (int i = 0; i < tabcount; i++)
-    out += '\t';
-  for (unsigned int j = 0; j < theWidth % 8; j++)
-    out += ' ';
-  return out;
+  if (theValue == kFloatMissing) return "-";
+  return Fmi::to_string(theValue);
 }
 
 // ----------------------------------------------------------------------
@@ -206,11 +202,12 @@ void ReportParameters(NFmiFastQueryInfo *q, bool ignoresubs)
 
   unsigned int count = 0;
 
-  cout << endl
-       << "The parameters stored in the querydata are:" << endl
-       << endl
-       << "Number\tName\t\t\t\t\tDescription\t\t\tInterpolation\tPrecision" << endl
-       << "======\t====\t\t\t\t\t===========\t\t\t=============\t=========" << endl;
+  cout << "\n"
+       << "The parameters stored in the querydata are:\n\n"
+       << "Number  Name                                    Description                             "
+          "Interpolation      Precision  Lolimit  Hilimit\n"
+       << "======  ====                                    ===========                             "
+          "=============      =========  =======  =======\n";
 
   q->ResetParam();
   while (q->NextParam(ignoresubs))
@@ -230,9 +227,12 @@ void ReportParameters(NFmiFastQueryInfo *q, bool ignoresubs)
     else
       paramtype = "";
 
-    cout << id << '\t' << TabularPad(paramtype + name, 40) << TabularPad(description.CharPtr(), 32)
-         << TabularPad(interpolation_name(q->Param().GetParam()->InterpolationMethod()), 16)
-         << q->Param().GetParam()->Precision().CharPtr() << endl;
+    cout << setw(8) << left << id << setw(40) << paramtype + name << setw(40)
+         << description.CharPtr() << setw(16)
+         << interpolation_name(q->Param().GetParam()->InterpolationMethod()) << setw(12) << right
+         << q->Param().GetParam()->Precision().CharPtr() << setw(9)
+         << ToString(q->Param().GetParam()->MinValue()) << setw(9)
+         << ToString(q->Param().GetParam()->MaxValue()) << endl;
   }
   cout << endl << "There are " << count << " stored parameters in total" << endl;
   return;
@@ -545,6 +545,14 @@ void ReportProjection(NFmiFastQueryInfo *q)
   }
 
   unsigned long classid = area->ClassId();
+  const auto rect = area->WorldRect();
+
+#ifdef UNIX
+  const auto wkt = area->WKT();
+  OGRSpatialReference crs;
+  if (crs.SetFromUserInput(wkt.c_str()) != OGRERR_NONE)
+    throw std::runtime_error("GDAL does not understand the WKT in the data");
+#endif
 
   cout << "projection\t\t= " << area->ClassName() << endl;
 
@@ -556,17 +564,29 @@ void ReportProjection(NFmiFastQueryInfo *q)
        << area->BottomLeftLatLon().Y() << endl;
   cout << "bottom right lonlat\t= " << area->BottomRightLatLon().X() << ','
        << area->BottomRightLatLon().Y() << endl;
-  cout << "center lonlat\t= " << area->CenterLatLon().X() << ',' << area->CenterLatLon().Y()
+  cout << "center lonlat\t\t= " << area->CenterLatLon().X() << ',' << area->CenterLatLon().Y()
+       << endl
+       << std::setprecision(9) << "bbox\t\t\t= [" << rect.Left() << " " << rect.Right() << " "
+       << std::min(rect.Bottom(), rect.Top()) << " " << std::max(rect.Bottom(), rect.Top()) << "]"
+       << std::setprecision(6) << endl
        << endl;
-  cout << endl;
 
-  cout << "fmiarea\t= " << area->AreaStr() << endl
+  cout << "fmiarea\t= " << area->AreaStr() << endl;
 #ifdef UNIX
-       << "wktarea\t= " << area->WKT() << endl
-#endif
-       << endl;
+  char *proj4 = nullptr;
+  crs.exportToProj4(&proj4);
+  cout << "wktarea\t= " << area->WKT() << endl << "proj4\t= " << proj4 << endl;
 
-  cout << "top\t= " << area->Top() << endl
+#if GDAL_VERSION_MAJOR < 2
+  OGRFree(proj4);
+#else
+  CPLFree(proj4);
+#endif
+
+#endif
+
+  cout << endl
+       << "top\t= " << area->Top() << endl
        << "left\t= " << area->Left() << endl
        << "right\t= " << area->Right() << endl
        << "bottom\t= " << area->Bottom() << endl
@@ -615,6 +635,8 @@ void ReportProjection(NFmiFastQueryInfo *q)
     case kNFmiKKJArea:
     case kNFmiPKJArea:
     case kNFmiYKJArea:
+    case kNFmiLambertConformalConicArea:
+    case kNFmiWebMercatorArea:
     {
       break;
     }
@@ -664,7 +686,7 @@ void ReportLocations(NFmiFastQueryInfo *q)
   {
     const NFmiLocation *loc = q->Location();
 
-    cout << loc->GetIdent() << '\t' << TabularPad(loc->GetName().CharPtr(), 24) << '\t'
+    cout << setw(8) << left << loc->GetIdent() << setw(32) << loc->GetName().CharPtr()
          << loc->GetLongitude() << ',' << loc->GetLatitude() << endl;
   }
 
@@ -807,7 +829,7 @@ int domain(int argc, const char *argv[])
 
   if (cmdline.isOption('q'))
   {
-    if (cmdline.OptionValue('q') != NULL)
+    if (cmdline.OptionValue('q') != nullptr)
     {
       opt_queryfile = cmdline.OptionValue('q');
       opt_queryfile = NFmiFileSystem::FileComplete(opt_queryfile, datapath);
@@ -820,7 +842,7 @@ int domain(int argc, const char *argv[])
 
   // Actual processing begins
 
-  auto_ptr<NFmiQueryInfo> qi;
+  unique_ptr<NFmiQueryInfo> qi;
 
   if (cmdline.isOption('q'))
   {
@@ -870,7 +892,7 @@ int domain(int argc, const char *argv[])
 
   if (cmdline.isOption('t') || opt_all)
   {
-    if (cmdline.OptionValue('t') == NULL)
+    if (cmdline.OptionValue('t') == nullptr)
       dateFormat = "%Y%m%d%H";
     else
       dateFormat = cmdline.OptionValue('t');
@@ -881,7 +903,7 @@ int domain(int argc, const char *argv[])
 
   if (cmdline.isOption('T') || opt_all_extended)
   {
-    if (cmdline.OptionValue('T') == NULL)
+    if (cmdline.OptionValue('T') == nullptr)
       dateFormat = "%Y%m%d%H";
     else
       dateFormat = cmdline.OptionValue('T');

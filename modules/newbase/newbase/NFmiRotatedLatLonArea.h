@@ -11,7 +11,7 @@
 
 //! Undocumented
 
-class _FMI_DLL NFmiRotatedLatLonArea : public NFmiLatLonArea
+class NFmiRotatedLatLonArea : public NFmiLatLonArea
 {
  public:
   virtual ~NFmiRotatedLatLonArea(void);
@@ -51,6 +51,8 @@ class _FMI_DLL NFmiRotatedLatLonArea : public NFmiLatLonArea
 
   virtual const NFmiAngle TrueNorthAzimuth(const NFmiPoint &theLatLonPoint,
                                            double theLatitudeEpsilon = 0.001) const;
+
+  std::size_t HashValue() const;
 
  private:
   NFmiPoint itsSouthernPole;

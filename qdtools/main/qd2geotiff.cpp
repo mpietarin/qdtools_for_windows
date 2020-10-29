@@ -1,18 +1,18 @@
-#include <stdio.h>
 #include "GeoTiffQD.h"
-#include <gdal/gdal_priv.h>
-#include <gdal/ogr_spatialref.h>
-#include <newbase/NFmiArea.h>
-#include <newbase/NFmiLatLonArea.h>
-#include <newbase/NFmiStereographicArea.h>
-#include <newbase/NFmiLambertEqualArea.h>
-#include <newbase/NFmiRotatedLatLonArea.h>
-#include <newbase/NFmiYKJArea.h>
-#include <newbase/NFmiQueryData.h>
-#include <newbase/NFmiAreaFactory.h>
-#include <iostream>
-#include <iomanip>
 #include <boost/shared_ptr.hpp>
+#include <gdal_priv.h>
+#include <ogr_spatialref.h>
+#include <newbase/NFmiArea.h>
+#include <newbase/NFmiAreaFactory.h>
+#include <newbase/NFmiLambertEqualArea.h>
+#include <newbase/NFmiLatLonArea.h>
+#include <newbase/NFmiQueryData.h>
+#include <newbase/NFmiRotatedLatLonArea.h>
+#include <newbase/NFmiStereographicArea.h>
+#include <newbase/NFmiYKJArea.h>
+#include <iomanip>
+#include <iostream>
+#include <stdio.h>
 
 // float * fillFloatRasterByQD(NFmiFastQueryInfo * theData, int width, int height);
 // int * fillIntRasterByQD(NFmiFastQueryInfo * theData, int width, int height);
@@ -124,7 +124,7 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
 {
   const char *pszFormat = "gtiff";
   GDALDriver *poDriver;
-  // char **papszMetadata = NULL;
+  // char **papszMetadata = nullptr;
   NFmiFastQueryInfo *theData = orginData;
 
   // bool makeInt32 = true;  //false=Float32, true=Int32
@@ -155,7 +155,7 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
   double aLat = (tlLat - brLat) / height;
 
   OGRSpatialReference oSRS;
-  // char *pszSRS_WKT = NULL;
+  // char *pszSRS_WKT = nullptr;
 
   // Data
   GDALRasterBand *poBand;
@@ -165,7 +165,7 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
 
   poDriver = GetGDALDriverManager()->GetDriverByName(pszFormat);
 
-  if (poDriver == NULL) exit(1);
+  if (poDriver == nullptr) exit(1);
 
   // papszMetadata = poDriver->GetMetadata();
 
@@ -179,7 +179,7 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
   int paramSize = 1;  // theData->ParamBag().GetSize();
   if (theExternal != 0) paramSize = 2;
 
-  char **papszOptions = NULL;
+  char **papszOptions = nullptr;
   // papszOptions = CSLSetNameValue( papszOptions, "COMPRESS", "PACKBITS" );
 
   // GDT_Int32 -or- GDT_Float32  1/4
@@ -192,12 +192,16 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
 
   // Metadata **************************
 
-  double *adfGeoTransform;
+  double adfGeoTransform[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   // Places - latlon
   if (geomDefinedType == kLatLonGeom)
   {
-    double adfGeoTransformTmp[6] = {tlLon, aLon, 0, tlLat, 0, -aLat};  // decree
-    adfGeoTransform = adfGeoTransformTmp;
+    // double adfGeoTransformTmp[6] = {tlLon, aLon, 0, tlLat, 0, -aLat};  // decree
+    // adfGeoTransform = adfGeoTransformTmp;
+    adfGeoTransform[0] = tlLon;
+    adfGeoTransform[1] = aLon;
+    adfGeoTransform[3] = tlLat;
+    adfGeoTransform[5] = -aLat;
   }
   else if (geomDefinedType == kYkjGeom)
   {
@@ -209,8 +213,12 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
     double aLon = (brWorldXY.X() - tlWorldXY.X()) / width;
     double aLat = (tlWorldXY.Y() - brWorldXY.Y()) / height;
 
-    double adfGeoTransformTmp[6] = {tlWorldXY.X(), aLon, 0, tlWorldXY.Y(), 0, -aLat};  // decree
-    adfGeoTransform = adfGeoTransformTmp;
+    // double adfGeoTransformTmp[6] = {tlWorldXY.X(), aLon, 0, tlWorldXY.Y(), 0, -aLat};  // decree
+    // adfGeoTransform = adfGeoTransformTmp;
+    adfGeoTransform[0] = tlWorldXY.X();
+    adfGeoTransform[1] = aLon;
+    adfGeoTransform[3] = tlWorldXY.Y();
+    adfGeoTransform[5] = -aLat;
   }
   else
   {
@@ -223,8 +231,12 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
       double aLon = rotLatLon->XScale() / width;
       double aLat = rotLatLon->YScale() / height;
 
-      double adfGeoTransformTmp[6] = {tlLon, aLon, 0, tlLat, 0, aLat};  // decree
-      adfGeoTransform = adfGeoTransformTmp;
+      // double adfGeoTransformTmp[6] = {tlLon, aLon, 0, tlLat, 0, aLat};  // decree
+      // adfGeoTransform = adfGeoTransformTmp;
+      adfGeoTransform[0] = tlLon;
+      adfGeoTransform[1] = aLon;
+      adfGeoTransform[3] = tlLat;
+      adfGeoTransform[5] = aLat;
     }
     else
     {
@@ -238,8 +250,13 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
         double aLon = (brWorldXY.X() - tlWorldXY.X()) / width;
         double aLat = (tlWorldXY.Y() - brWorldXY.Y()) / height;
 
-        double adfGeoTransformTmp[6] = {tlWorldXY.X(), aLon, 0, tlWorldXY.Y(), 0, -aLat};  // decree
-        adfGeoTransform = adfGeoTransformTmp;
+        // double adfGeoTransformTmp[6] = {tlWorldXY.X(), aLon, 0, tlWorldXY.Y(), 0, -aLat};  //
+        // decree
+        // adfGeoTransform = adfGeoTransformTmp;
+        adfGeoTransform[0] = tlWorldXY.X();
+        adfGeoTransform[1] = aLon;
+        adfGeoTransform[3] = tlWorldXY.Y();
+        adfGeoTransform[5] = -aLat;
       }
     }
   }
@@ -250,7 +267,7 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
   NFmiTime timeNow = NFmiTime();
   poDstDS->SetMetadataItem("SourceDate", timeNow.ToStr(kYYYYMMDDHHMM));
 
-  char *pszWKT = NULL;
+  char *pszWKT = nullptr;
   // oSRS.SetFromUserInput(area->WKT().c_str());
   oSRS.exportToWkt(&pszWKT);
   poDstDS->SetProjection(pszWKT);
@@ -270,17 +287,19 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
   // int  *abyRaster;
   // abyRaster = fillIntRasterByQD(theData, theExternal, width, height, area);
   void *abyRaster;
+
+  CPLErr err;
   if (isIntDataType)
   {
     abyRaster = fillIntRasterByQD(theData, theExternal, width, height, area);
     // GDT_Int32   3/4
-    poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Int32, 0, 0);
+    err = poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Int32, 0, 0);
   }
   else
   {
     abyRaster = fillFloatRasterByQD(theData, theExternal, width, height, area);
     //  GDT_Float32  3/4
-    poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Float32, 0, 0);
+    err = poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Float32, 0, 0);
   }
 
   // External Band parameter for data int
@@ -296,14 +315,17 @@ void GeoTiffQD::ConvertToGeoTiff(string aNameVersion,
     {
       abyRaster = fillIntRasterByQD(theExternal, theData, width, height, area);
       // GDT_Int32   3/4
-      poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Int32, 0, 0);
+      err = poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Int32, 0, 0);
     }
     else
     {
       abyRaster = fillFloatRasterByQD(theExternal, theData, width, height, area);
       //  GDT_Float32  3/4
-      poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Float32, 0, 0);
+      err = poBand->RasterIO(GF_Write, 0, 0, width, height, abyRaster, width, height, GDT_Float32, 0, 0);
     }
+
+    if(err)
+	std::cout << "Warning: Encountered problems in raster band conversions\n";
 
     // abyRaster = fillIntRasterByQD(theExternal, theData, width, height, area);
     // abyRaster = fillFloatRasterByQD(theExternal, theData, width, height, area);
@@ -676,9 +698,11 @@ enum data_Type
 };
 struct paramTypes
 {
-  int param, external;
-  float scale;  // base
-  data_Type dataType, dataTypeExternal;
+  int param = 0;
+  int external = 0;
+  float scale = 0;  // base
+  data_Type dataType = noneGDL;
+  data_Type dataTypeExternal = noneGDL;
 };
 
 static void usage()
@@ -889,10 +913,10 @@ int main(int argc, char *argv[])
 
       char *pch;
       pch = strtok(argv[i], ",");
-      while (pch != NULL)
+      while (pch != nullptr)
       {
         paramStrs.push_back(pch);
-        pch = strtok(NULL, ",");
+        pch = strtok(nullptr, ",");
       }
 
       for (std::vector<char *>::iterator it = paramStrs.begin(); it != paramStrs.end(); ++it)
@@ -917,14 +941,14 @@ int main(int argc, char *argv[])
         te.scale = 1.0;
         te.dataType = noneGDL;
 
-        while (pch_scale != NULL)
+        while (pch_scale != nullptr)
         {
           if (i == 0) te.param = atoi(pch_scale);
           if (i == 1) te.external = atoi(pch_scale);
           if (i == 2) te.scale = atof(pch_scale);
           i++;
 
-          pch_scale = strtok(NULL, ":");
+          pch_scale = strtok(nullptr, ":");
         }
         params.push_back(te);
       }
@@ -932,7 +956,7 @@ int main(int argc, char *argv[])
       /*
                               char * pch;
                               pch = strtok (argv[i],",");
-                               while (pch != NULL)
+                               while (pch != nullptr)
                                 {
                                       //int te = atoi(pch);
                                   int * te = new int[3] ;
@@ -966,10 +990,10 @@ int main(int argc, char *argv[])
                                       char * pch_scale = strtok (pch_scale_str,":");
                                       int i=0;
 
-                                      while (pch_scale != NULL)
+                                      while (pch_scale != nullptr)
                                       {
                                               te[i++] = atoi(pch_scale);
-                                              pch_scale = strtok (NULL, ":");
+                                              pch_scale = strtok (nullptr, ":");
                                       }
 
                                       te[0] = atoi(pch);
@@ -977,7 +1001,7 @@ int main(int argc, char *argv[])
                                       te[2] = 0;
 
                                       params.push_back(te);
-                                      pch = strtok (NULL, ",");
+                                      pch = strtok (nullptr, ",");
                                 }
       */
     }
@@ -987,11 +1011,11 @@ int main(int argc, char *argv[])
 
       char *pch;
       pch = strtok(argv[i], ",");
-      while (pch != NULL)
+      while (pch != nullptr)
       {
         int te = atoi(pch);
         levels.push_back(te);
-        pch = strtok(NULL, ",");
+        pch = strtok(nullptr, ",");
       }
     }
     else if (EQUAL(argv[i], "-t_srs"))
@@ -1234,7 +1258,7 @@ void spawn_new_process(char *const *argv,
   gdalDel += tempFile;
 
   system(gdalWrap.c_str());
-// system(gdalDel.c_str());
+  // system(gdalDel.c_str());
 
 #endif
 

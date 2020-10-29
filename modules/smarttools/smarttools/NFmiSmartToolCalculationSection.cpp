@@ -19,9 +19,7 @@
 //--------------------------------------------------------
 // Constructor/Destructor
 //--------------------------------------------------------
-NFmiSmartToolCalculationSection::NFmiSmartToolCalculationSection(void) : itsCalculations()
-{
-}
+NFmiSmartToolCalculationSection::NFmiSmartToolCalculationSection(void) : itsCalculations() {}
 
 NFmiSmartToolCalculationSection::NFmiSmartToolCalculationSection(
     const NFmiSmartToolCalculationSection &theOther)
@@ -29,9 +27,7 @@ NFmiSmartToolCalculationSection::NFmiSmartToolCalculationSection(
 {
 }
 
-NFmiSmartToolCalculationSection::~NFmiSmartToolCalculationSection(void)
-{
-}
+NFmiSmartToolCalculationSection::~NFmiSmartToolCalculationSection(void) {}
 //--------------------------------------------------------
 // Calculate
 //--------------------------------------------------------
@@ -52,15 +48,13 @@ void NFmiSmartToolCalculationSection::Calculate_ver2(
 void NFmiSmartToolCalculationSection::AddCalculations(
     const boost::shared_ptr<NFmiSmartToolCalculation> &value)
 {
-  if (value)
-    itsCalculations.push_back(value);
+  if (value) itsCalculations.push_back(value);
 }
 
 boost::shared_ptr<NFmiFastQueryInfo> NFmiSmartToolCalculationSection::FirstVariableInfo(void)
 {
   boost::shared_ptr<NFmiFastQueryInfo> info;
-  if (itsCalculations.size())
-    info = itsCalculations[0]->GetResultInfo();
+  if (itsCalculations.size()) info = itsCalculations[0]->GetResultInfo();
   return info;
 }
 

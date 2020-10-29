@@ -31,11 +31,11 @@
 //**********************************************************
 #pragma once
 
+#include "NFmiDrawParam.h"
 #include "NFmiSortedPtrList.h"
+#include <boost/shared_ptr.hpp>
 #include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiInfoData.h>
-#include "NFmiDrawParam.h"
-#include <boost/shared_ptr.hpp>
 #include <list>
 
 #ifdef _MSC_VER
@@ -65,7 +65,7 @@ class NFmiDrawParamList
   bool Next(void);
   void Clear(void);
   void Clear(const NFmiProducer& theProducer,
-             checkedVector<int>& theParamIdsNotRemoved,
+             std::vector<int>& theParamIdsNotRemoved,
              NFmiLevel* theLevel = 0);
   void Clear(const NFmiProducer& theProducer,
              std::list<std::pair<int, NFmiLevel> >& theParamIdsAndLevelsNotRemoved);
@@ -98,6 +98,9 @@ class NFmiDrawParamList
   bool HasBorrowedParams(void) const { return fHasBorrowedParams; }
   void HasBorrowedParams(bool newValue) { fHasBorrowedParams = newValue; }
   void ActivateOnlyOne(void);
+  ListType::iterator begin() { return itsList.begin(); }
+  ListType::iterator end() { return itsList.end(); }
+  void Swap(NFmiDrawParamList* otherList);
 
  private:
   void Swap(int index1, int index2);
@@ -113,4 +116,3 @@ class NFmiDrawParamList
   bool fDirtyList;
   bool fHasBorrowedParams;  // onko tällä listalla 'lainattuja' parametreja
 };
-

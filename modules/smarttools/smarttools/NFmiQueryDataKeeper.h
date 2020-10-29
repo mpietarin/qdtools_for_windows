@@ -1,22 +1,13 @@
 #pragma once
 
-#include <newbase/NFmiMilliSecondTimer.h>
-#include <newbase/NFmiDataMatrix.h>
-#include <newbase/NFmiMetTime.h>
-#include <newbase/NFmiInfoData.h>
 #include <boost/shared_ptr.hpp>
+#include <newbase/NFmiDataMatrix.h>
+#include <newbase/NFmiInfoData.h>
+#include <newbase/NFmiMetTime.h>
+#include <newbase/NFmiMilliSecondTimer.h>
 #include <list>
+#include <mutex>
 #include <set>
-
-#ifdef _MSC_VER
-#pragma warning( \
-    disable : 4244 4267 4512)  // boost:in thread kirjastosta tulee ikävästi 4244 varoituksia
-#endif
-#include <boost/thread.hpp>
-#ifdef _MSC_VER
-#pragma warning(default : 4244 4267 4512)  // laitetaan 4244 takaisin päälle, koska se on tärkeä
-                                           // (esim. double -> int auto castaus varoitus)
-#endif
 
 class NFmiOwnerInfo;
 class NFmiFastQueryInfo;
@@ -27,10 +18,8 @@ class NFmiFastQueryInfo;
 class NFmiQueryDataKeeper
 {
  public:
-  typedef boost::shared_mutex MutexType;
-  typedef boost::shared_lock<MutexType>
-      ReadLock;  // Read-lockia ei oikeasti tarvita, mutta laitan sen tähän, jos joskus tarvitaankin
-  typedef boost::unique_lock<MutexType> WriteLock;
+  typedef std::mutex MutexType;
+  typedef std::lock_guard<MutexType> WriteLock;
 
   NFmiQueryDataKeeper(void);
   NFmiQueryDataKeeper(boost::shared_ptr<NFmiOwnerInfo> &theOriginalData);
@@ -56,7 +45,7 @@ class NFmiQueryDataKeeper
   // laskea, voidaanko kyseinen data siivota pois muistista (jos dataa ei ole käytetty tarpeeksi
   // pitkään aikaan)
   int itsIndex;  // malliajo datoissa 0 arvo tarkoittaa viimeisintä ja -1 sitä edellistä jne.
-  checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > itsIteratorList;  // originaali datasta
+  std::vector<boost::shared_ptr<NFmiFastQueryInfo> > itsIteratorList;  // originaali datasta
                                                                          // tehnään tarvittaessa n
                                                                          // kpl iteraattori
                                                                          // kopioita, ulkopuoliset
@@ -93,7 +82,7 @@ class NFmiQueryDataSetKeeper
   const std::string &FilePattern(void) const { return itsFilePattern; }
   void FilePattern(const std::string &newValue) { itsFilePattern = newValue; }
   int MaxLatestDataCount(void) const { return itsMaxLatestDataCount; }
-  void MaxLatestDataCount(int newValue) { itsMaxLatestDataCount = newValue; }
+  void MaxLatestDataCount(int newValue);
   int ModelRunTimeGap(void) const { return itsModelRunTimeGap; }
   void ModelRunTimeGap(int newValue) { itsModelRunTimeGap = newValue; }
   std::set<std::string> GetAllFileNames(void);
@@ -133,4 +122,3 @@ class NFmiQueryDataSetKeeper
   int itsKeepInMemoryTime;  // kuinka kauan pidetään data muistissa, jos sitä ei ole käytetty.
                             // yksikkö on minuutteja
 };
-

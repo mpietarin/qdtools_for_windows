@@ -49,10 +49,8 @@ static bool GetAviationStationFromCsvString(const std::string &theStationStr,
   static long currentWmoIdCounter = 128000;
   if (theStationStr.size() > 2)
   {
-    if (theStationStr[0] == '#')
-      return false;
-    if (theStationStr[0] == '/' && theStationStr[1] == '/')
-      return false;
+    if (theStationStr[0] == '#') return false;
+    if (theStationStr[0] == '/' && theStationStr[1] == '/') return false;
 
     std::vector<std::string> stationParts = NFmiStringTools::Split(theStationStr, ",");
     if (stationParts.size() >= 30)
@@ -66,8 +64,7 @@ static bool GetAviationStationFromCsvString(const std::string &theStationStr,
       long wmoId = missingWmoId;
       double lat = -9999;
       double lon = -9999;
-      if (icaoStr.size() == 4)
-        icaoOk = true;
+      if (icaoStr.size() == 4) icaoOk = true;
       try
       {
         wmoId = NFmiStringTools::Convert<long>(stationParts[21]);
@@ -90,8 +87,7 @@ static bool GetAviationStationFromCsvString(const std::string &theStationStr,
       if (latlonOk && (fIcaoNeeded == false || (fIcaoNeeded && icaoOk)) &&
           (fWmoNeeded == false || (fWmoNeeded && wmoOk)))
       {
-        if (wmoId == missingWmoId)
-          wmoId = currentWmoIdCounter++;
+        if (wmoId == missingWmoId) wmoId = currentWmoIdCounter++;
         theStationOut.SetIdent(wmoId);
         theStationOut.SetLatitude(lat);
         theStationOut.SetLongitude(lon);
@@ -205,13 +201,11 @@ static double GetLatOrLon(const std::string &theLatOrLonStr, bool fDoLatitude)
   value += (NFmiStringTools::Convert<double>(minutesStr) / 60. * 100.) / 100.;
   if (fDoLatitude)
   {
-    if (orientationStr == "S")
-      value = -value;
+    if (orientationStr == "S") value = -value;
   }
   else
   {
-    if (orientationStr == "W")
-      value = -value;
+    if (orientationStr == "W") value = -value;
   }
   return value;
 }
@@ -246,10 +240,8 @@ static bool GetAviationStationFromWmoFlatTableString(const std::string &theStati
   {
     // HUOM! vaikka data formaatti ei tuekaan kommentteja, annetaan kommenttien tarkistus koodin
     // olla tässä varmuuden vuoksi
-    if (theStationStr[0] == '#')
-      return false;
-    if (theStationStr[0] == '/' && theStationStr[1] == '/')
-      return false;
+    if (theStationStr[0] == '#') return false;
+    if (theStationStr[0] == '/' && theStationStr[1] == '/') return false;
 
     std::vector<std::string> stationParts = NFmiStringTools::Split(theStationStr, "\t");
     if (stationParts.size() >= 13)
@@ -282,8 +274,7 @@ static bool GetAviationStationFromWmoFlatTableString(const std::string &theStati
 
       if (latlonOk && wmoOk)
       {
-        if (wmoId == missingWmoId)
-          wmoId = currentWmoIdCounter++;
+        if (wmoId == missingWmoId) wmoId = currentWmoIdCounter++;
         theStationOut.SetIdent(wmoId);
         theStationOut.SetLatitude(lat);
         theStationOut.SetLongitude(lon);

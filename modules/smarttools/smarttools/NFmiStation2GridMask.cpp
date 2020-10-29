@@ -1,8 +1,12 @@
 #include "NFmiStation2GridMask.h"
 #include "NFmiDrawParam.h"
 #include "NFmiGriddingHelperInterface.h"
+#include "NFmiGriddingProperties.h"
+#include "NFmiIgnoreStationsData.h"
 #include <newbase/NFmiFastInfoUtils.h>
 #include <newbase/NFmiFastQueryInfo.h>
+
+#include <boost/math/special_functions/round.hpp>
 
 // ****************************************************************************
 // ****************** NFmiStation2GridMask ************************************
@@ -12,23 +16,26 @@ NFmiStation2GridMask::GriddingFunctionCallBackType NFmiStation2GridMask::itsGrid
 
 NFmiStation2GridMask::NFmiStation2GridMask(Type theMaskType,
                                            NFmiInfoData::Type theDataType,
-                                           boost::shared_ptr<NFmiFastQueryInfo> &theInfo)
-    : NFmiInfoAreaMask(
-          NFmiCalculationCondition(), theMaskType, theDataType, theInfo, NFmiAreaMask::kNoValue),
+                                           boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+                                           unsigned long thePossibleMetaParamId)
+    : NFmiInfoAreaMask(NFmiCalculationCondition(),
+                       theMaskType,
+                       theDataType,
+                       theInfo,
+                       thePossibleMetaParamId,
+                       NFmiAreaMask::kNoValue),
       itsGriddedStationData(new DataCache()),
       itsCurrentGriddedStationData(0),
       itsLastCalculatedTime(NFmiMetTime::gMissingTime),
       itsAreaPtr(),
       itsGriddingHelper(0),
       itsStation2GridSize(1, 1),
-      itsObservationRadiusRelative(kFloatMissing),
+      itsObservationRadiusInKm(kFloatMissing),
       itsCacheMutex(new MutexType())
 {
 }
 
-NFmiStation2GridMask::~NFmiStation2GridMask(void)
-{
-}
+NFmiStation2GridMask::~NFmiStation2GridMask(void) {}
 
 NFmiStation2GridMask::NFmiStation2GridMask(const NFmiStation2GridMask &theOther)
     : NFmiInfoAreaMask(theOther),
@@ -39,36 +46,140 @@ NFmiStation2GridMask::NFmiStation2GridMask(const NFmiStation2GridMask &theOther)
       itsAreaPtr(theOther.itsAreaPtr.get() ? theOther.itsAreaPtr.get()->Clone() : 0),
       itsGriddingHelper(theOther.itsGriddingHelper),
       itsStation2GridSize(theOther.itsStation2GridSize),
-      itsObservationRadiusRelative(theOther.itsObservationRadiusRelative),
+      itsObservationRadiusInKm(theOther.itsObservationRadiusInKm),
       itsCacheMutex(theOther.itsCacheMutex)
 {
 }
 
-NFmiAreaMask *NFmiStation2GridMask::Clone(void) const
-{
-  return new NFmiStation2GridMask(*this);
-}
+NFmiAreaMask *NFmiStation2GridMask::Clone(void) const { return new NFmiStation2GridMask(*this); }
 
 double NFmiStation2GridMask::Value(const NFmiCalculationParams &theCalculationParams,
                                    bool /* fUseTimeInterpolationAlways */)
 {
-  DoGriddingCheck(theCalculationParams);
-  if (itsCurrentGriddedStationData)
-    return itsCurrentGriddedStationData->GetValue(theCalculationParams.itsLocationIndex,
-                                                  kFloatMissing);
+  if (IsNearestPointCalculationUsed())
+    return DoNearestPointCalculations(theCalculationParams);
   else
-    return kFloatMissing;
+  {
+    DoGriddingCheck(theCalculationParams);
+    if (itsCurrentGriddedStationData)
+      return itsCurrentGriddedStationData->GetValue(theCalculationParams.itsLocationIndex,
+                                                    kFloatMissing);
+    else
+      return kFloatMissing;
+  }
+}
+
+bool NFmiStation2GridMask::IsNearestPointCalculationUsed() const
+{
+  return itsObservationRadiusInKm != kFloatMissing && fUseCalculationPoints;
+}
+
+double NFmiStation2GridMask::GetFinalValueFromNearestLocationWithMetaParameterChecks(
+    const boost::shared_ptr<NFmiFastQueryInfo> &info)
+{
+  if (metaParamDataHolder.isMetaParameterCalculationNeeded())
+  {
+    return CalcMetaParamValueWithFunction([&]() { return info->FloatValue(); });
+  }
+  else
+    return info->FloatValue();
+}
+
+double NFmiStation2GridMask::GetFinalValueFromNearestLocation(
+    const boost::shared_ptr<NFmiFastQueryInfo> &info,
+    NFmiIgnoreStationsData &ignoreStationData,
+    const NFmiLocation &calculationLocation)
+{
+  if (!ignoreStationData.IsStationBlocked(*(info->Location()), true))
+  {
+    return GetFinalValueFromNearestLocationWithMetaParameterChecks(info);
+  }
+  else
+  {
+    // Jos datan lähin asema oli blokattu, etsitään n kpl lähintä asemaa ja katsotaan onko nekin
+    // blokattu
+    auto nearestLocationsInfo =
+        info->NearestLocations(calculationLocation, 3, itsObservationRadiusInKm * 1000.);
+    // skipataan se lähin paikka, koska jo tiedetään että se on blokattu
+    for (size_t index = 1; index < nearestLocationsInfo.size(); index++)
+    {
+      if (info->Location(nearestLocationsInfo[index].first))
+      {
+        if (!ignoreStationData.IsStationBlocked(*(info->Location()), true))
+        {
+          return GetFinalValueFromNearestLocationWithMetaParameterChecks(info);
+        }
+      }
+    }
+  }
+  return kFloatMissing;
+}
+
+double NFmiStation2GridMask::DoNearestPointCalculations(
+    const NFmiCalculationParams &theCalculationParams)
+{
+  GetUsedObservationInfoVector();
+  NFmiLocation calculationLocation(theCalculationParams.itsLatlon);
+  NFmiIgnoreStationsData &ignorestationdata = itsGriddingHelper->IgnoreStationsData();
+  double nearestValue = kFloatMissing;
+  double nearestValueDistanceInMeters = 99999999;
+  for (const auto &info : itsUsedObservationInfoVector)
+  {
+    if (!NFmiFastInfoUtils::IsInfoShipTypeData(*info))
+    {
+      if (info->Time(theCalculationParams.itsTime))
+      {
+        if (metaParamDataHolder.isMetaParameterCalculationNeeded() ||
+            info->Param(static_cast<FmiParameterName>(itsDataIdent.GetParamIdent())))
+        {
+          // HUOM! ei hanskaa blokattuja havaintoasemia
+          if (info->NearestLocation(
+                  calculationLocation, itsAreaPtr.get(), itsObservationRadiusInKm * 1000.))
+          {
+            double value =
+                GetFinalValueFromNearestLocation(info, ignorestationdata, calculationLocation);
+            double distanceInMeters = calculationLocation.Distance(info->LatLonFast());
+            if (distanceInMeters < nearestValueDistanceInMeters)
+            {
+              nearestValue = value;
+              nearestValueDistanceInMeters = distanceInMeters;
+            }
+          }
+        }
+      }
+    }
+  }
+  return nearestValue;
+}
+
+void NFmiStation2GridMask::GetUsedObservationInfoVector()
+{
+  if (!fUsedObservationInfoVectorRetrieved)
+  {
+    fUsedObservationInfoVectorRetrieved = true;
+    boost::shared_ptr<NFmiDrawParam> drawParam = MakeUsedDataRetrievingDrawParam();
+    itsGriddingHelper->MakeDrawedInfoVectorForMapView(
+        itsUsedObservationInfoVector, drawParam, itsAreaPtr);
+  }
+}
+
+boost::shared_ptr<NFmiDrawParam> NFmiStation2GridMask::MakeUsedDataRetrievingDrawParam() const
+{
+  return boost::shared_ptr<NFmiDrawParam>(
+      new NFmiDrawParam(itsDataIdent, itsLevel, 0, itsDataType));
 }
 
 void NFmiStation2GridMask::SetGriddingHelpers(NFmiArea *theArea,
                                               NFmiGriddingHelperInterface *theGriddingHelper,
                                               const NFmiPoint &theStation2GridSize,
-                                              float theObservationRadiusRelative)
+                                              float theObservationRadiusInKm,
+                                              bool useCalculationPoints)
 {
   itsAreaPtr.reset(theArea->Clone());
   itsGriddingHelper = theGriddingHelper;
   itsStation2GridSize = theStation2GridSize;
-  itsObservationRadiusRelative = theObservationRadiusRelative;
+  itsObservationRadiusInKm = theObservationRadiusInKm;
+  fUseCalculationPoints = useCalculationPoints;
 }
 
 void NFmiStation2GridMask::DoGriddingCheck(const NFmiCalculationParams &theCalculationParams)
@@ -89,19 +200,24 @@ void NFmiStation2GridMask::DoGriddingCheck(const NFmiCalculationParams &theCalcu
       // lasketaan halutun ajan hila
       if (itsGriddingHelper && itsAreaPtr.get())
       {
-        boost::shared_ptr<NFmiDrawParam> drawParam(
-            new NFmiDrawParam(itsDataIdent, itsLevel, 0, itsDataType));
+        boost::shared_ptr<NFmiDrawParam> drawParam = MakeUsedDataRetrievingDrawParam();
         NFmiDataMatrix<float> griddedData(
             static_cast<NFmiDataMatrix<float>::size_type>(itsStation2GridSize.X()),
             static_cast<NFmiDataMatrix<float>::size_type>(itsStation2GridSize.Y()),
             kFloatMissing);
         if (itsGridStationDataCallback)
+        {
+          auto griddingProperties = itsGriddingHelper->GriddingProperties(false);
+          griddingProperties.rangeLimitInKm(
+              itsObservationRadiusInKm);  // overridataan käytetty km-rajoitin arvosta, joka saadaan
+                                          // macroParam kaavasta
           itsGridStationDataCallback(itsGriddingHelper,
                                      itsAreaPtr,
                                      drawParam,
                                      griddedData,
                                      theCalculationParams.itsTime,
-                                     itsObservationRadiusRelative);
+                                     griddingProperties);
+        }
         std::pair<DataCache::iterator, bool> insertResult = itsGriddedStationData->insert(
             std::make_pair(theCalculationParams.itsTime, griddedData));
         if (insertResult.second)
@@ -113,6 +229,7 @@ void NFmiStation2GridMask::DoGriddingCheck(const NFmiCalculationParams &theCalcu
     itsLastCalculatedTime = theCalculationParams.itsTime;
   }
 }
+
 // ****************************************************************************
 // ****************** NFmiStation2GridMask ************************************
 // ****************************************************************************
@@ -125,9 +242,14 @@ NFmiNearestObsValue2GridMask::NFmiNearestObsValue2GridMask(
     Type theMaskType,
     NFmiInfoData::Type theDataType,
     boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-    int theArgumentCount)
-    : NFmiInfoAreaMask(
-          NFmiCalculationCondition(), theMaskType, theDataType, theInfo, NFmiAreaMask::kNoValue),
+    int theArgumentCount,
+    unsigned long thePossibleMetaParamId)
+    : NFmiInfoAreaMask(NFmiCalculationCondition(),
+                       theMaskType,
+                       theDataType,
+                       theInfo,
+                       thePossibleMetaParamId,
+                       NFmiAreaMask::kNoValue),
       itsNearestObsValuesData(new DataCache()),
       itsCurrentNearestObsValuesData(0),
       itsLastCalculatedTime(NFmiMetTime::gMissingTime),
@@ -139,9 +261,7 @@ NFmiNearestObsValue2GridMask::NFmiNearestObsValue2GridMask(
   itsFunctionArgumentCount = theArgumentCount;
 }
 
-NFmiNearestObsValue2GridMask::~NFmiNearestObsValue2GridMask(void)
-{
-}
+NFmiNearestObsValue2GridMask::~NFmiNearestObsValue2GridMask(void) {}
 
 NFmiNearestObsValue2GridMask::NFmiNearestObsValue2GridMask(
     const NFmiNearestObsValue2GridMask &theOther)
@@ -198,7 +318,7 @@ static NFmiDataMatrix<float> CalcNearestValueMatrix(
     const NFmiLevel &theLevel,
     const NFmiCalculationParams &theCalculationParams,
     const NFmiPoint &theResultGridSize,
-    checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfoVector,
+    std::vector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfoVector,
     boost::shared_ptr<NFmiArea> &theAreaPtr,
     float theTimePeekInHours)
 {
@@ -289,7 +409,7 @@ void NFmiNearestObsValue2GridMask::DoNearestValueGriddingCheck(
 
         boost::shared_ptr<NFmiDrawParam> drawParam(
             new NFmiDrawParam(itsDataIdent, itsLevel, 0, itsDataType));
-        checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > infoVector;  // tähän haetaan
+        std::vector<boost::shared_ptr<NFmiFastQueryInfo> > infoVector;  // tähän haetaan
                                                                           // tarvittavat datat
                                                                           // (synopin tapauksessa
                                                                           // mahdollisesti lista)
@@ -313,4 +433,145 @@ void NFmiNearestObsValue2GridMask::DoNearestValueGriddingCheck(
 }
 // ****************************************************************************
 // *************** NFmiNearestObsValue2GridMask *******************************
+// ****************************************************************************
+
+// ****************************************************************************
+// *************** NFmiLastTimeValueMask **************************************
+// ****************************************************************************
+
+NFmiLastTimeValueMask::NFmiLastTimeValueMask(Type theMaskType,
+                                             NFmiInfoData::Type theDataType,
+                                             boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+                                             int theArgumentCount,
+                                             unsigned long thePossibleMetaParamId)
+    : NFmiStation2GridMask(theMaskType, theDataType, theInfo, thePossibleMetaParamId),
+      itsLastTimeIndex(gMissingIndex),
+      itsLastTimeOfData(NFmiMetTime::gMissingTime)
+{
+  itsFunctionArgumentCount = theArgumentCount;
+}
+
+NFmiLastTimeValueMask::~NFmiLastTimeValueMask(void) = default;
+
+NFmiLastTimeValueMask::NFmiLastTimeValueMask(const NFmiLastTimeValueMask &theOther)
+    : NFmiStation2GridMask(theOther),
+      itsLastTimeIndex(theOther.itsLastTimeIndex),
+      itsLastTimeOfData(theOther.itsLastTimeOfData)
+{
+}
+
+NFmiAreaMask *NFmiLastTimeValueMask::Clone(void) const { return new NFmiLastTimeValueMask(*this); }
+
+double NFmiLastTimeValueMask::Value(const NFmiCalculationParams &theCalculationParams,
+                                    bool fUseTimeInterpolationAlways)
+{
+  NFmiCalculationParams calculationParams(theCalculationParams);
+  calculationParams.itsTime = itsLastTimeOfData;
+  if (itsInfo->IsGrid())
+  {
+    // Hiladatan laskut hoidataan NFmiInfoAreaMask::Value:ssa, joka hanskaa mm. tuulen
+    // meta-parametrit
+    return NFmiInfoAreaMask::Value(calculationParams, fUseTimeInterpolationAlways);
+  }
+  else
+  {
+    // Havainto data menee hilaus-funktioiden kautta ja niille ei laiteta toistaiseksi tuulen
+    // meta-parametri tukea
+    return NFmiStation2GridMask::Value(calculationParams, fUseTimeInterpolationAlways);
+  }
+}
+
+void NFmiLastTimeValueMask::SetGriddingHelpers(NFmiArea *theArea,
+                                               NFmiGriddingHelperInterface *theGriddingHelper,
+                                               const NFmiPoint &theStation2GridSize,
+                                               float theObservationRadiusInKm,
+                                               bool useCalculationPoints)
+{
+  NFmiStation2GridMask::SetGriddingHelpers(theArea,
+                                           theGriddingHelper,
+                                           theStation2GridSize,
+                                           theObservationRadiusInKm,
+                                           useCalculationPoints);
+  itsLastTimeOfData = FindLastTime();
+}
+
+NFmiMetTime NFmiLastTimeValueMask::FindLastTime()
+{
+  if (itsInfo->IsGrid())
+  {
+    // Asetetaan info viimeiseen aikaa ja otetaan sen aikaindeksi talteen
+    itsInfo->LastTime();
+    itsLastTimeIndex = itsInfo->TimeIndex();
+    return itsInfo->Time();
+  }
+  else
+  {
+    boost::shared_ptr<NFmiDrawParam> drawParam(
+        new NFmiDrawParam(itsDataIdent, itsLevel, 0, itsDataType));
+    // tähän haetaan tarvittavat datat (synopin tapauksessa mahdollisesti lista)
+    std::vector<boost::shared_ptr<NFmiFastQueryInfo> > infoVector;
+    itsGriddingHelper->MakeDrawedInfoVectorForMapView(infoVector, drawParam, itsAreaPtr);
+    if (infoVector.size() >= 1)
+    {
+      // Käytetään prioriteetti 1 infoa (se mikä on ensimmäisena vektorissa) pohjadatatna ja siitä
+      // otetaan haluttu aika
+      return infoVector[0]->TimeDescriptor().LastTime();
+    }
+    else
+      return NFmiMetTime::gMissingTime;
+  }
+}
+
+// ****************************************************************************
+// *************** NFmiLastTimeValueMask **************************************
+// ****************************************************************************
+
+// ****************************************************************************
+// *************** NFmiStation2GridTimeShiftMask ******************************
+// ****************************************************************************
+
+NFmiStation2GridTimeShiftMask::NFmiStation2GridTimeShiftMask(
+    Type theMaskType,
+    NFmiInfoData::Type theDataType,
+    boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+    float theTimeOffsetInHours,
+    unsigned long thePossibleMetaParamId)
+    : NFmiStation2GridMask(theMaskType, theDataType, theInfo, thePossibleMetaParamId),
+      itsTimeOffsetInHours(theTimeOffsetInHours),
+      itsChangeByMinutesValue(boost::math::lround(theTimeOffsetInHours * 60.f))
+{
+}
+
+NFmiStation2GridTimeShiftMask::~NFmiStation2GridTimeShiftMask(void) {}
+
+NFmiStation2GridTimeShiftMask::NFmiStation2GridTimeShiftMask(
+    const NFmiStation2GridTimeShiftMask &theOther)
+    : NFmiStation2GridMask(theOther),
+      itsTimeOffsetInHours(theOther.itsTimeOffsetInHours),
+      itsChangeByMinutesValue(theOther.itsChangeByMinutesValue)
+{
+}
+
+NFmiAreaMask *NFmiStation2GridTimeShiftMask::Clone(void) const
+{
+  return new NFmiStation2GridTimeShiftMask(*this);
+}
+
+double NFmiStation2GridTimeShiftMask::Value(const NFmiCalculationParams &theCalculationParams,
+                                            bool fUseTimeInterpolationAlways)
+{
+  return NFmiStation2GridMask::Value(GetUsedCalculationParams(theCalculationParams),
+                                     fUseTimeInterpolationAlways);
+}
+
+NFmiCalculationParams NFmiStation2GridTimeShiftMask::GetUsedCalculationParams(
+    const NFmiCalculationParams &theCalculationParams)
+{
+  NFmiCalculationParams usedCalculationParams = theCalculationParams;
+  usedCalculationParams.itsTime.ChangeByMinutes(itsChangeByMinutesValue);
+  return usedCalculationParams;
+}
+
+// ****************************************************************************
+// *************** NFmiStation2GridTimeShiftMask ******************************
 // ****************************************************************************

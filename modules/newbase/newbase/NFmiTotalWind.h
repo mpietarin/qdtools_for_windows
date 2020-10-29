@@ -10,11 +10,12 @@
 #include "NFmiCombinedParam.h"
 
 #include <cmath>
-extern "C" {
+extern "C"
+{
 #if defined(_MSC_VER) && \
     (_MSC_VER <          \
      1600)  // stdint.h -headeria ei ole MSVC++ kääntäjissä ennen VC++ 2010 eli _MSC_VER < 1600
-typedef unsigned long uint32_t;
+  typedef unsigned long uint32_t;
 #else
 #include <stdint.h>
 #endif
@@ -26,7 +27,7 @@ class NFmiVoidPtrList;
 class NFmiIntegrationSelector;
 
 //! Undocumented
-class _FMI_DLL NFmiTotalWind : public NFmiCombinedParam
+class NFmiTotalWind : public NFmiCombinedParam
 {
  public:
   virtual ~NFmiTotalWind(void);

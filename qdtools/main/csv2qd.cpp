@@ -16,10 +16,16 @@
  */
 // ======================================================================
 
+#include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/program_options.hpp>
 #include <macgyver/CsvReader.h>
 #include <macgyver/TimeParser.h>
 #include <macgyver/TimeZoneFactory.h>
-
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiHPlaceDescriptor.h>
@@ -30,21 +36,16 @@
 #include <newbase/NFmiTimeDescriptor.h>
 #include <newbase/NFmiTimeList.h>
 #include <newbase/NFmiVPlaceDescriptor.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/program_options.hpp>
-#include <boost/filesystem/operations.hpp>
-
 #include <iostream>
 #include <list>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
 
 using namespace std;
 
@@ -62,62 +63,34 @@ const string default_producer_name = "SYNOP";
 
 struct Options
 {
-  Options();
-
-  bool verbose;
-
-  string order;
-  int timecolumn;
-  int stationcolumn;
-  int levelcolumn;
-  int datacolumn;
+  bool verbose = false;
+  bool quiet = false;
+  bool allstations = false;
+  string order = "idtime";
+  int timecolumn = 1;
+  int stationcolumn = 0;
+  int levelcolumn = -1;
+  int datacolumn = 2;
 
   vector<string> files;
   string infile;
   string outfile;
 
-  string missingvalue;
-  int producernumber;
-  string producername;
+  string missingvalue = default_missingvalue;
+  int producernumber = default_producer_number;
+  string producername = default_producer_name;
   vector<int> params;
 
-  string paramsfile;
-  string stationsfile;
+  string paramsfile = default_paramsfile;
+  string stationsfile = default_stationsfile;
   string origintime;
-  string timezone;
+  string timezone = "UTC";
 
-  int leveltype;
+  int leveltype = 5000;
 };
 
 Options options;
 
-// ----------------------------------------------------------------------
-/*!
- * \brief Default options
- */
-// ----------------------------------------------------------------------
-
-Options::Options()
-    : verbose(false),
-      order("idtime"),
-      timecolumn(1),
-      stationcolumn(0),
-      levelcolumn(-1),
-      datacolumn(2),
-      files(),
-      infile(),
-      outfile(),
-      missingvalue(default_missingvalue),
-      producernumber(default_producer_number),
-      producername(default_producer_name),
-      params(),
-      paramsfile(default_paramsfile),
-      stationsfile(default_stationsfile),
-      origintime(),
-      timezone("UTC"),
-      leveltype(5000)
-{
-}
 // ----------------------------------------------------------------------
 /*!
  * \brief Parse command line options
@@ -138,31 +111,36 @@ bool parse_options(int argc, char* argv[], Options& options)
 
   string prodnamedesc = "producer name (default=" + string(default_producer_name + ")");
 
-  po::options_description desc("Allowed options");
-  desc.add_options()("help,h", "print out help message")(
-      "verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")(
-      "version,V", "display version number")("missing,m",
-                                             po::value(&options.missingvalue),
-                                             "missing value string (default is empty string)")(
-      "prodnum", po::value(&options.producernumber), prodnumdesc.c_str())(
-      "prodname", po::value(&options.producername), prodnamedesc.c_str())(
-      "infile,i", po::value(&options.infile), "input csv file")(
-      "outfile,o", po::value(&options.outfile), "output querydata file")(
-      "files", po::value<vector<string> >(&options.files), "all input files and the output file")(
-      "params,p", po::value(&params), "parameter names of csv columns")(
-      "paramsfile,P",
-      po::value(&options.paramsfile),
-      ("parameter configuration file (" + default_paramsfile + ")").c_str())(
-      "order,O",
-      po::value(&options.order),
-      "column ordering "
-      "(idtime|timeid|idtimelevel|idleveltime|timeidlevel|timelevelid|levelidtime|leveltimeid")(
-      "stationsfile,S",
-      po::value(&options.stationsfile),
-      ("station configuration file (" + default_stationsfile + ")").c_str())(
-      "origintime", po::value(&options.origintime), "origin time")("timezone,t",
-                                                                   po::value(&options.timezone))(
-      "leveltype", po::value(&options.leveltype), "leveltype as number");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Allowed options", desc_width);
+  // clang-format off
+  desc.add_options()
+      ("help,h", "print out help message")
+      ("verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")
+      ("quiet,q", po::bool_switch(&options.quiet), "set quiet mode on")
+      ("version,V", "display version number")
+      ("missing,m", po::value(&options.missingvalue),"missing value string (default is empty string)")
+      ("prodnum", po::value(&options.producernumber), prodnumdesc.c_str() )
+      ("prodname", po::value(&options.producername), prodnamedesc.c_str() )
+      ("infile,i", po::value(&options.infile), "input csv file")
+      ("outfile,o", po::value(&options.outfile), "output querydata file")
+      ("files", po::value<vector<string> >(&options.files), "all input files and the output file")
+      ("params,p", po::value(&params), "parameter names of csv columns")
+      ("paramsfile,P", po::value(&options.paramsfile), ("parameter configuration file (" + default_paramsfile + ")").c_str() )
+      ("order,O", po::value(&options.order), "column ordering (idtime|timeid|idtimelevel|idleveltime|timeidlevel|timelevelid|levelidtime|leveltimeid")
+      ("stationsfile,S", po::value(&options.stationsfile), ("station configuration file (" + default_stationsfile + ")").c_str() )
+      ("allstations,A",po::bool_switch(&options.allstations),"store all stations in station file into output")
+      ("origintime", po::value(&options.origintime), "origin time")
+      ("timezone,t", po::value(&options.timezone))
+      ("leveltype", po::value(&options.leveltype), "leveltype as number");
+  // clang-format on
 
   po::positional_options_description p;
   p.add("files", -1);
@@ -187,6 +165,9 @@ bool parse_options(int argc, char* argv[], Options& options)
          << desc << endl;
     return false;
   }
+
+  if (options.verbose && options.quiet)
+    throw std::runtime_error("Cannot use --verbose and --quiet simultaneously");
 
   if (opt.count("files") == 0)
   {
@@ -473,14 +454,31 @@ NFmiHPlaceDescriptor create_hdesc(const CsvTable& csv, const Stations& stations)
   // Build LocationBag
 
   NFmiLocationBag lbag;
-  BOOST_FOREACH (const string& id, used)
+  if (!options.allstations)
   {
-    Stations::const_iterator it = stations.find(id);
-    if (it == stations.end())
-      throw runtime_error("No information found for station id '" + id + "'");
-
-    NFmiStation station(it->second.number, it->second.name, it->second.lon, it->second.lat);
-    lbag.AddLocation(station);
+    BOOST_FOREACH (const string& id, used)
+    {
+      Stations::const_iterator it = stations.find(id);
+      if (it == stations.end())
+      {
+        if (!options.quiet) std::cerr << "Warning: Unknown station id '" << id << "'" << std::endl;
+      }
+      else
+      {
+        NFmiStation station(it->second.number, it->second.name, it->second.lon, it->second.lat);
+        lbag.AddLocation(station);
+      }
+    }
+  }
+  else
+  {
+    std::cout << "Generating " << stations.size() << " stations" << endl;
+    for (const auto& name_station : stations)
+    {
+      const auto& s = name_station.second;
+      NFmiStation station(s.number, s.name, s.lon, s.lat);
+      lbag.AddLocation(station);
+    }
   }
 
   return NFmiHPlaceDescriptor(lbag);
@@ -772,7 +770,7 @@ void write_querydata(const CsvTable& csv, const Params& params, const Stations& 
   NFmiTimeDescriptor tdesc = create_tdesc(csv, tz);
 
   NFmiFastQueryInfo qi(pdesc, tdesc, hdesc, vdesc);
-  auto_ptr<NFmiQueryData> data(NFmiQueryDataUtil::CreateEmptyData(qi));
+  unique_ptr<NFmiQueryData> data(NFmiQueryDataUtil::CreateEmptyData(qi));
   NFmiFastQueryInfo info(data.get());
 
   if (data.get() == 0) throw runtime_error("Could not allocate memory for result data");

@@ -87,6 +87,7 @@
 // ======================================================================
 
 #include "NFmiAzimuthalArea.h"
+#include <boost/functional/hash.hpp>
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -129,13 +130,13 @@ NFmiAzimuthalArea::NFmiAzimuthalArea(const NFmiAzimuthalArea &theAzimuthalArea)
     = default;
 
 /*!
-* Constructor
-*
-* \param theCenterLatLon Undocumented
-* \param theRadialRangeInMeters Undocumented
-* \param theTopLeftXY Undocumented
-* \param theBottomRightXY Undocumented
-*/
+ * Constructor
+ *
+ * \param theCenterLatLon Undocumented
+ * \param theRadialRangeInMeters Undocumented
+ * \param theTopLeftXY Undocumented
+ * \param theBottomRightXY Undocumented
+ */
 NFmiAzimuthalArea::NFmiAzimuthalArea(double theRadialRangeInMeters,
                                      const NFmiPoint &theCenterLatLon,
                                      const NFmiPoint &theTopLeftXY,
@@ -836,7 +837,8 @@ std::ostream &NFmiAzimuthalArea::Write(std::ostream &file) const
   int oldPrec = file.precision();
   file.precision(15);
 
-  if (FmiInfoVersion >= 5)
+  // We trust everything to be at least version 6 by now
+  if (DefaultFmiInfoVersion >= 5)
   {
     file << itsRadialRange << " 0"
          << " 0" << endl;
@@ -870,7 +872,8 @@ std::istream &NFmiAzimuthalArea::Read(std::istream &file)
   file >> itsCentralLongitude;
   file >> theCentralLatitude;
   file >> theTrueLatitude;
-  if (FmiInfoVersion >= 5)
+  // We trust everything to be at least version 6 by now
+  if (DefaultFmiInfoVersion >= 5)
   {
     unsigned long dummy;
     file >> itsRadialRange >> dummy >> dummy;
@@ -884,6 +887,30 @@ std::istream &NFmiAzimuthalArea::Read(std::istream &file)
   Init();
 
   return file;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Hash value
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiAzimuthalArea::HashValue() const
+{
+  std::size_t hash = NFmiArea::HashValue();
+  boost::hash_combine(hash, itsTopRightLatLon.HashValue());
+  boost::hash_combine(hash, itsBottomLeftLatLon.HashValue());
+  boost::hash_combine(hash, itsBottomLeftWorldXY.HashValue());
+  boost::hash_combine(hash, boost::hash_value(itsXScaleFactor));
+  boost::hash_combine(hash, boost::hash_value(itsYScaleFactor));
+  boost::hash_combine(hash, itsWorldRect.HashValue());
+  boost::hash_combine(hash, boost::hash_value(itsRadialRange));
+  boost::hash_combine(hash, boost::hash_value(itsCentralLongitude));
+  boost::hash_combine(hash, itsCentralLatitude.HashValue());
+  boost::hash_combine(hash, itsTrueLatitude.HashValue());
+  boost::hash_combine(hash, boost::hash_value(itsTrueLatScaleFactor));
+
+  return hash;
 }
 
 // ======================================================================

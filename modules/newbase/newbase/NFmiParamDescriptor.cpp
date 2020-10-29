@@ -63,9 +63,12 @@ NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamDescriptor &theParamDesc
       itsActivity(nullptr),
       fInterpolate(theParamDescriptor.fInterpolate)
 {
-  itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];  // 5.3.1997/Marko
-  for (int i = 0; i < static_cast<int>(itsParamBag->GetSize()); i++)
-    itsActivity[i] = theParamDescriptor.itsActivity[i];
+  if (itsParamBag != nullptr)
+  {
+    itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];  // 5.3.1997/Marko
+    for (int i = 0; i < static_cast<int>(itsParamBag->GetSize()); i++)
+      itsActivity[i] = theParamDescriptor.itsActivity[i];
+  }
 }
 
 // ----------------------------------------------------------------------
@@ -341,7 +344,8 @@ std::istream &NFmiParamDescriptor::Read(std::istream &file)
   itsParamBag->Reset();
   for (unsigned long i = 0; i < itsParamBag->GetSize(); i++)
   {
-    if (FmiInfoVersion >= 3)
+    // We trust all data to be at least version 6 by now
+    if (DefaultFmiInfoVersion >= 3)
       file >> itsActivity[i];
     else
     {

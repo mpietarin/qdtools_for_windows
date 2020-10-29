@@ -374,7 +374,9 @@ bool NFmiTransformList::Allocate(int theMaxPairNumber)
     // Allocate space for more pair data
     **/
 
-    return false;  // Lisämuistin varausta ei ole toteutettu
+    // Prevent crash in AddDataMapping since itsFirstPair is nullptr
+    throw std::runtime_error("Unable to allocate more memory for transform list");
+    
   }
   else
   {
@@ -511,9 +513,9 @@ bool NFmiTransformList::Interpolate(const NFmiPoint& firstPair, const NFmiPoint&
   if ((firstInputValue < inputValue) && (inputValue < lastInputValue))
   {
     // Interpolate
-    itsOutputValue = firstOutputValue +
-                     ((lastOutputValue - firstOutputValue) * (inputValue - firstInputValue)) /
-                         (lastInputValue - firstInputValue);
+    itsOutputValue =
+        firstOutputValue + ((lastOutputValue - firstOutputValue) * (inputValue - firstInputValue)) /
+                               (lastInputValue - firstInputValue);
     return true;
   }
 

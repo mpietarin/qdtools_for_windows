@@ -13,7 +13,7 @@ class NFmiMetTime;
 class NFmiTimeBag;
 
 //! Undocumented
-class _FMI_DLL NFmiTimeList
+class NFmiTimeList
 {
  public:
   virtual ~NFmiTimeList(void);
@@ -69,25 +69,25 @@ class _FMI_DLL NFmiTimeList
   bool TimeInSearchRange(const NFmiMetTime &theTime,
                          unsigned long theTimeRangeInMinutes);  // apu funktio nearestTime:en
   bool IndexOk(int theIndex) const;
-  bool FindNearestBackwardTime(checkedVector<NFmiMetTime *>::iterator &firstNotLess,
+  bool FindNearestBackwardTime(std::vector<NFmiMetTime *>::iterator &firstNotLess,
                                const NFmiMetTime &theTime,
                                unsigned long theTimeRangeInMinutes);
-  bool FindNearestForwardTime(checkedVector<NFmiMetTime *>::iterator &firstNotLess,
+  bool FindNearestForwardTime(std::vector<NFmiMetTime *>::iterator &firstNotLess,
                               const NFmiMetTime &theTime,
                               unsigned long theTimeRangeInMinutes);
-  bool FindNearestTime(checkedVector<NFmiMetTime *>::iterator &firstNotLess,
+  bool FindNearestTime(std::vector<NFmiMetTime *>::iterator &firstNotLess,
                        const NFmiMetTime &theTime,
                        unsigned long theTimeRangeInMinutes);
-  int CalcTimeListIndex(const checkedVector<NFmiMetTime *>::iterator &theIter);
-  bool IsSearchedTimeInRange(checkedVector<NFmiMetTime *>::iterator &foundTimeIter,
+  int CalcTimeListIndex(const std::vector<NFmiMetTime *>::iterator &theIter);
+  bool IsSearchedTimeInRange(std::vector<NFmiMetTime *>::iterator &foundTimeIter,
                              const NFmiMetTime &theTime,
                              unsigned long theTimeRangeInMinutes);
-  bool CheckFoundTimeIter(checkedVector<NFmiMetTime *>::iterator &foundTimeIter,
+  bool CheckFoundTimeIter(std::vector<NFmiMetTime *>::iterator &foundTimeIter,
                           const NFmiMetTime &theTime,
                           unsigned long theTimeRangeInMinutes);
 
-  checkedVector<NFmiMetTime *> itsVectorList;  // muutin nimen, että se erottuu vanhasta
-                                               //  NFmiVoidPtrList *	itsList;
+  std::vector<NFmiMetTime *> itsVectorList;  // muutin nimen, että se erottuu vanhasta
+                                             //  NFmiVoidPtrList *	itsList;
   mutable int itsIndex;
 
   //  mutable NFmiVoidPtrIterator* itsIter;

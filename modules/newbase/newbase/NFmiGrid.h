@@ -57,7 +57,7 @@ class NFmiTimeCache
 };
 
 //! Undocumented
-class _FMI_DLL NFmiGrid : public NFmiGridBase
+class NFmiGrid : public NFmiGridBase
 {
  public:
   virtual ~NFmiGrid(void);
@@ -97,7 +97,7 @@ class _FMI_DLL NFmiGrid : public NFmiGridBase
                      double theMaxDistance = kFloatMissing * 1000.,
                      NFmiPoint *theGridPoint = 0);
 
-  checkedVector<std::pair<int, double> > NearestLocations(
+  std::vector<std::pair<int, double> > NearestLocations(
       const NFmiLocation &theLocation,
       int theMaxWantedLocations,
       double theMaxDistance = kFloatMissing) const;

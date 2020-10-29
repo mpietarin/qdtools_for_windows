@@ -3,80 +3,29 @@ LIB = smartmet-$(SUBNAME)
 SPEC = smartmet-library-$(SUBNAME)
 INCDIR = smartmet/$(SUBNAME)
 
-# Installation directories
 
-processor := $(shell uname -p)
-
-ifeq ($(origin PREFIX), undefined)
-  PREFIX = /usr
-else
-  PREFIX = $(PREFIX)
+# Say 'yes' to disable Gdal
+DISABLED_GDAL ?=
+REQUIRES :=
+ifneq ($(DISABLED_GDAL),yes)
+REQUIRES += gdal
 endif
 
-ifeq ($(processor), x86_64)
-  libdir = $(PREFIX)/lib64
-else
-  libdir = $(PREFIX)/lib
-endif
+include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
 
-bindir = $(PREFIX)/bin
-includedir = $(PREFIX)/include
-datadir = $(PREFIX)/share
-objdir = obj
+DEFINES = -DUNIX -D_REENTRANT -DBOOST -DFMI_COMPRESSION
 
-# Compiler options
 
-DEFINES = -DUNIX -D_REENTRANT -DFMI_COMPRESSION -DBOOST -DBOOST_IOSTREAMS_NO_LIB
+CFLAGS0        = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O0 -g
 
-ifeq ($(CXX), clang++)
-
- FLAGS = \
-	-std=c++11 -fPIC -MD \
-	-Weverything \
-	-Wno-c++98-compat \
-	-Wno-float-equal \
-	-Wno-padded \
-	-Wno-missing-prototypes
-
- INCLUDES = \
-	-isystem $(includedir) \
-	-isystem $(includedir)/smartmet
-
-else
-
- FLAGS = -std=c++11 -fPIC -MD -Wall -W -Wno-unused-parameter
-
- FLAGS_DEBUG = \
-	-Wcast-align \
-	-Winline \
-	-Wno-multichar \
-	-Wno-pmf-conversions \
-	-Woverloaded-virtual  \
-	-Wpointer-arith \
-	-Wcast-qual \
-	-Wredundant-decls \
-	-Wwrite-strings \
-	-Wsign-promo
-
- FLAGS_RELEASE = -Wuninitialized
-
- INCLUDES = \
-	-I$(includedir) \
-	-I$(includedir)/smartmet
-
-endif
-
-# Compile options in detault, debug and profile modes
-
-CFLAGS         = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O2 -g
-CFLAGS_DEBUG   = $(DEFINES) $(FLAGS) $(FLAGS_DEBUG)   -Werror  -O0 -g
-CFLAGS_PROFILE = $(DEFINES) $(FLAGS) $(FLAGS_PROFILE) -DNDEBUG -O2 -g -pg
-
-LIBS = -L$(libdir) \
-	-lboost_filesystem \
+LIBS += -L$(libdir) \
+	-lfmt \
 	-lboost_regex \
+	-lboost_date_time \
+	-lboost_filesystem \
+	-lboost_iostreams \
 	-lboost_thread \
-	-lgdal
+	$(GDAL_LIBS)
 
 # What to install
 
@@ -84,21 +33,7 @@ LIBFILE = libsmartmet-$(SUBNAME).so
 ALIBFILE = libsmartmet-$(SUBNAME).a
 
 # How to install
-
-INSTALL_PROG = install -p -m 775
-INSTALL_DATA = install -p -m 664
-
 ARFLAGS = -r
-
-# Compile option overrides
-
-ifneq (,$(findstring debug,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_DEBUG)
-endif
-
-ifneq (,$(findstring profile,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_PROFILE)
-endif
 
 # Compilation directories
 
@@ -124,6 +59,11 @@ profile: all
 
 $(LIBFILE): $(OBJS)
 	$(CXX) $(CFLAGS) -shared -rdynamic -o $(LIBFILE) $(OBJS) $(LIBS)
+	@echo Checking $(LIBFILE) for unresolved references
+	@if ldd -r $(LIBFILE) 2>&1 | c++filt | grep ^undefined\ symbol; \
+		then rm -v $(LIBFILE); \
+		exit 1; \
+	fi
 
 $(ALIBFILE): $(OBJS)
 	$(AR) $(ARFLAGS) $(ALIBFILE) $(OBJS)
@@ -131,6 +71,7 @@ $(ALIBFILE): $(OBJS)
 clean:
 	rm -f $(LIBFILE) $(ALIBFILE) *~ $(SUBNAME)/*~
 	rm -rf $(objdir)
+	rm -f test/*Test
 
 format:
 	clang-format -i -style=file $(SUBNAME)/*.h $(SUBNAME)/*.cpp test/*.cpp
@@ -155,15 +96,11 @@ test:
 objdir:
 	@mkdir -p $(objdir)
 
-rpm: clean
-	if [ -e $(SPEC).spec ]; \
-	then \
-	  tar -czvf $(SPEC).tar.gz --transform "s,^,$(SPEC)/," * ; \
-	  rpmbuild -ta $(SPEC).tar.gz ; \
-	  rm -f $(SPEC).tar.gz ; \
-	else \
-	  echo $(SPEC).spec file missing; \
-	fi;
+rpm: clean $(SPEC).spec
+	rm -f $(SPEC).tar.gz # Clean a possible leftover from previous attempt
+	tar -czvf $(SPEC).tar.gz --exclude test --exclude-vcs --transform "s,^,$(SPEC)/," *
+	rpmbuild -ta $(SPEC).tar.gz
+	rm -f $(SPEC).tar.gz
 
 .SUFFIXES: $(SUFFIXES) .cpp
 
@@ -172,6 +109,10 @@ modernize:
 
 obj/%.o: %.cpp
 	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+ifneq ($(USE_CLANG), yes)
+obj/NFmiEnumConverterInit.o: CFLAGS += -O0
+endif
 
 ifneq ($(wildcard obj/*.d),)
 -include $(wildcard obj/*.d)

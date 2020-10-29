@@ -329,15 +329,13 @@ bool NFmiTimeBag::FindNearestTime(const NFmiMetTime &theTime,
       if (CurrentTime() > theTime)
       {
         if (theDirection == kForward)
-          return (noTimeRange ||
-                  CurrentTime().DifferenceInMinutes(theTime) <=
-                      static_cast<long>(theTimeRangeInMinutes));
+          return (noTimeRange || CurrentTime().DifferenceInMinutes(theTime) <=
+                                     static_cast<long>(theTimeRangeInMinutes));
         if (theDirection == kBackward)
         {
           Previous();
-          return (noTimeRange ||
-                  theTime.DifferenceInMinutes(CurrentTime()) <=
-                      static_cast<long>(theTimeRangeInMinutes));
+          return (noTimeRange || theTime.DifferenceInMinutes(CurrentTime()) <=
+                                     static_cast<long>(theTimeRangeInMinutes));
         }
         // finds the nearest time to theTime (e.g. theDirection == kCenter)
         long deltaT2 = CurrentTime().DifferenceInMinutes(theTime);
@@ -440,7 +438,8 @@ std::ostream &NFmiTimeBag::Write(std::ostream &file) const
        << " " << itsLastTime.GetHour() << " " << itsLastTime.GetMin() << " " << itsLastTime.GetSec()
        << std::endl;
 
-  if (FmiInfoVersion >= 4)
+  // We trust all data to be at least version 6 by now
+  if (DefaultFmiInfoVersion >= 4)
     file << itsResolution;
   else
     file << static_cast<long>(itsResolution) << std::endl;
@@ -465,7 +464,8 @@ std::istream &NFmiTimeBag::Read(std::istream &file)
   file >> year >> month >> day >> hour >> min >> sec;
   itsLastTime = NFmiMetTime(year, month, day, hour, min, sec, 1);
 
-  if (FmiInfoVersion >= 4)
+  // We trust all data to be at least version 6 by now
+  if (DefaultFmiInfoVersion >= 4)
   {
     file >> itsResolution;
   }

@@ -13,8 +13,8 @@
 // Yksi rivi on aina yksi lasku ja laskussa pitää olla sijoitus johonkin parametriin (=).
 //**********************************************************
 
-#include <newbase/NFmiDataMatrix.h>
 #include <boost/shared_ptr.hpp>
+#include <newbase/NFmiDataMatrix.h>
 #include <set>
 
 class NFmiSmartToolCalculationInfo;
@@ -27,12 +27,12 @@ class NFmiSmartToolCalculationSectionInfo
 
   void Clear(void);
   void AddCalculationInfo(boost::shared_ptr<NFmiSmartToolCalculationInfo> &value);
-  checkedVector<boost::shared_ptr<NFmiSmartToolCalculationInfo> > &GetCalculationInfos(void)
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculationInfo> > &GetCalculationInfos(void)
   {
     return itsSmartToolCalculationInfoVector;
   }
-  void AddModifiedParams(std::set<int> &theModifiedParams);
+  void AddModifiedParams(std::map<int, std::string> &theModifiedParams);
 
  private:
-  checkedVector<boost::shared_ptr<NFmiSmartToolCalculationInfo> > itsSmartToolCalculationInfoVector;
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculationInfo> > itsSmartToolCalculationInfoVector;
 };

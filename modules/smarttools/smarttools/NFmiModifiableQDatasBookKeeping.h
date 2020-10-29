@@ -5,7 +5,6 @@
 
 class NFmiRect;
 class NFmiBitMask;
-class NFmiHarmonizerBookKeepingData;
 class NFmiRawData;
 class NFmiUndoableMultiLevelMask;
 class NFmiUndoRedoQData;
@@ -38,17 +37,13 @@ class NFmiModifiableQDatasBookKeeping
   unsigned long MaskType(void);
   bool IsMasked(unsigned long theIndex) const;
 
-  bool SnapShotData(const std::string &theAction,
-                    const NFmiHarmonizerBookKeepingData &theHarmonizerBookKeepingData,
-                    const NFmiRawData &theRawData);
+  bool SnapShotData(const std::string &theAction, const NFmiRawData &theRawData);
   void RearrangeUndoTable(void);
   bool Undo(void);
   bool Redo(void);
-  bool UndoData(const NFmiHarmonizerBookKeepingData &theHarmonizerBookKeepingData,
-                NFmiRawData &theRawData);
-  bool RedoData(NFmiRawData &theRawData);
+  bool UndoData(NFmiRawData &theRawData, std::string &modificationDescription);
+  bool RedoData(NFmiRawData &theRawData, std::string &modificationDescription);
   void UndoLevel(long theDepth, const NFmiRawData &theRawData);
-  const NFmiHarmonizerBookKeepingData *CurrentHarmonizerBookKeepingData(void) const;
 
   bool LocationSelectionSnapShot(void);                  // ota maskit talteen
   bool LocationSelectionUndo(void);                      // kysyy onko undo mahdollinen

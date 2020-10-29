@@ -23,16 +23,16 @@
  *
  */
 
-#include <newbase/NFmiQueryData.h>
-#include <newbase/NFmiStreamQueryData.h>
 #include <newbase/NFmiCmdLine.h>
-#include <newbase/NFmiValueString.h>
-#include <newbase/NFmiTimeList.h>
-#include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiQueryDataUtil.h>
+#include <newbase/NFmiStreamQueryData.h>
+#include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiTimeList.h>
+#include <newbase/NFmiValueString.h>
 
-#include <stdexcept>
 #include <fstream>
+#include <stdexcept>
 
 bool ReadFlashFile(const std::string &theFileName,
                    int theSkipLines,
@@ -96,7 +96,7 @@ void Domain(int argc, const char *argv[])
                         std::string(" ei saatu avattua"));
 
   NFmiQueryData *newData = CreateFlashQueryData(flashStrings, makeLocal2UtcTimeConversion);
-  auto_ptr<NFmiQueryData> dataPtr(newData);  // tämä tuhoaa dynaamisesti luodun datan
+  unique_ptr<NFmiQueryData> dataPtr(newData);  // tämä tuhoaa dynaamisesti luodun datan
                                              // automaattisesti (vaikka return paikkoja olisi kuinka
                                              // monta)
   if (newData)

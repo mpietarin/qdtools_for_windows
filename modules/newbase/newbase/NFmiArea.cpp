@@ -15,6 +15,22 @@
 #include "NFmiAreaFactory.h"
 #include <boost/functional/hash.hpp>
 
+// Needed until HashValue API is changed
+
+#include "NFmiAzimuthalArea.h"
+#include "NFmiEquidistArea.h"
+#include "NFmiGdalArea.h"
+#include "NFmiGnomonicArea.h"
+#include "NFmiKKJArea.h"
+#include "NFmiLambertEqualArea.h"
+#include "NFmiLatLonArea.h"
+#include "NFmiMercatorArea.h"
+#include "NFmiOrthographicArea.h"
+#include "NFmiPKJArea.h"
+#include "NFmiRotatedLatLonArea.h"
+#include "NFmiStereographicArea.h"
+#include "NFmiYKJArea.h"
+
 // ----------------------------------------------------------------------
 /*!
  * \bug Turha argumentti konstruktorille
@@ -462,6 +478,42 @@ std::size_t NFmiArea::HashValue() const
 {
   std::size_t hash = itsXYRectArea.HashValue();
   boost::hash_combine(hash, boost::hash_value(fPacificView));
-  boost::hash_combine(hash, boost::hash_value(WKT()));
   return hash;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Temporary fix until HashValue is made virtual (breaks ABI, delayed for now)
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiArea::HashValueKludge() const
+{
+#ifdef UNIX
+#ifndef DISABLED_GDAL
+  if (const auto *a = dynamic_cast<const NFmiGdalArea *>(this)) return a->HashValue();
+#endif
+#endif
+  if (const auto *a = dynamic_cast<const NFmiGnomonicArea *>(this)) return a->HashValue();
+
+  if (const auto *a = dynamic_cast<const NFmiLambertEqualArea *>(this)) return a->HashValue();
+
+  if (const auto *a = dynamic_cast<const NFmiMercatorArea *>(this)) return a->HashValue();
+
+  // azimuthal is the base class
+  if (const auto *a = dynamic_cast<const NFmiEquidistArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiOrthographicArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiStereographicArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiAzimuthalArea *>(this)) return a->HashValue();
+
+  // kkj is the base class
+  if (const auto *a = dynamic_cast<const NFmiYKJArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiPKJArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiKKJArea *>(this)) return a->HashValue();
+
+  // latlon is the base class
+  if (const auto *a = dynamic_cast<const NFmiRotatedLatLonArea *>(this)) return a->HashValue();
+  if (const auto *a = dynamic_cast<const NFmiLatLonArea *>(this)) return a->HashValue();
+
+  return HashValue();
 }

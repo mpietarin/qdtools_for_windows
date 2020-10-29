@@ -1,27 +1,29 @@
 // Example encoding program.
 
 #include "GribTools.h"
-
+#include <boost/filesystem/operations.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
+#include <boost/program_options.hpp>
+#include <macgyver/StringConversion.h>
 #include <newbase/NFmiArea.h>
-#include <newbase/NFmiGrid.h>
 #include <newbase/NFmiCmdLine.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiFileString.h>
+#include <newbase/NFmiGrid.h>
+#include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiRotatedLatLonArea.h>
 #include <newbase/NFmiStereographicArea.h>
-#include <newbase/NFmiQueryData.h>
-
-#include <grib_api.h>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/program_options.hpp>
-
 #include <cassert>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
+#include <grib_api.h>
 #include <map>
 #include <string>
+
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)  // winkkari puolella fopen -funktio koetaan turvattomaksi ja siit‰
@@ -38,33 +40,188 @@ typedef std::vector<ParamChangeItem> ParamChangeTable;
 
 struct Options
 {
-  Options();
+  Options() = default;
 
-  std::string infile;       // -i --infile
-  std::string outfile;      // -o --outfile
-  bool grib1;               // -1, --grib1
-  bool grib2;               // -2, --grib2
-  bool split;               // -s --split
-  bool crop;                // -d --delete
-  bool verbose;             // -v --verbose
-  NFmiLevel level;          // -l --level
-  ParamChangeTable ptable;  // -c --config
+  std::string infile = "-";        // -i --infile
+  std::string outfile = "-";       // -o --outfile
+  std::string packing = "";        // -p --packing, empty implies use ECCODES default
+  bool grib1 = false;              // -1, --grib1
+  bool grib2 = false;              // -2, --grib2
+  bool split = false;              // -s --split
+  bool crop = false;               // -d --delete
+  bool ignore_origintime = false;  // -I --ignore-origintime
+  bool verbose = false;            // -v --verbose
+  bool dump = false;               // -D --dump ; generate a grib_api dump
+  std::string centre = "";         // -C --centre
+  int subcentre = 0;               // -S --subcentre
+  bool list_centres = false;       // -L --list-centres
+  NFmiLevel level;                 // -l --level
+  ParamChangeTable ptable;         // -c --config
 };
 
 Options options;
 
-Options::Options()
-    : infile("-"),
-      outfile("-"),
-      grib1(false),
-      grib2(false),
-      split(false),
-      crop(false),
-      verbose(false),
-      level(),
-      ptable()
-{
-}
+// ----------------------------------------------------------------------
+/*!
+ * \brief Known centres
+ */
+// ----------------------------------------------------------------------
+
+std::map<std::string, int> centres = {{"WMO", 0},
+                                      {"ammc", 1},
+                                      {"Melbourne", 2},
+                                      {"rums", 4},
+                                      {"Moscow", 5},
+                                      {"kwbc", 7},
+                                      {"NCEP", 7},
+                                      {"NWSTG", 8},
+                                      {"Cairo", 10},
+                                      {"Dakar", 12},
+                                      {"Nairobi", 14},
+                                      {"Atananarivo", 16},
+                                      {"Tunis", 18},
+                                      {"Casablanca", 18},
+                                      {"Las Palmas", 20},
+                                      {"Algiers", 21},
+                                      {"Lagos", 22},
+                                      {"fapr", 24},
+                                      {"Pretoria", 24},
+                                      {"Khabarovsk", 26},
+                                      {"vabb", 28},
+                                      {"dems", 29},
+                                      {"Novosibirsk", 30},
+                                      {"Tashkent", 32},
+                                      {"Jeddah", 33},
+                                      {"rjtd", 34},
+                                      {"Tokyo", 34},
+                                      {"Bankok", 36},
+                                      {"Ulan Bator", 37},
+                                      {"babj", 38},
+                                      {"Beijing", 38},
+                                      {"rksl", 40},
+                                      {"Seoul", 40},
+                                      {"Buenos Aires", 41},
+                                      {"Brasilia", 43},
+                                      {"Santiago", 45},
+                                      {"sbsj", 46},
+                                      {"Miami", 51},
+                                      {"cwao", 54},
+                                      {"Montreal", 54},
+                                      {"San Francisco", 55},
+                                      {"fnmo", 58},
+                                      {"NOAA", 59},
+                                      {"NCAR", 60},
+                                      {"Honolulu", 64},
+                                      {"Darwin", 65},
+                                      {"Melbourne", 67},
+                                      {"Wellington", 69},
+                                      {"egrr", 74},
+                                      {"Exeter", 74},
+                                      {"edzw", 78},
+                                      {"Offenbach", 78},
+                                      {"cnmc", 80},
+                                      {"Rome", 80},
+                                      {"eswi", 82},
+                                      {"Norrkoping", 82},
+                                      {"lfpw", 84},
+                                      {"efkl", 86},
+                                      {"Helsinki", 86},
+                                      {"Belgrade", 87},
+                                      {"enmi", 88},
+                                      {"Oslo", 88},
+                                      {"Prague", 89},
+                                      {"Episkopi", 90},
+                                      {"Ankara", 91},
+                                      {"Frankfurt", 92},
+                                      {"London", 93},
+                                      {"WAFC", 93},
+                                      {"ekmi", 94},
+                                      {"Copenhagen", 94},
+                                      {"Rota", 95},
+                                      {"Athens", 96},
+                                      {"ESA", 97},
+                                      {"ecmf", 98},
+                                      {"DeBilt", 99},
+                                      {"Hong-Kong", 110},
+                                      {"wiix", 195},
+                                      {"Frascati", 210},
+                                      {"Lannion", 211},
+                                      {"Lisboa", 212},
+                                      {"Reykjavik", 213},
+                                      {"lemm", 214},
+                                      {"lssw", 215},
+                                      {"Zurich", 215},
+                                      {"Bratislava", 217},
+                                      {"habp", 218},
+                                      {"Budapest", 218},
+                                      {"Ljubljana", 219},
+                                      {"Warsaw", 220},
+                                      {"Zagreb", 221},
+                                      {"Albania", 222},
+                                      {"Armenia", 223},
+                                      {"lowm", 224},
+                                      {"Austria", 224},
+                                      {"ebum", 227},
+                                      {"Belgium", 227},
+                                      {"Bosnia and Herzegovina", 228},
+                                      {"Bulgaria", 229},
+                                      {"Cyprus", 230},
+                                      {"Estonia", 231},
+                                      {"Georgia", 232},
+                                      {"eidb", 233},
+                                      {"Dublin", 233},
+                                      {"Israel", 234},
+                                      {"ingv", 235},
+                                      {"crfc", 239},
+                                      {"Malta", 240},
+                                      {"Monaco", 241},
+                                      {"Romania", 242},
+                                      {"vuwien", 244},
+                                      {"knmi", 245},
+                                      {"ifmk", 246},
+                                      {"Kiel  ", 246},
+                                      {"hadc", 247},
+                                      {"Hadley", 247},
+                                      {"cosmo", 250},
+                                      {"MetCoOp", 251},
+                                      {"mpim", 252},
+                                      {"eums", 254},
+                                      {"consensus", 255},
+                                      {"Angola", 256},
+                                      {"Benin", 257},
+                                      {"Botswana", 258},
+                                      {"Burkina Faso", 259},
+                                      {"Burundi", 260},
+                                      {"Cameroon", 261},
+                                      {"Cabo Verde", 262},
+                                      {"Central African Republic", 263},
+                                      {"Chad", 264},
+                                      {"Comoros", 265},
+                                      {"Congo", 266},
+                                      {"Djibouti", 267},
+                                      {"Eritrea", 268},
+                                      {"Ethiopia", 269},
+                                      {"Gabon", 270},
+                                      {"Gambia", 271},
+                                      {"Ghana", 272},
+                                      {"Guinea", 273},
+                                      {"Guinea-Bissau", 274},
+                                      {"Lesotho", 275},
+                                      {"Liberia", 276},
+                                      {"Malawi", 277},
+                                      {"Mali", 278},
+                                      {"Mauritania", 279},
+                                      {"Namibia", 280},
+                                      {"Nigeria", 281},
+                                      {"Rwanda", 282},
+                                      {"Sao Tome and Principe", 283},
+                                      {"Sierra Leone", 284},
+                                      {"Somalia", 285},
+                                      {"Sudan", 286},
+                                      {"Swaziland", 287},
+                                      {"Togo", 288},
+                                      {"Zambia", 289},
+                                      {"Missing", 65535}};
 
 // ----------------------------------------------------------------------
 
@@ -75,8 +232,8 @@ NFmiLevel parse_level(const std::string &theLevelInfoStr)
       0);  // jos level type on 0, se tarkoittaa puuttuvaa ja level info otetaan datasta
   try
   {
-    checkedVector<float> levelValues =
-        NFmiStringTools::Split<checkedVector<float> >(theLevelInfoStr, ",");
+    std::vector<float> levelValues =
+        NFmiStringTools::Split<std::vector<float> >(theLevelInfoStr, ",");
     if (levelValues.size() != 2)
       throw std::runtime_error(
           "GetWantedLevel: level-info contain two values separated with comma: type,value (e.g. "
@@ -114,19 +271,37 @@ bool parse_options(int argc, char *argv[])
 
   std::string msg1 = "configuration file with conversion information (default='" + config + "')";
 
-  po::options_description desc("Allowed options");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Allowed options", desc_width);
+  // clang-format off
   desc.add_options()("help,h", "print out help message")("version,V", "display version number")(
       "verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")(
+      "dump,D", po::bool_switch(&options.dump), "dump GRIB contents using grib_api dumper")(
       "infile,i", po::value(&options.infile), "input querydata")(
       "outfile,o", po::value(&options.outfile), "output grib file")(
       "grib1,1", po::bool_switch(&options.grib1), "output GRIB1")(
       "grib2,2", po::bool_switch(&options.grib2), "output GRIB2 (the default)")(
+      "packing,p", po::value(&options.packing), "packing method (grid_simple, grid_ieee, grid_second_order, grid_jpeg etc)")(
+      "centre,C", po::value(&options.centre), "originating centre (default = none)")(
+      "subcentre,S", po::value(&options.subcentre), "subcentre (default = 0)")(
+      "list-centres,L", po::bool_switch(&options.list_centres), "list known centres")(
       "delete,d",
       po::bool_switch(&options.crop),
       "ignore parameters which are not listed in the config")(
+      "ignore-origintime,I",
+      po::bool_switch(&options.ignore_origintime),
+      "use first valid time instead of origin time as the forecast time")(
       "split,s", po::bool_switch(&options.split), "split individual timesteps")(
       "level,l", po::value(&level), "level to extract")(
       "config,c", po::value(&config), msg1.c_str());
+  // clang-format on
 
   po::positional_options_description p;
   p.add("infile", 1);
@@ -139,7 +314,7 @@ bool parse_options(int argc, char *argv[])
 
   if (opt.count("version") != 0)
   {
-    std::cout << "qdtogrib v1.0 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
+    std::cout << "qdtogrib v1.4 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
   }
 
   if (opt.count("help"))
@@ -149,6 +324,14 @@ bool parse_options(int argc, char *argv[])
               << "Converts querydata to GRIB format." << std::endl
               << std::endl
               << desc << std::endl;
+    return false;
+  }
+
+  if (options.list_centres)
+  {
+    std::cout << "Known centres:\n";
+    for (const auto &name_value : centres)
+      std::cout << name_value.second << "\t= " << name_value.first << "\n";
     return false;
   }
 
@@ -209,6 +392,30 @@ double fix_longitude(double lon)
 
 // ----------------------------------------------------------------------
 /*!
+ * \brief Find smallest timestep in the data (or return 0 if there is no step)
+ */
+// ----------------------------------------------------------------------
+
+long get_smallest_timestep(NFmiFastQueryInfo &theInfo)
+{
+  boost::optional<NFmiMetTime> last_time;
+  long timestep = 0;
+
+  for (theInfo.ResetTime(); theInfo.NextTime();)
+  {
+    if (last_time)
+    {
+      long diff = theInfo.ValidTime().DifferenceInMinutes(*last_time);
+      if (timestep == 0 || diff < timestep) timestep = diff;
+    }
+    last_time = theInfo.ValidTime();
+  }
+
+  return timestep;
+}
+
+// ----------------------------------------------------------------------
+/*!
  * \brief Set latlon projection metadata
  */
 // ----------------------------------------------------------------------
@@ -260,10 +467,12 @@ void set_rotated_latlon_geometry(NFmiFastQueryInfo &theInfo,
                                  grib_handle *gribHandle,
                                  std::vector<double> &theValueArray)
 {
+  const NFmiRotatedLatLonArea &a = *dynamic_cast<const NFmiRotatedLatLonArea *>(theInfo.Area());
+
   gset(gribHandle, "typeOfGrid", "rotated_ll");
 
-  NFmiPoint bl(theInfo.Area()->BottomLeftLatLon());
-  NFmiPoint tr(theInfo.Area()->TopRightLatLon());
+  NFmiPoint bl(a.ToRotLatLon(theInfo.Area()->BottomLeftLatLon()));
+  NFmiPoint tr(a.ToRotLatLon(theInfo.Area()->TopRightLatLon()));
 
   gset(gribHandle, "longitudeOfFirstGridPointInDegrees", fix_longitude(bl.X()));
   gset(gribHandle, "latitudeOfFirstGridPointInDegrees", bl.Y());
@@ -283,13 +492,12 @@ void set_rotated_latlon_geometry(NFmiFastQueryInfo &theInfo,
   gset(gribHandle, "iDirectionIncrementInDegrees", gridCellWidthInDegrees);
   gset(gribHandle, "jDirectionIncrementInDegrees", gridCellHeightInDegrees);
 
-  const NFmiRotatedLatLonArea *a = dynamic_cast<const NFmiRotatedLatLonArea *>(theInfo.Area());
-
-  if (a->SouthernPole().X() != 0)
+  if (a.SouthernPole().X() != 0)
     throw std::runtime_error(
         "GRIB does not support rotated latlon areas where longitude is also rotated");
 
-  gset(gribHandle, "angleOfRotationInDegrees", a->SouthernPole().Y());
+  gset(gribHandle, "longitudeOfSouthernPoleInDegrees", a.SouthernPole().X());
+  gset(gribHandle, "latitudeOfSouthernPoleInDegrees", a.SouthernPole().Y());
 
   gset(gribHandle, "jScansPositively", 1);
   gset(gribHandle, "iScansNegatively", 0);
@@ -342,8 +550,8 @@ void set_stereographic_geometry(NFmiFastQueryInfo &theInfo,
   gset(gribHandle, "Ni", nx);
   gset(gribHandle, "Nj", ny);
 
-  double dx = theInfo.Area()->WorldXYWidth() / nx;
-  double dy = theInfo.Area()->WorldXYHeight() / ny;
+  double dx = theInfo.Area()->WorldXYWidth() / (nx - 1);
+  double dy = theInfo.Area()->WorldXYHeight() / (ny - 1);
 
   gset(gribHandle, "DxInMetres", dx);
   gset(gribHandle, "DyInMetres", dy);
@@ -418,8 +626,55 @@ void set_mercator_geometry(NFmiFastQueryInfo &theInfo,
 }
 
 // ----------------------------------------------------------------------
+/*!
+ * \brief Set the producer
+ */
+// ----------------------------------------------------------------------
 
-// T‰t‰ kutsutaan vain kerran, koska querydatassa kaikki hilat ja areat ovat samoja
+static void set_producer(grib_handle *gribHandle)
+{
+  if (options.centre.empty()) return;
+
+  auto it = centres.find(options.centre);
+  int centre = 0;
+
+  if (it != centres.end())
+    centre = it->second;
+  else
+  {
+    try
+    {
+      centre = Fmi::stoi(options.centre);
+    }
+    catch (...)
+    {
+      throw std::runtime_error("Unknown centre: '" + options.centre + "'");
+    }
+  }
+
+  gset(gribHandle, "centre", centre);
+  gset(gribHandle, "subCentre", options.subcentre);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Set packing method (grid_simple, grid_jpeg etc)
+ */
+// ----------------------------------------------------------------------
+
+static void set_packing(grib_handle *gribHandle)
+{
+  if (options.packing.empty()) return;
+
+  gset(gribHandle, "packingType", options.packing);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Set the geometry. Called only once since in querydata all geometries are equal
+ */
+// ----------------------------------------------------------------------
+
 static void set_geometry(NFmiFastQueryInfo &theInfo,
                          grib_handle *gribHandle,
                          std::vector<double> &theValueArray)
@@ -455,13 +710,41 @@ static void set_geometry(NFmiFastQueryInfo &theInfo,
 
 // ----------------------------------------------------------------------
 
-static void set_times(NFmiFastQueryInfo &theInfo, grib_handle *gribHandle)
+static NFmiMetTime get_origintime(NFmiFastQueryInfo &theInfo)
 {
-  const NFmiMetTime &vTime = theInfo.OriginTime();
-  long dateLong = vTime.GetYear() * 10000 + vTime.GetMonth() * 100 + vTime.GetDay();
-  long timeLong = vTime.GetHour() * 100 + vTime.GetMin();
+  if (!options.ignore_origintime) return theInfo.OriginTime();
+
+  // Get first time without altering the time index
+  auto idx = theInfo.TimeIndex();
+  theInfo.FirstTime();
+  auto t = theInfo.ValidTime();
+  theInfo.TimeIndex(idx);
+  return t;
+}
+
+// ----------------------------------------------------------------------
+
+static void set_times(NFmiFastQueryInfo &theInfo, grib_handle *gribHandle, bool use_minutes)
+{
+  NFmiMetTime orig_time = get_origintime(theInfo);
+
+  long dateLong = orig_time.GetYear() * 10000 + orig_time.GetMonth() * 100 + orig_time.GetDay();
+
+  long timeLong = orig_time.GetHour() * 100;
+  if (use_minutes) timeLong += orig_time.GetMin();
+
   gset(gribHandle, "dataDate", dateLong);
   gset(gribHandle, "dataTime", timeLong);
+
+  // P1 max 255 minutes is not enough, we need to enable P2
+  if (use_minutes && options.grib1) gset(gribHandle, "timeRangeIndicator", 10);
+
+  // step units in stepUnits.table: m h D M Y 10Y 30Y C 3h 6h 12h s 15m 30m
+
+  if (use_minutes)
+    gset(gribHandle, "indicatorOfUnitOfTimeRange", 0);
+  else
+    gset(gribHandle, "indicatorOfUnitOfTimeRange", 1);
 }
 
 // ----------------------------------------------------------------------
@@ -556,17 +839,41 @@ void set_level(grib_handle *gribHandle, const NFmiLevel &theLevelFromData)
 // ----------------------------------------------------------------------
 
 // kopioidaan kurrentti aika/param/level hila annettuun grib-handeliin.
-void copy_values(NFmiFastQueryInfo &theInfo,
+bool copy_values(NFmiFastQueryInfo &theInfo,
                  grib_handle *gribHandle,
-                 std::vector<double> &theValueArray)
+                 std::vector<double> &theValueArray,
+                 bool use_minutes)
 {
   // NOTE: This froecastTime part is not edition independent
-  const NFmiMetTime &oTime = theInfo.OriginTime();
+  const NFmiMetTime oTime = get_origintime(theInfo);
   const NFmiMetTime &vTime = theInfo.ValidTime();
-  long diff = vTime.DifferenceInHours(oTime);
+
+  long mdiff = vTime.DifferenceInMinutes(oTime);
+
+  // Note that we round up and origin time is rounded down in set_times
+  long diff = (use_minutes ? mdiff : std::ceil(mdiff / 60.0));
+
+  // Forecast time cannot be negative. This may happen for example
+  // when using the SmartMet Editor. We simply ignore such lines.
+
+  if (diff < 0)
+  {
+    if (options.verbose)
+      std::cout << "Ignoring timestep " << vTime << " for having a negative lead time" << std::endl;
+    return false;
+  }
 
   if (options.grib1)
-    gset(gribHandle, "P1", diff);
+  {
+    if (!use_minutes)
+      gset(gribHandle, "P1", diff);
+    else
+    {
+      // timeRangeIndicator=10 was set by set_times
+      gset(gribHandle, "P1", diff >> 8);
+      gset(gribHandle, "P2", diff % 256);
+    }
+  }
   else
     gset(gribHandle, "forecastTime", diff);
 
@@ -580,17 +887,30 @@ void copy_values(NFmiFastQueryInfo &theInfo,
   get_conversion(param.GetIdent(), &scale, &offset);
 
   int i = 0;
+  bool missingValuesExist = false;
+
   for (theInfo.ResetLocation(); theInfo.NextLocation();)
   {
     float value = theInfo.FloatValue();
     if (value != kFloatMissing)
+    {
       theValueArray[i] = (value - offset) / scale;
+    }
     else
+    {
       theValueArray[i] = 9999;  // GRIB1 missing value by default
+      missingValuesExist = true;
+    }
     i++;
   }
 
+  if (missingValuesExist)
+  {
+    grib_set_long(gribHandle, "bitmapPresent", 1);
+  }
   grib_set_double_array(gribHandle, "values", &theValueArray[0], theValueArray.size());
+
+  return true;
 }
 
 // ----------------------------------------------------------------------
@@ -628,7 +948,7 @@ void write_grib(NFmiFastQueryInfo &theInfo, grib_handle *gribHandle, const std::
   size_t mesg_len;
   grib_get_message(gribHandle, &mesg, &mesg_len);
   fwrite(mesg, 1, mesg_len, out);
-  fclose(out);  // suljetaan outputfile
+  fclose(out);
 }
 
 // ----------------------------------------------------------------------
@@ -678,8 +998,14 @@ int run(const int argc, char *argv[])
     qi.First();
     std::vector<double> valueArray;  // t‰t‰ vektoria k‰ytet‰‰n siirt‰m‰‰n dataa querydatasta
                                      // gribiin (aina saman kokoinen)
+    set_producer(gribHandle);
+    set_packing(gribHandle);
     set_geometry(qi, gribHandle, valueArray);
-    set_times(qi, gribHandle);
+    const long timestep = get_smallest_timestep(qi);
+    const bool use_minutes = (timestep < 60);
+    set_times(qi, gribHandle, use_minutes);
+
+    if (options.verbose) std::cout << "Smallest timestep = " << timestep << std::endl;
 
     for (qi.ResetLevel(); qi.NextLevel();)
     {
@@ -695,19 +1021,15 @@ int run(const int argc, char *argv[])
         {
           for (qi.ResetTime(); qi.NextTime();)
           {
-            copy_values(qi, gribHandle, valueArray);
-            if (options.verbose)
-#if (GRIB_API_MAJOR_VERSION < 1)  // jos versio esim. 0.8.2, grib_dump_content-rajapinta erilainen
-                                  // kuin uusilla grib_api versioilla
-              // grib_dump_content(gribHandle, stdout, "serialize", option_flags);
-              grib_dump_content(gribHandle, stdout, "serialize", option_flags, NULL);
-#else
-              grib_dump_content(gribHandle, stdout, "serialize", option_flags, NULL);
-#endif
-            if (!options.split)
-              write_grib(out, gribHandle);
-            else
-              write_grib(qi, gribHandle, options.outfile);
+            if (copy_values(qi, gribHandle, valueArray, use_minutes))
+            {
+              if (options.dump)
+                grib_dump_content(gribHandle, stdout, "serialize", option_flags, nullptr);
+              if (!options.split)
+                write_grib(out, gribHandle);
+              else
+                write_grib(qi, gribHandle, options.outfile);
+            }
           }
         }
       }

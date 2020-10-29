@@ -110,7 +110,7 @@ bool NFmiSnapShotInterface::Update(NFmiQueryInfo** theInfo)
   else if (itsInfo)
   {
     retBool = true;
-    if (theInfo) delete theInfo;
+    if (*theInfo) delete *theInfo;
   }
   else if (ReadData())
   {

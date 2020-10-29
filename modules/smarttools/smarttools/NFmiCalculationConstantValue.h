@@ -7,9 +7,9 @@
 //
 //**********************************************************
 
+#include <boost/shared_ptr.hpp>
 #include <newbase/NFmiAreaMaskImpl.h>
 #include <newbase/NFmiInfoAreaMask.h>
-#include <boost/shared_ptr.hpp>
 
 class NFmiDataModifier;
 class NFmiDataIterator;
@@ -19,15 +19,17 @@ class NFmiFastQueryInfo;
 class NFmiCalculationConstantValue : public NFmiAreaMaskImpl
 {
  public:
-  double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
+  double Value(const NFmiCalculationParams &theCalculationParams,
+               bool fUseTimeInterpolationAlways) override;
 
   NFmiCalculationConstantValue(double value = 0);
   ~NFmiCalculationConstantValue();
   NFmiCalculationConstantValue(const NFmiCalculationConstantValue &theOther);
-  NFmiAreaMask *Clone(void) const;
+  NFmiAreaMask *Clone(void) const override;
 
   void SetValue(double value) { itsValue = value; }
   double GetValue(void) const { return itsValue; }
+
  private:
   double itsValue;
 };
@@ -40,7 +42,7 @@ class NFmiCalculationDeltaZValue : public NFmiAreaMaskImpl
 {
  public:
   double Value(const NFmiCalculationParams & /* theCalculationParams */,
-               bool /* fUseTimeInterpolationAlways */)
+               bool /* fUseTimeInterpolationAlways */) override
   {
     return NFmiCalculationDeltaZValue::itsHeightValue;
   }
@@ -48,11 +50,12 @@ class NFmiCalculationDeltaZValue : public NFmiAreaMaskImpl
   NFmiCalculationDeltaZValue(void);
   ~NFmiCalculationDeltaZValue(){};
   NFmiCalculationDeltaZValue(const NFmiCalculationDeltaZValue &theOther);
-  NFmiAreaMask *Clone(void) const;
+  NFmiAreaMask *Clone(void) const override;
 
   // tätä funktiota käyttämällä asetetaan korkeus 'siivun' paksuus. HUOM! se on staattinen kuten on
   // itsHeightValue-dataosakin, joten se tulee kaikille 'DeltaZ':oille yhteiseksi arvoksi.
   static void SetDeltaZValue(double value) { itsHeightValue = value; }
+
  private:
   static double itsHeightValue;
 };
@@ -67,7 +70,7 @@ class NFmiCalculationSpecialCase : public NFmiAreaMaskImpl
   NFmiCalculationSpecialCase(NFmiAreaMask::CalculationOperator theValue = NotOperation);
   ~NFmiCalculationSpecialCase(void){};
   NFmiCalculationSpecialCase(const NFmiCalculationSpecialCase &theOther);
-  NFmiAreaMask *Clone(void) const;
+  NFmiAreaMask *Clone(void) const override;
 
  private:
 };
@@ -76,16 +79,18 @@ class NFmiCalculationSpecialCase : public NFmiAreaMaskImpl
 class NFmiCalculationRampFuction : public NFmiInfoAreaMask
 {
  public:
-  double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
+  double Value(const NFmiCalculationParams &theCalculationParams,
+               bool fUseTimeInterpolationAlways) override;
 
   NFmiCalculationRampFuction(const NFmiCalculationCondition &theOperation,
                              Type theMaskType,
                              NFmiInfoData::Type theDataType,
                              boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                             BinaryOperator thePostBinaryOperator = kNoValue);
+                             unsigned long thePossibleMetaParamId,
+                             BinaryOperator thePostBinaryOperator);
   ~NFmiCalculationRampFuction(void);
   NFmiCalculationRampFuction(const NFmiCalculationRampFuction &theOther);
-  NFmiAreaMask *Clone(void) const;
+  NFmiAreaMask *Clone(void) const override;
 
  private:
 };
@@ -94,16 +99,17 @@ class NFmiCalculationRampFuction : public NFmiInfoAreaMask
 class NFmiCalculationRampFuctionWithAreaMask : public NFmiAreaMaskImpl
 {
  public:
-  double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
+  double Value(const NFmiCalculationParams &theCalculationParams,
+               bool fUseTimeInterpolationAlways) override;
 
   NFmiCalculationRampFuctionWithAreaMask(const NFmiCalculationCondition &theOperation,
                                          Type theMaskType,
                                          NFmiInfoData::Type theDataType,
                                          boost::shared_ptr<NFmiAreaMask> &theAreaMask,
-                                         BinaryOperator thePostBinaryOperator = kNoValue);
+                                         BinaryOperator thePostBinaryOperator);
   ~NFmiCalculationRampFuctionWithAreaMask(void);
   NFmiCalculationRampFuctionWithAreaMask(const NFmiCalculationRampFuctionWithAreaMask &theOther);
-  NFmiAreaMask *Clone(void) const;
+  NFmiAreaMask *Clone(void) const override;
 
  private:
   boost::shared_ptr<NFmiAreaMask> itsAreaMask;
@@ -115,13 +121,15 @@ class NFmiCalculationRampFuctionWithAreaMask : public NFmiAreaMaskImpl
 class NFmiCalculationIntegrationFuction : public NFmiInfoAreaMask
 {
  public:
-  double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
+  double Value(const NFmiCalculationParams &theCalculationParams,
+               bool fUseTimeInterpolationAlways) override;
 
   NFmiCalculationIntegrationFuction(boost::shared_ptr<NFmiDataIterator> &theDataIterator,
                                     boost::shared_ptr<NFmiDataModifier> &theDataModifier,
                                     Type theMaskType,
                                     NFmiInfoData::Type theDataType,
-                                    boost::shared_ptr<NFmiFastQueryInfo> &theInfo);
+                                    boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+                                    unsigned long thePossibleMetaParamId);
   ~NFmiCalculationIntegrationFuction(void);
 
  private:
@@ -129,23 +137,4 @@ class NFmiCalculationIntegrationFuction : public NFmiInfoAreaMask
 
   boost::shared_ptr<NFmiDataModifier> itsDataModifier;
   boost::shared_ptr<NFmiDataIterator> itsDataIterator;
-};
-
-// NFmiPeekTimeMask -luokka 'kurkkaa' datasta annetun tunti offsetin verran ajassa eteen/taaksepäin.
-class NFmiPeekTimeMask : public NFmiInfoAreaMask
-{
- public:
-  NFmiPeekTimeMask(Type theMaskType,
-                   NFmiInfoData::Type theDataType,
-                   boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                   int theArgumentCount);
-  ~NFmiPeekTimeMask(void);
-  NFmiPeekTimeMask(const NFmiPeekTimeMask &theOther);
-  NFmiAreaMask *Clone(void) const;
-
-  double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
-  void SetArguments(std::vector<float> &theArgumentVector);
-
- private:
-  long itsTimeOffsetInMinutes;  // kuinka paljon kurkataan ajassa eteen/taakse
 };

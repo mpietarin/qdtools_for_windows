@@ -316,6 +316,9 @@ std::istream &NFmiStringList::Read(std::istream &file)
       item = new NFmiStatusString;
     else if (classId == kNFmiStatusPositionString)
       item = new NFmiStatusPositionString;
+    else
+      throw std::runtime_error("Unknown string type in input stream");
+
     file >> *item;
     Add(item);
   }

@@ -55,11 +55,11 @@ void construct_from_local_date_time()
   boost::local_time::tz_database db;
   db.load_from_file("/usr/share/smartmet/timezones/date_time_zonespec.csv");
 
+  using boost::local_time::local_date_time;
+  using boost::local_time::posix_time_zone;
+  using boost::local_time::time_zone_ptr;
   using boost::posix_time::ptime;
   using boost::posix_time::time_from_string;
-  using boost::local_time::local_date_time;
-  using boost::local_time::time_zone_ptr;
-  using boost::local_time::posix_time_zone;
 
   {
     ptime pt = time_from_string("2015-10-25 03:00:00");

@@ -15,6 +15,7 @@
 #include "NFmiTotalWind.h"
 #include "NFmiAngle.h"
 #include "NFmiDataIdent.h"
+#include "NFmiInterpolation.h"
 #include "NFmiParamBag.h"
 
 #include <algorithm>

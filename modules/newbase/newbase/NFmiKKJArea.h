@@ -11,7 +11,7 @@
 #include "NFmiArea.h"
 
 //! Undocumented
-class _FMI_DLL NFmiKKJArea : public NFmiArea
+class NFmiKKJArea : public NFmiArea
 {
  public:
   virtual ~NFmiKKJArea(void);
@@ -63,6 +63,8 @@ class _FMI_DLL NFmiKKJArea : public NFmiArea
 
   void SetupGaussKruger(void);
   void SetupAnyEllipsoid(double theA, double theP);
+
+  std::size_t HashValue() const;
 
  protected:
   NFmiPoint itsTopRightLatLon;

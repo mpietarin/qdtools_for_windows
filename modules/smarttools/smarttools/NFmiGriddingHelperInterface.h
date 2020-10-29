@@ -1,12 +1,13 @@
 #pragma once
 
-#include <newbase/NFmiDataMatrix.h>
 #include <boost/shared_ptr.hpp>
+#include <newbase/NFmiDataMatrix.h>
 
 class NFmiFastQueryInfo;
 class NFmiDrawParam;
 class NFmiArea;
 class NFmiIgnoreStationsData;
+class NFmiGriddingProperties;
 
 enum FmiGriddingFunction
 {
@@ -24,9 +25,9 @@ class NFmiGriddingHelperInterface
  public:
   virtual ~NFmiGriddingHelperInterface();
   virtual void MakeDrawedInfoVectorForMapView(
-      checkedVector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfoVector,
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo> > &theInfoVector,
       boost::shared_ptr<NFmiDrawParam> &theDrawParam,
       const boost::shared_ptr<NFmiArea> &theArea) = 0;
   virtual NFmiIgnoreStationsData &IgnoreStationsData() = 0;
-  virtual FmiGriddingFunction GriddingFunction() = 0;
+  virtual const NFmiGriddingProperties &GriddingProperties(bool getEditingRelatedProperties) = 0;
 };

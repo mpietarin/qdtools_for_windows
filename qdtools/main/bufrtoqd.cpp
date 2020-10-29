@@ -33,9 +33,17 @@ This file is part of libECBUFR.
                                            // warnings that e.g. MSVC++ 2012 generates
 #endif
 
-#include <macgyver/StringConversion.h>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/erase.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/bind.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/foreach.hpp>
+#include <boost/program_options.hpp>
+#include <fmt/format.h>
 #include <macgyver/CsvReader.h>
-
+#include <macgyver/StringConversion.h>
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiGlobals.h>
@@ -50,24 +58,18 @@ This file is part of libECBUFR.
 #include <newbase/NFmiTimeDescriptor.h>
 #include <newbase/NFmiTimeList.h>
 #include <newbase/NFmiVPlaceDescriptor.h>
-
 #include <smarttools/NFmiAviationStationInfoSystem.h>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/erase.hpp>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/bind.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/foreach.hpp>
-#include <boost/program_options.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
-extern "C" {
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
+
+extern "C"
+{
 #include <bufr_api.h>
 #include <bufr_local.h>
 #include <bufr_value.h>
@@ -76,7 +78,8 @@ extern "C" {
 namespace fs = boost::filesystem;
 struct ParNameInfo
 {
-  ParNameInfo() : bufrName(), shortName(), parId(kFmiBadParameter) {}
+  ParNameInfo() : bufrId(), bufrName(), shortName(), parId(kFmiBadParameter) {}
+  std::string bufrId;
   std::string bufrName;
   std::string shortName;
   FmiParameterName parId;
@@ -208,57 +211,30 @@ BufrDataCategory data_category(const std::string &name)
 
 struct Options
 {
-  Options();
-
-  bool verbose;              // -v --verbose
-  bool debug;                //    --debug
-  bool subsets;              //    --subsets
-  std::string category;      // -C --category
-  std::string conffile;      // -c --config
-  std::string stationsfile;  // -s --stations
-  std::string infile;        // -i --infile
-  std::string outfile;       // -o --outfile
-  std::string localtableB;   // -B --localtableB
-  std::string localtableD;   // -D --localtableD
-  std::string producername;  // --producername
-  long producernumber;       // --producernumber
-  bool autoproducer;         // -a --autoproducer
-  int messagenumber;         // -m --message
+  bool verbose = false;  // -v --verbose
+  bool debug = false;    //    --debug
+  // Code 8042 = extended vertical sounding significance. Insignificant levels
+  // will also be output if this option is used. This may significantly increase
+  // the size of the sounding (from ~100 to ~5000 levels)
+  bool insignificant = false;                                      //    --insignificant
+  bool subsets = false;                                            //    --subsets
+  bool usebufrname = false;                                        // --usebufrname
+  std::string category;                                            // -C --category
+  std::string conffile = "/usr/share/smartmet/formats/bufr.conf";  // -c --config
+  std::string stationsfile = "/usr/share/smartmet/stations.csv";   // -s --stations
+  std::string infile = ".";                                        // -i --infile
+  std::string outfile = "-";                                       // -o --outfile
+  std::string localtableB;                                         // -B --localtableB
+  std::string localtableD;                                         // -D --localtableD
+  std::string producername = "UNKNOWN";                            // --producername
+  long producernumber = 0;                                         // --producernumber
+  bool autoproducer = false;                                       // -a --autoproducer
+  int messagenumber = 0;                                           // -m --message
+  int roundtohours = 0;                                            // --roundtohours
 };
 
 Options options;
 
-// ----------------------------------------------------------------------
-/*!
- * \brief Default options
- */
-// ----------------------------------------------------------------------
-
-Options::Options()
-    : verbose(false),
-      debug(false),
-      subsets(false),
-      category()
-#ifdef UNIX
-      ,
-      conffile("/usr/share/smartmet/formats/bufr.conf"),
-      stationsfile("/usr/share/smartmet/stations.csv")
-#else
-      ,
-      conffile(""),
-      stationsfile("")
-#endif
-      ,
-      infile("."),
-      outfile("-"),
-      localtableB(""),
-      localtableD(""),
-      producername("UNKNOWN"),
-      producernumber(0),
-      autoproducer(false),
-      messagenumber(0)
-{
-}
 // ----------------------------------------------------------------------
 /*!
  * \brief Parse command line options
@@ -276,11 +252,25 @@ bool parse_options(int argc, char *argv[], Options &options)
   std::string msg1 = "BUFR parameter configuration file (default='" + options.conffile + "')";
   std::string msg2 = "stations CSV file (default='" + options.stationsfile + "')";
 
-  po::options_description desc("Allowed options");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Allowed options", desc_width);
   desc.add_options()("help,h", "print out help message")("version,V", "display version number")(
       "verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")(
       "debug", po::bool_switch(&options.debug), "set debug mode on")(
       "subsets", po::bool_switch(&options.subsets), "decode all subsets, not just first ones")(
+      "insignificant",
+      po::bool_switch(&options.insignificant),
+      "extract also insignificant sounding levels")(
+      "roundtohours",
+      po::value(&options.roundtohours),
+      "round times to multiples of the given number of hours")(
       "config,c", po::value(&options.conffile), msg1.c_str())(
       "stations,s", po::value(&options.stationsfile), msg2.c_str())(
       "infile,i", po::value(&options.infile), "input BUFR file or directory")(
@@ -292,7 +282,10 @@ bool parse_options(int argc, char *argv[], Options &options)
       "producer,p", po::value(&producerinfo), "producer number,name")(
       "producernumber", po::value(&options.producernumber), "producer number (default: 0)")(
       "producername", po::value(&options.producername), "producer name (default: UNKNOWN)")(
-      "autoproducer,a", po::bool_switch(&options.autoproducer), "guess producer automatically");
+      "autoproducer,a", po::bool_switch(&options.autoproducer), "guess producer automatically")(
+      "usebufrname",
+      po::bool_switch(&options.usebufrname),
+      "use BUFR parameter name instead of parameter code number from configuration file");
 
   po::positional_options_description p;
   p.add("infile", 1);
@@ -310,32 +303,40 @@ bool parse_options(int argc, char *argv[], Options &options)
 
   if (opt.count("help"))
   {
-    std::cout << "Usage: bufrtoqd [options] infile/dir outfile" << std::endl
-              << std::endl
-              << "Converts BUFR observations to querydata." << std::endl
-              << std::endl
-              << desc << std::endl
-              << std::endl
-              << "The known data category names for option -C are: " << std::endl
-              << std::endl
-              << " * 'land' or 'land surface'" << std::endl
-              << " * 'sea' or 'sea surface'" << std::endl
-              << " * 'sounding'" << std::endl
-              << " * 'satellite sounding'" << std::endl
-              << " * 'upper air level'" << std::endl
-              << " * 'upper air level with satellite'" << std::endl
-              << " * 'radar'" << std::endl
-              << " * 'synoptic'" << std::endl
-              << " * 'physical'" << std::endl
-              << " * 'dispersal'" << std::endl
-              << " * 'radiological'" << std::endl
-              << " * 'tables'" << std::endl
-              << " * 'satellite surface'" << std::endl
-              << " * 'radiances'" << std::endl
-              << " * 'oceanographic'" << std::endl
-              << " * 'image'" << std::endl
-              << std::endl
-              << "Conversion of all categories is not supported though." << std::endl;
+    std::cout
+        << "Usage: bufrtoqd [options] infile/dir outfile\n"
+           "Converts BUFR observations to querydata.\n\n"
+        << desc
+        << "\n"
+           "If option --insignificant is used, sounding levels with a zero extended vertical\n"
+           "significance (code 8042) value will be extracted. This may increase the size of\n"
+           "high resolution sounding from a hundred levels to thousands, and thus significantly\n"
+           "increase the size of the output querydata.\n\n"
+           "The known data category names for option -C are:\n\n"
+           " * 'land' or 'land surface'\n"
+           " * 'sea' or 'sea surface'\n"
+           " * 'sounding'\n"
+           " * 'satellite sounding'\n"
+           " * 'upper air level'\n"
+           " * 'upper air level with satellite'\n"
+           " * 'radar'\n"
+           " * 'synoptic'\n"
+           " * 'physical'\n"
+           " * 'dispersal'\n"
+           " * 'radiological'\n"
+           " * 'tables'\n"
+           " * 'satellite surface'\n"
+           " * 'radiances'\n"
+           " * 'oceanographic'\n"
+           " * 'image'\n\n"
+           "Conversion of all categories is not supported though.\n\n"
+           "Earlier versions of bufrtoqd used the second column of the configuration file, i.e.\n"
+           "the parameter name, to determine the mapping from BUFR to querydata parameters. This\n"
+           "lead to problems since codes 010004 and 007004 both have the same name PRESSURE.\n"
+           "The current default is to use the BUFR code instead of the name so that parameters\n"
+           "with the same name can be discerned. The old behaviour can be restored using the\n"
+           "option --usebufrname.\n";
+
     return false;
   }
 
@@ -346,6 +347,12 @@ bool parse_options(int argc, char *argv[], Options &options)
 
   if (!fs::exists(options.infile))
     throw std::runtime_error("Input BUFR '" + options.infile + "' does not exist");
+
+  if ((options.roundtohours > 0) && (24 % options.roundtohours != 0))
+    throw std::runtime_error("Option roundtohours value must divide 24 evenly (1,2,3,4,6,8,12,24)");
+
+  // Validate the category option
+  if (!options.category.empty()) data_category(options.category);
 
   // Handle the alternative ways to define the producer
 
@@ -454,6 +461,12 @@ struct record
 
   record() : name(), units(), value(std::numeric_limits<double>::quiet_NaN()), svalue() {}
 };
+
+std::ostream &operator<<(std::ostream &out, const record &rec)
+{
+  out << rec.name << "=" << rec.svalue << " (" << rec.value << ") " << rec.units;
+  return out;
+}
 
 typedef std::map<int, record> Message;
 typedef std::list<Message> Messages;
@@ -575,15 +588,35 @@ bool message_looks_valid(const Message &msg)
 
 // ----------------------------------------------------------------------
 /*!
+ * \brief Accept only significant sounding levels if option -S is used
+ */
+// ----------------------------------------------------------------------
+
+bool message_is_significant(const Message &msg)
+{
+  // Keep all levels if --insignificant was used
+  if (options.insignificant) return true;
+
+  // If there is no vertical significance value in the message, keep it
+  Message::const_iterator sig = msg.find(8042);  // extended vertical sounding sig.
+  if (sig == msg.end()) return true;
+
+  // Significant levels are marked with nonzero values
+  return (sig->second.value > 0);
+}
+
+// ----------------------------------------------------------------------
+/*!
  * \brief Append records from a dataset to a list
  */
 // ----------------------------------------------------------------------
+
+static bool replicating = false;  // set to true if FLAG_CLASS31 is encountered
 
 void append_message(Messages &messages, BUFR_Dataset *dts, BUFR_Tables *tables)
 {
   int nsubsets = bufr_count_datasubset(dts);
 
-  bool replicating = false;    // set to true if FLAG_CLASS31 is encountered
   int replication_count = -1;  // value of that descriptor
   int replicating_desc = -1;   // the id of the descriptor following above
   Message replicated_message;  // the message when replication starts
@@ -636,7 +669,10 @@ void append_message(Messages &messages, BUFR_Dataset *dts, BUFR_Tables *tables)
       }
       else if (desc == replicating_desc)
       {
-        if (!message.empty() && message_looks_valid(message)) messages.push_back(message);
+        if (!message.empty() && message_looks_valid(message))
+        {
+          if (message_is_significant(message)) messages.push_back(message);
+        }
 
         message = replicated_message;
         message.insert(Message::value_type(desc, rec));
@@ -655,10 +691,10 @@ void append_message(Messages &messages, BUFR_Dataset *dts, BUFR_Tables *tables)
 
     if (!message.empty())
     {
-      if (message_looks_valid(message))
-        messages.push_back(message);
-      else
+      if (!message_looks_valid(message))
         message.clear();
+      else if (message_is_significant(message))
+        messages.push_back(message);
     }
   }
 }
@@ -678,10 +714,9 @@ void read_message(const std::string &filename,
   // Open the file
 
   FILE *bufr = fopen(filename.c_str(),
-                     "rb");  // VC++ vaatii ett‰ avataan bin‰‰risen‰ (Linuxissa se on default)
-  if (bufr == NULL)
+                     "rb");  // VC++ vaatii ett√§ avataan bin√§√§risen√§ (Linuxissa se on default)
+  if (bufr == nullptr)
   {
-    bufr_free_tables(file_tables);
     throw std::runtime_error("Could not open BUFR file '" + filename + "' reading");
   }
 
@@ -691,7 +726,8 @@ void read_message(const std::string &filename,
 
   int count = 0;
 
-  BUFR_Message *msg;
+  BUFR_Message *msg = nullptr;
+
   while (bufr_read_message(bufr, &msg) > 0)
   {
     ++count;
@@ -704,91 +740,103 @@ void read_message(const std::string &filename,
       continue;
     }
 
-    // Print message headers
+    // Try to parse a single message. If it fails, skip to the next one.
 
-    if (options.verbose)
+    try
     {
-      std::cout << "MESSAGE NUMBER " << count << std::endl;
-      bufr_print_message(msg, bufr_print_output);
-    }
+      // Print message headers
 
-    // Save data category if necessary
-
-    if (options.category.empty())
-      datacategories.insert(msg->s1.msg_type);
-    else if (msg->s1.msg_type == data_category(options.category))
-      datacategories.insert(msg->s1.msg_type);
-    else
-    {
-      bufr_free_message(msg);
-      if (options.debug)
-        std::cout << "Message " << count << " in " << filename << " is not of desired category"
-                  << std::endl;
-      continue;
-    }
-
-    // Use default tables first
-
-    BUFR_Tables *use_tables = file_tables;
-
-    // Try to find another if not compatible
-
-    if (use_tables->master.version != msg->s1.master_table_version)
-      use_tables = bufr_use_tables_list(tables_list, msg->s1.master_table_version);
-
-    // Read the dataset
-
-    BUFR_Dataset *dts = NULL;
-    if (use_tables == NULL)
-    {
-      // dts = NULL;  // is already null
-      std::cerr << "Warning: No BUFR table version " << msg->s1.master_table_version << " available"
-                << std::endl;
-    }
-    else
-    {
-      dts = bufr_decode_message(msg, use_tables);
       if (options.verbose)
       {
-        std::cout << "Decoding message version " << msg->s1.master_table_version
-                  << " with BUFR tables version " << use_tables->master.version << std::endl;
+        std::cout << "MESSAGE NUMBER " << count << std::endl;
+        bufr_print_message(msg, bufr_print_output);
       }
-    }
 
-    if (dts == NULL)
-    {
-      bufr_free_message(msg);
-      // continuing at this point may cause a segmentation fault
-      throw std::runtime_error("Could not decode message " +
-                               boost::lexical_cast<std::string>(count));
-    }
-    if (dts->data_flag & BUFR_FLAG_INVALID)
-    {
-      bufr_free_message(msg);
-      // continuing at this point may cause a segmentation fault
-      throw std::runtime_error("Message number " + boost::lexical_cast<std::string>(count) +
-                               " is invalid");
-    }
+      // Save data category if necessary
 
-    // Search for local table updates
-
-    if (bufr_contains_tables(dts))
-    {
-      BUFR_Tables *tables = bufr_extract_tables(dts);
-      if (tables != NULL)
+      if (options.category.empty())
+        datacategories.insert(msg->s1.msg_type);
+      else if (msg->s1.msg_type == data_category(options.category))
+        datacategories.insert(msg->s1.msg_type);
+      else
       {
-        bufr_tables_list_merge(tables_list, tables);
-        bufr_free_tables(tables);
+        bufr_free_message(msg);
+        if (options.debug)
+          std::cout << "Message " << count << " in " << filename << " is not of desired category"
+                    << std::endl;
+        continue;
       }
+
+      // Use default tables first
+
+      BUFR_Tables *use_tables = file_tables;
+
+      // Try to find another if not compatible
+
+      if (use_tables->master.version != msg->s1.master_table_version)
+        use_tables = bufr_use_tables_list(tables_list, msg->s1.master_table_version);
+
+      // Read the dataset
+
+      BUFR_Dataset *dts = nullptr;
+      if (use_tables == nullptr)
+      {
+        // dts = nullptr;  // is already null
+        std::cerr << "Warning: No BUFR table version " << msg->s1.master_table_version
+                  << " available" << std::endl;
+      }
+      else
+      {
+        dts = bufr_decode_message(msg, use_tables);
+        if (options.verbose)
+        {
+          std::cout << "Decoding message version " << msg->s1.master_table_version
+                    << " with BUFR tables version " << use_tables->master.version << std::endl;
+        }
+      }
+
+      if (dts == nullptr)
+      {
+        bufr_free_message(msg);
+        // continuing at this point may cause a segmentation fault
+        throw std::runtime_error("Could not decode message " +
+                                 boost::lexical_cast<std::string>(count));
+      }
+      if (dts->data_flag & BUFR_FLAG_INVALID)
+      {
+        bufr_free_message(msg);
+        // continuing at this point may cause a segmentation fault
+        throw std::runtime_error("Message number " + boost::lexical_cast<std::string>(count) +
+                                 " is invalid");
+      }
+
+      // Search for local table updates
+
+      if (bufr_contains_tables(dts))
+      {
+        BUFR_Tables *tables = bufr_extract_tables(dts);
+        if (tables != nullptr)
+        {
+          bufr_tables_list_merge(tables_list, tables);
+          bufr_free_tables(tables);
+        }
+      }
+
+      append_message(messages, dts, file_tables);
+
+      // Done with the current message
+
+      bufr_free_dataset(dts);
+      bufr_free_message(msg);
     }
-
-    append_message(messages, dts, file_tables);
-
-    // Done with the current message
-
-    bufr_free_dataset(dts);
-    bufr_free_message(msg);
+    catch (std::exception &e)
+    {
+      std::cerr << "Warning: " << e.what() << "  ...skipping to next message in '" << filename
+                << "'" << std::endl;
+    }
   }
+
+  fclose(bufr);
 }
 
 // ----------------------------------------------------------------------
@@ -840,10 +888,18 @@ std::pair<BufrDataCategory, Messages> read_messages(const std::list<std::string>
 
   BOOST_FOREACH (const std::string &file, files)
   {
+    // Reset for each file
+    replicating = false;
+
     try
     {
       read_message(file, messages, file_tables, tables_list, datacategories);
       succesful_parse_events++;
+    }
+    catch (std::exception &e)
+    {
+      errorneous_parse_events++;
+      std::cerr << "Warning: " << e.what() << std::endl;
     }
     catch (...)
     {
@@ -864,7 +920,7 @@ std::pair<BufrDataCategory, Messages> read_messages(const std::list<std::string>
       names.push_back(data_category_name(BufrDataCategory(tmp)));
     throw std::runtime_error("BURF messages contain multiple data categories (" +
                              boost::algorithm::join(names, ",") +
-                             "), plase use the -C or --category option to select one");
+                             "), please use the -C or --category option to select one");
   }
 
   if (options.verbose)
@@ -889,7 +945,12 @@ std::set<std::string> collect_names(const Messages &messages)
   BOOST_FOREACH (const Message &msg, messages)
   {
     BOOST_FOREACH (const Message::value_type &value, msg)
-      names.insert(value.second.name);
+    {
+      if (options.usebufrname)
+        names.insert(value.second.name);
+      else
+        names.insert(fmt::format("{:0>6}", value.first));
+    }
   }
   return names;
 }
@@ -949,9 +1010,13 @@ struct CsvConfig
 
     ParNameInfo parInfo;
     parInfo.parId = static_cast<FmiParameterName>(converter.ToEnum(row[2]));
+    parInfo.bufrId = row[0];
     parInfo.bufrName = row[1];
     parInfo.shortName = row[3];
-    pmap.insert(NameMap::value_type(parInfo.bufrName, parInfo));
+    if (options.usebufrname)
+      pmap.insert(NameMap::value_type(parInfo.bufrName, parInfo));
+    else
+      pmap.insert(NameMap::value_type(parInfo.bufrId, parInfo));
   }
 };
 
@@ -980,12 +1045,12 @@ NameMap read_bufr_config()
 
 NFmiAviationStationInfoSystem read_station_csv()
 {
+  if (options.verbose) std::cout << "Reading " << options.stationsfile << std::endl;
+
   bool wmostations = true;
   NFmiAviationStationInfoSystem stations(wmostations, options.verbose);
 
   if (options.stationsfile.empty()) return stations;
-
-  if (options.verbose) std::cout << "Reading " << options.stationsfile << std::endl;
 
   stations.InitFromMasterTableCsv(options.stationsfile);
 
@@ -1276,6 +1341,18 @@ NFmiStation get_station(const Message &msg)
 
 // ----------------------------------------------------------------------
 /*!
+ * \brief Rough estimate on the accuracy of the coordinates
+ */
+// ----------------------------------------------------------------------
+
+int accuracy_estimate(const NFmiPoint &coord)
+{
+  auto str = fmt::format("{}{}", coord.X(), coord.Y());
+  return str.size();
+}
+
+// ----------------------------------------------------------------------
+/*!
  *  \brief Create horizontal place descriptor
  *
  * For some reason NFmiAviationStationInfoSystem::FindStation is not const
@@ -1294,15 +1371,26 @@ NFmiHPlaceDescriptor create_hdesc(const Messages &messages,
 
   // First list all unique stations
 
-  typedef std::set<NFmiStation> Stations;
-  Stations stations;
+  std::map<long, NFmiStation> stations;
 
-  BOOST_FOREACH (const Message &msg, messages)
+  for (const Message &msg : messages)
   {
     NFmiStation station = get_station(msg);
 
     if (station.GetLongitude() != kFloatMissing && station.GetLatitude() != kFloatMissing)
-      stations.insert(station);
+    {
+      auto pos = stations.insert(std::make_pair(station.GetIdent(), station));
+      // Handle stations with different coordinates
+      auto &iter = pos.first;
+      if (!pos.second && iter->second.GetLocation() != station.GetLocation())
+      {
+        auto &oldstation = iter->second;
+        auto acc1 = accuracy_estimate(oldstation.GetLocation());
+        auto acc2 = accuracy_estimate(station.GetLocation());
+        // Use the one which seems to have more significant decimals
+        if (acc1 < acc2) oldstation = station;
+      }
+    }
   }
 
   // Then build the descriptor. The message may contain no name for the
@@ -1310,8 +1398,10 @@ NFmiHPlaceDescriptor create_hdesc(const Messages &messages,
   // possible.
 
   NFmiLocationBag lbag;
-  BOOST_FOREACH (const NFmiStation &station, stations)
+  for (const auto &id_station : stations)
   {
+    const auto &station = id_station.second;
+
     NFmiAviationStation *stationinfo = stationinfos.FindStation(station.GetIdent());
 
     if (stationinfo == 0)
@@ -1321,6 +1411,8 @@ NFmiHPlaceDescriptor create_hdesc(const Messages &messages,
     }
     else
     {
+      // we use fixed coordinates instead of message ones, since there is often some
+      // variation in the message coordinates
       NFmiStation tmp(station.GetIdent(),
                       stationinfo->GetName().CharPtr(),
                       station.GetLongitude(),
@@ -1346,24 +1438,37 @@ NFmiHPlaceDescriptor create_hdesc(const Messages &messages,
 
 NFmiMetTime get_validtime(const Message &msg)
 {
-  Message::const_iterator yy = msg.find(4001);
-  Message::const_iterator mm = msg.find(4002);
-  Message::const_iterator dd = msg.find(4003);
-  Message::const_iterator hh = msg.find(4004);
-  Message::const_iterator mi = msg.find(4005);
+  Message::const_iterator yy_i = msg.find(4001);
+  Message::const_iterator mm_i = msg.find(4002);
+  Message::const_iterator dd_i = msg.find(4003);
+  Message::const_iterator hh_i = msg.find(4004);
+  Message::const_iterator mi_i = msg.find(4005);
 
-  if (yy == msg.end() || mm == msg.end() || dd == msg.end() || hh == msg.end() || mi == msg.end())
+  if (yy_i == msg.end() || mm_i == msg.end() || dd_i == msg.end() || hh_i == msg.end() ||
+      mi_i == msg.end())
     throw std::runtime_error("Message does not contain all required date/time fields");
 
-  const int timeresolution = 1;
+  auto yy = yy_i->second.value;
+  auto mm = mm_i->second.value;
+  auto dd = dd_i->second.value;
+  auto hh = hh_i->second.value;
+  auto mi = mi_i->second.value;
 
-  return NFmiMetTime(static_cast<short>(yy->second.value),
-                     static_cast<short>(mm->second.value),
-                     static_cast<short>(dd->second.value),
-                     static_cast<short>(hh->second.value),
-                     static_cast<short>(mi->second.value),
-                     0,
-                     timeresolution);
+  const int timeresolution = (options.roundtohours > 0 ? 60 * options.roundtohours : 1);
+
+  NFmiMetTime t(static_cast<short>(yy),
+                static_cast<short>(mm),
+                static_cast<short>(dd),
+                static_cast<short>(hh),
+                static_cast<short>(mi),
+                0,
+                timeresolution);
+
+  if (yy < 1900 || mm < 1 || mm > 12 || dd < 1 || dd > 31 || hh < 0 || hh > 23 || mi < 0 ||
+      mi > 60 || dd > t.DaysInMonth(mm, yy))
+    throw std::runtime_error("Message contains a date whose components are out of range");
+
+  return t;
 }
 
 // ----------------------------------------------------------------------
@@ -1422,7 +1527,7 @@ NFmiMetTime get_validtime_amdar(std::set<NFmiMetTime> &used_times, const Message
   if (year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0)
     throw std::runtime_error("Insufficient date information in AMDAR message");
 
-  const int timestep = 0;
+  const int timestep = (options.roundtohours > 0 ? 60 * options.roundtohours : 1);
   NFmiMetTime t(year, month, day, hour, minute, second, timestep);
 
   // Add up seconds until there is no previous such time.
@@ -1493,7 +1598,16 @@ NFmiTimeDescriptor create_tdesc(const Messages &messages, BufrDataCategory categ
 
   std::set<NFmiMetTime> validtimes;
   BOOST_FOREACH (const Message &msg, messages)
-    validtimes.insert(get_validtime(msg));
+  {
+    try
+    {
+      validtimes.insert(get_validtime(msg));
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "Skipping errorneous valid time: " << e.what() << std::endl;
+    }
+  }
 
   NFmiTimeList tlist;
   BOOST_FOREACH (const NFmiMetTime &t, validtimes)
@@ -1537,7 +1651,8 @@ void copy_params(NFmiFastQueryInfo &info, const Message &msg, const NameMap &nam
 {
   BOOST_FOREACH (const Message::value_type &value, msg)
   {
-    NameMap::const_iterator it = namemap.find(value.second.name);
+    auto key = options.usebufrname ? value.second.name : fmt::format("{:0>6}", value.first);
+    NameMap::const_iterator it = namemap.find(key);
     if (it != namemap.end())
     {
       if (!info.Param(it->second.parId))
@@ -1568,23 +1683,29 @@ void copy_records_sounding(NFmiFastQueryInfo &info,
 
   BOOST_FOREACH (const Message &msg, messages)
   {
-    if (!info.Time(get_validtime(msg)))
-      throw std::runtime_error("Internal error in handling valid times of the messages");
-
-    NFmiStation station = get_station(msg);
-
-    // We ignore stations with invalid coordinates
-    if (!info.Location(station.GetIdent())) continue;
-
-    if (laststation != station)
+    try
     {
-      info.ResetLevel();
-      laststation = station;
+      if (!info.Time(get_validtime(msg)))
+        throw std::runtime_error("Internal error in copying soundings");
+
+      NFmiStation station = get_station(msg);
+
+      // We ignore stations with invalid coordinates
+      if (!info.Location(station.GetIdent())) continue;
+
+      if (laststation != station)
+      {
+        info.ResetLevel();
+        laststation = station;
+      }
+
+      if (!info.NextLevel()) throw std::runtime_error("Changing to next level failed");
+
+      copy_params(info, msg, namemap);
     }
-
-    if (!info.NextLevel()) throw std::runtime_error("Changing to next level failed");
-
-    copy_params(info, msg, namemap);
+    catch (...)
+    {
+    }
   }
 }
 
@@ -1632,9 +1753,9 @@ void copy_records_amdar(NFmiFastQueryInfo &info, const Messages &messages, const
     if (lon != kFloatMissing && (lon < -180 || lon > 180))
     {
       if (options.debug)
-        std::cerr
-            << "Warning: BUFR message contains a station with longitude out of bounds [-180,180]: "
-            << lon << std::endl;
+        std::cerr << "Warning: BUFR message contains a station with longitude out of bounds "
+                     "[-180,180]: "
+                  << lon << std::endl;
     }
     else if (lat != kFloatMissing && (lat < -90 || lat > 90))
     {
@@ -1700,7 +1821,8 @@ void copy_records_buoy_ship(NFmiFastQueryInfo &info,
 
     if (laststation != name)
     {
-      // Find the station based on the name. If there's no match, the station is invalid and we skip
+      // Find the station based on the name. If there's no match, the station is invalid and we
+      // skip
       // it
       if (!info.Location(name)) continue;
     }
@@ -1720,9 +1842,9 @@ void copy_records_buoy_ship(NFmiFastQueryInfo &info,
     if (lon != kFloatMissing && (lon < -180 || lon > 180))
     {
       if (options.debug)
-        std::cerr
-            << "Warning: BUFR message contains a station with longitude out of bounds [-180,180]: "
-            << lon << std::endl;
+        std::cerr << "Warning: BUFR message contains a station with longitude out of bounds "
+                     "[-180,180]: "
+                  << lon << std::endl;
     }
     else if (lat != kFloatMissing && (lat < -90 || lat > 90))
     {
@@ -1771,15 +1893,21 @@ void copy_records(NFmiFastQueryInfo &info,
 
   BOOST_FOREACH (const Message &msg, messages)
   {
-    if (!info.Time(get_validtime(msg)))
-      throw std::runtime_error("Internal error in handling valid times of the messages");
+    try
+    {
+      if (!info.Time(get_validtime(msg)))
+        throw std::runtime_error("Internal error in handling valid times of the messages");
 
-    NFmiStation station = get_station(msg);
+      NFmiStation station = get_station(msg);
 
-    // We ignore stations with bad coordinates
-    if (!info.Location(station.GetIdent())) continue;
+      // We ignore stations with bad coordinates
+      if (!info.Location(station.GetIdent())) continue;
 
-    copy_params(info, msg, namemap);
+      copy_params(info, msg, namemap);
+    }
+    catch (...)
+    {
+    }
   }
 }
 
@@ -1893,6 +2021,7 @@ int run(int argc, char *argv[])
   // Build a list of all parameter names
 
   std::set<std::string> names = collect_names(messages);
+
   NameMap namemap = map_names(names, parammap);
 
   // Build the querydata descriptors from the file names etc
@@ -1900,6 +2029,7 @@ int run(int argc, char *argv[])
   NFmiParamDescriptor pdesc = create_pdesc(namemap, category);
   NFmiVPlaceDescriptor vdesc = create_vdesc(messages, category);
   NFmiTimeDescriptor tdesc = create_tdesc(messages, category);
+
   NFmiHPlaceDescriptor hdesc = create_hdesc(messages, stations, category);
 
   // Initialize the data to missing values
@@ -1923,9 +2053,9 @@ int run(int argc, char *argv[])
   else
   {
     std::ofstream out(options.outfile.c_str(),
-                      std::ios::out | std::ios::binary);  // VC++ vaatii ett‰ tiedosto avataan
-                                                          // bin‰‰risen‰ (Linuxissa se on default
-                                                          // optio)
+                      std::ios::out | std::ios::binary);  // VC++ vaatii ett√§ tiedosto avataan
+    // bin√§√§risen√§ (Linuxissa se on default
+    // optio)
     out << *data;
   }
 

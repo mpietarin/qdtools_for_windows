@@ -10,7 +10,7 @@
 #include "NFmiKKJArea.h"
 
 //! Undocumented
-class _FMI_DLL NFmiPKJArea : public NFmiKKJArea
+class NFmiPKJArea : public NFmiKKJArea
 {
  public:
   virtual ~NFmiPKJArea(void);
@@ -59,6 +59,8 @@ class _FMI_DLL NFmiPKJArea : public NFmiKKJArea
   virtual std::istream& Read(std::istream& file);
 
   virtual const std::string WKT() const;
+
+  std::size_t HashValue() const;
 
  protected:
   virtual int ZoneNumberByLongitude(const double lon) const;

@@ -5,12 +5,12 @@
  */
 
 #include "NFmiSmartToolInfo.h"
+#include <boost/filesystem.hpp>
 #include <newbase/NFmiFileString.h>
 #include <newbase/NFmiFileSystem.h>
 #include <newbase/NFmiSettings.h>
 #include <fstream>
 #include <iterator>
-#include "boost/filesystem.hpp"
 
 using namespace std;
 
@@ -27,9 +27,7 @@ NFmiSmartToolInfo::NFmiSmartToolInfo(void)
 {
 }
 
-NFmiSmartToolInfo::~NFmiSmartToolInfo(void)
-{
-}
+NFmiSmartToolInfo::~NFmiSmartToolInfo(void) {}
 // luetaan  asetukset nykyään NFmiSetting-luokasta
 bool NFmiSmartToolInfo::Init(const std::string &theLoadDirectory)
 {
@@ -71,12 +69,13 @@ bool NFmiSmartToolInfo::SpeedLoadScript(const std::string &theScriptName)
   return false;
 }
 
-bool NFmiSmartToolInfo::SaveScript(const std::string &theScriptName)
+bool NFmiSmartToolInfo::SaveScript(const std::string &theFullScriptPath)
 {
-  string fullFileName(GetFullScriptFileName(theScriptName));
-  if (WriteScript2File(fullFileName, itsCurrentScript))
+  if (WriteScript2File(theFullScriptPath, itsCurrentScript))
   {
-    itsCurrentScriptName = theScriptName;
+    NFmiFileString fileString(theFullScriptPath);
+    itsCurrentScriptName = fileString.Header();
+    itsLoadDirectory = fileString.Device() + fileString.Path();
     return SaveSettings();
   }
   return false;
@@ -149,15 +148,14 @@ bool NFmiSmartToolInfo::SaveSettings(void)
 
 bool NFmiSmartToolInfo::ScriptExist(const std::string &theScriptName)
 {
-  checkedVector<string> names = GetScriptNames();
-  checkedVector<string>::iterator it = std::find(names.begin(), names.end(), theScriptName);
-  if (it != names.end())
-    return true;
+  std::vector<string> names = GetScriptNames();
+  std::vector<string>::iterator it = std::find(names.begin(), names.end(), theScriptName);
+  if (it != names.end()) return true;
   return false;
 }
-checkedVector<std::string> NFmiSmartToolInfo::GetScriptNames(void)
+std::vector<std::string> NFmiSmartToolInfo::GetScriptNames(void)
 {
-  checkedVector<string> names;
+  std::vector<string> names;
 
   // listataan alkuun hakemistot ja jos ei olla rootissa, laitetaan vielä ..-hakemsito mukaan
   std::list<std::string> directories = NFmiFileSystem::Directories(itsLoadDirectory);
@@ -166,11 +164,9 @@ checkedVector<std::string> NFmiSmartToolInfo::GetScriptNames(void)
   for (; itDir != itEndDir; ++itDir)
   {
     // "this"-hakemistoa ei laiteta
-    if (*itDir == ".")
-      continue;
+    if (*itDir == ".") continue;
     // jos ollaan ns. root hakemistossa, ei up-hakemistoa laiteta
-    if (itsLoadDirectory == itsRootLoadDirectory && *itDir == "..")
-      continue;
+    if (itsLoadDirectory == itsRootLoadDirectory && *itDir == "..") continue;
     std::string name("<");
     name += *itDir;
     name += ">";
@@ -214,8 +210,7 @@ void NFmiSmartToolInfo::LoadDirectory(const std::string &newValue, bool fSaveSet
   else if (itsLoadDirectory[itsLoadDirectory.size() - 1] != '\\')
     itsLoadDirectory += "\\";
   itsRootLoadDirectory = itsLoadDirectory;
-  if (fSaveSettings)
-    SaveSettings();
+  if (fSaveSettings) SaveSettings();
 }
 
 /*
@@ -242,8 +237,7 @@ static void RemoveLastPartOfDirectory(string &thePath)
   else if (pos2 != string::npos)
     usedPos = pos2;
 
-  if (usedPos != string::npos)
-    thePath = string(thePath.begin(), thePath.begin() + usedPos + 1);
+  if (usedPos != string::npos) thePath = string(thePath.begin(), thePath.begin() + usedPos + 1);
 }
 
 void NFmiSmartToolInfo::SetCurrentLoadDirectory(const std::string &newValue)

@@ -7,8 +7,8 @@
 // ns. InfoOrganizer-luokkaan talteen, mistä eri datojen infoja pyydetään.
 // TODO: Keksi luokalle parempi nimi.
 
-#include <newbase/NFmiFastQueryInfo.h>
 #include <boost/shared_ptr.hpp>
+#include <newbase/NFmiFastQueryInfo.h>
 
 class NFmiOwnerInfo : public NFmiFastQueryInfo
 {
@@ -35,6 +35,7 @@ class NFmiOwnerInfo : public NFmiFastQueryInfo
   }
 
   boost::shared_ptr<NFmiQueryData> DataReference(void) { return itsDataPtr; }
+
  protected:
   boost::shared_ptr<NFmiQueryData> itsDataPtr;
   std::string itsDataFileName;

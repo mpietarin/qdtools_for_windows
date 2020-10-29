@@ -10,7 +10,7 @@
 #include "NFmiDataMatrix.h"
 #include "NFmiDataModifier.h"
 
-class _FMI_DLL NFmiDataModifierMode : public NFmiDataModifier
+class NFmiDataModifierMode : public NFmiDataModifier
 {
  public:
   void Clear(void);
@@ -42,7 +42,7 @@ class _FMI_DLL NFmiDataModifierMode : public NFmiDataModifier
     float itsValue;
     int itsCounter;
   };
-  checkedVector<Data> itsDataVector;
+  std::vector<Data> itsDataVector;
 };
 
 // ======================================================================

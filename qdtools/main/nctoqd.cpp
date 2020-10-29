@@ -6,186 +6,46 @@
  */
 // ======================================================================
 
+#include "NcFileExtended.h"
 #include "nctools.h"
-
-#include <newbase/NFmiEnumConverter.h>
-#include <newbase/NFmiFastQueryInfo.h>
-#include <newbase/NFmiQueryData.h>
-#include <newbase/NFmiQueryDataUtil.h>
-#include <newbase/NFmiLatLonArea.h>
-#include <newbase/NFmiStereographicArea.h>
-#include <newbase/NFmiHPlaceDescriptor.h>
-#include <newbase/NFmiVPlaceDescriptor.h>
-#include <newbase/NFmiTimeDescriptor.h>
-#include <newbase/NFmiTimeList.h>
-#include <newbase/NFmiParamDescriptor.h>
-#include <newbase/NFmiAreaFactory.h>
-
-#include <macgyver/CsvReader.h>
-#include <macgyver/StringConversion.h>
-#include <macgyver/TimeParser.h>
-
-#include <netcdfcpp.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/date_time/posix_time/ptime.hpp>
-
+#include <macgyver/CsvReader.h>
+#include <macgyver/Exception.h>
+#include <macgyver/StringConversion.h>
+#include <macgyver/TimeParser.h>
+#include <newbase/NFmiAreaFactory.h>
+#include <newbase/NFmiEnumConverter.h>
+#include <newbase/NFmiFastQueryInfo.h>
+#include <newbase/NFmiHPlaceDescriptor.h>
+#include <newbase/NFmiLambertEqualArea.h>
+#include <newbase/NFmiLatLonArea.h>
+#include <newbase/NFmiParam.h>
+#include <newbase/NFmiParamBag.h>
+#include <newbase/NFmiParamDescriptor.h>
+#include <newbase/NFmiQueryData.h>
+#include <newbase/NFmiQueryDataUtil.h>
+#include <newbase/NFmiStereographicArea.h>
+#include <newbase/NFmiTimeDescriptor.h>
+#include <newbase/NFmiVPlaceDescriptor.h>
 #include <cmath>
-#include <limits>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <limits>
+#include <netcdfcpp.h>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <functional>
 
 nctools::Options options;
 
-// ----------------------------------------------------------------------
-/*!
- * Validate the data conforms to CF
- */
-// ----------------------------------------------------------------------
-
-void require_conventions(const NcFile& ncfile, const std::string& reference, int sz)
-{
-  NcAtt* att = ncfile.get_att("Conventions");
-  if (att == 0) throw std::runtime_error("The NetCDF file is missing the Conventions attribute");
-
-  if (att->type() != ncChar) throw std::runtime_error("The Conventions attribute must be a string");
-
-  std::string ref = att->values()->as_string(0);
-
-  if (ref.substr(0, sz) != reference.substr(0, sz))
-    throw std::runtime_error("The file must conform to " + reference + ", not to " + ref);
-
-  // We do not test the version numerically at all, since it is
-  // possible the version will some day be of the form x.y.z
-}
-
-// ----------------------------------------------------------------------
-/*!
- * Find variable for the desired axis
- */
-// ----------------------------------------------------------------------
-
-NcVar* find_axis(const NcFile& ncfile, const std::string& axisname)
-{
-  std::string axis = boost::algorithm::to_lower_copy(axisname);
-
-  NcVar* var = 0;
-  for (int i = 0; i < ncfile.num_vars(); i++)
-  {
-    var = ncfile.get_var(i);
-    for (int j = 0; j < var->num_atts(); j++)
-    {
-      NcAtt* att = var->get_att(j);
-      if (att->type() == ncChar && att->num_vals() > 0)
-      {
-        std::string name = att->values()->as_string(0);
-        boost::algorithm::to_lower(name);
-        if (name == axis) return var;
-      }
-    }
-  }
-  return NULL;
-}
-
-// ----------------------------------------------------------------------
-/*!
- * Find dimension of given axis
- */
-// ----------------------------------------------------------------------
-
-int find_dimension(const NcFile& ncfile, const std::string& varname)
-{
-  std::string dimname = boost::algorithm::to_lower_copy(varname);
-  for (int i = 0; i < ncfile.num_dims(); i++)
-  {
-    NcDim* dim = ncfile.get_dim(i);
-    std::string name = dim->name();
-    boost::algorithm::to_lower(name);
-    if (name == dimname) return dim->size();
-  }
-  throw std::runtime_error(std::string("Could not find dimension of axis ") + varname);
-}
-
-// ----------------------------------------------------------------------
-/*!
- * Find axis bounds
- */
-// ----------------------------------------------------------------------
-
-void find_axis_bounds(NcVar* var, int n, double* x1, double* x2, const char* name)
-{
-  if (var == NULL) return;
-
-  NcValues* values = var->values();
-
-  // Verify monotonous coordinates
-
-  for (int i = 1; i < var->num_vals(); i++)
-  {
-    if (values->as_double(i) <= values->as_double(i - 1))
-      throw std::runtime_error(std::string(name) + "-axis is not monotonously increasing");
-  }
-
-  // Min&max is now easy
-
-  *x1 = values->as_double(0);
-  *x2 = values->as_double(var->num_vals() - 1);
-
-  // Verify stepsize is even
-
-  if (n <= 2) return;
-
-  double step = ((*x2) - (*x1)) / (n - 1);
-  double tolerance = 1e-3;
-
-  for (int i = 1; i < var->num_vals(); i++)
-  {
-    double s = values->as_double(i) - values->as_double(i - 1);
-
-    if (std::abs(s - step) > tolerance * step)
-      throw std::runtime_error(std::string(name) + "-axis is not regular with tolerance 1e-3");
-  }
-}
-
-void find_lonlat_bounds(
-    const NcFile& ncfile, double& lon1, double& lat1, double& lon2, double& lat2)
-{
-  for (int i = 0; i < ncfile.num_vars(); i++)
-  {
-    NcVar* ncvar = ncfile.get_var(i);
-
-    NcAtt* att = ncvar->get_att("standard_name");
-    if (att != 0)
-    {
-      std::string attributeStandardName(att->values()->as_string(0));
-      if (attributeStandardName == "longitude" || attributeStandardName == "latitude")
-      {
-        NcValues* ncvals = ncvar->values();
-        if (attributeStandardName == "longitude")
-        {
-          lon1 = ncvals->as_double(0);
-          lon2 = ncvals->as_double(ncvar->num_vals() - 1);
-        }
-        else
-        {
-          lat1 = ncvals->as_double(0);
-          lat2 = ncvals->as_double(ncvar->num_vals() - 1);
-        }
-        delete ncvals;
-      }
-    }
-  }
-}
+using Fmi::Exception;
 
 // ----------------------------------------------------------------------
 /*!
@@ -196,7 +56,7 @@ void find_lonlat_bounds(
 void check_xaxis_units(NcVar* var)
 {
   NcAtt* att = var->get_att("units");
-  if (att == 0) throw std::runtime_error("X-axis has no units attribute");
+  if (att == 0) throw Exception(BCP, "X-axis has no units attribute");
 
   std::string units = att->values()->as_string(0);
 
@@ -209,8 +69,11 @@ void check_xaxis_units(NcVar* var)
   if (units == "degreesE") return;
   if (units == "100  km") return;
   if (units == "m") return;
+  if (units == "km") return;
 
-  throw std::runtime_error("X-axis has unknown units: " + units);
+  if (units == "Meter") return;
+
+  throw Exception(BCP, "X-axis has unknown units: " + units);
 }
 
 // ----------------------------------------------------------------------
@@ -222,7 +85,7 @@ void check_xaxis_units(NcVar* var)
 void check_yaxis_units(NcVar* var)
 {
   NcAtt* att = var->get_att("units");
-  if (att == 0) throw std::runtime_error("Y-axis has no units attribute");
+  if (att == 0) throw Exception(BCP, "Y-axis has no units attribute");
 
   std::string units = att->values()->as_string(0);
 
@@ -235,8 +98,11 @@ void check_yaxis_units(NcVar* var)
   if (units == "degreesN") return;
   if (units == "100  km") return;
   if (units == "m") return;
+  if (units == "km") return;
 
-  throw std::runtime_error("Y-axis has unknown units: " + units);
+  if (units == "Meter") return;
+
+  throw Exception(BCP, "Y-axis has unknown units: " + units);
 }
 
 // ----------------------------------------------------------------------
@@ -244,33 +110,64 @@ void check_yaxis_units(NcVar* var)
  * Create horizontal descriptor
  */
 // ----------------------------------------------------------------------
-NFmiHPlaceDescriptor create_hdesc(double x1,
-                                  double y1,
-                                  double x2,
-                                  double y2,
-                                  int nx,
-                                  int ny,
-                                  double centralLongitude,
-                                  const std::string& grid_mapping)
+NFmiHPlaceDescriptor create_hdesc(nctools::NcFileExtended& ncfile)
 {
+  double x1 = ncfile.xmin();
+  double y1 = ncfile.ymin();
+  double x2 = ncfile.xmax();
+  double y2 = ncfile.ymax();
+  double nx = ncfile.xsize();
+  double ny = ncfile.ysize();
+  double centralLongitude = ncfile.longitudeOfProjectionOrigin;
+
   if (options.verbose)
   {
-    std::cout << "x1 => " << x1 << std::endl;
-    std::cout << "y1 => " << y1 << std::endl;
-    std::cout << "x2 => " << x2 << std::endl;
-    std::cout << "y2 => " << y2 << std::endl;
-    std::cout << "nx => " << nx << std::endl;
-    std::cout << "ny => " << ny << std::endl;
-    std::cout << "grid_mapping => " << grid_mapping << std::endl;
+    if (options.infiles.size() > 1) std::cout << std::endl;
+    std::cout << "Input file: " << ncfile.path << std::endl;
+    std::cout << "  x1 => " << x1 << std::endl;
+    std::cout << "  y1 => " << y1 << std::endl;
+    std::cout << "  x2 => " << x2 << std::endl;
+    std::cout << "  y2 => " << y2 << std::endl;
+    std::cout << "  nx => " << nx << std::endl;
+    std::cout << "  ny => " << ny << std::endl;
+    if (ncfile.xinverted()) std::cout << "  x-axis is inverted" << std::endl;
+    if (ncfile.yinverted()) std::cout << "  y-axis is inverted" << std::endl;
+    std::cout << "  x-scaling multiplier to meters => " << ncfile.x_scale() << std::endl;
+    std::cout << "  y-scaling multiplier to meters => " << ncfile.y_scale() << std::endl;
+    std::cout << "  latitude_origin => " << ncfile.latitudeOfProjectionOrigin << std::endl;
+    std::cout << "  longitude_origin => " << ncfile.longitudeOfProjectionOrigin << std::endl;
+    std::cout << "  grid_mapping => " << ncfile.grid_mapping() << std::endl;
   }
 
-  NFmiArea* area;
-  if (grid_mapping == POLAR_STEREOGRAPHIC)
+  NFmiArea* area = nullptr;
+
+  if (ncfile.grid_mapping() == POLAR_STEREOGRAPHIC)
     area = new NFmiStereographicArea(NFmiPoint(x1, y1), NFmiPoint(x2, y2), centralLongitude);
-  else if (grid_mapping == LAMBERT_CONFORMAL_CONIC)
-    throw std::runtime_error("Lambert conformal conic projection not supported");
-  else
+  else if (ncfile.grid_mapping() == LATITUDE_LONGITUDE)
     area = new NFmiLatLonArea(NFmiPoint(x1, y1), NFmiPoint(x2, y2));
+  else if (ncfile.grid_mapping() == LAMBERT_CONFORMAL_CONIC)
+    throw Exception(BCP, "Lambert conformal conic projection not supported");
+  else if (ncfile.grid_mapping() == LAMBERT_AZIMUTHAL)
+  {
+    NFmiLambertEqualArea tmp(NFmiPoint(-90, 0),
+                             NFmiPoint(90, 0),
+                             ncfile.longitudeOfProjectionOrigin,
+                             NFmiPoint(0, 0),
+                             NFmiPoint(1, 1),
+                             ncfile.latitudeOfProjectionOrigin);
+    NFmiPoint bottomleft =
+        tmp.WorldXYToLatLon(NFmiPoint(ncfile.x_scale() * x1, ncfile.y_scale() * y1));
+    NFmiPoint topright =
+        tmp.WorldXYToLatLon(NFmiPoint(ncfile.x_scale() * x2, ncfile.y_scale() * y2));
+    area = new NFmiLambertEqualArea(bottomleft,
+                                    topright,
+                                    ncfile.longitudeOfProjectionOrigin,
+                                    NFmiPoint(0, 0),
+                                    NFmiPoint(1, 1),
+                                    ncfile.latitudeOfProjectionOrigin);
+  }
+  else
+    throw Exception(BCP, "Projection " + ncfile.grid_mapping() + " is not supported");
 
   NFmiGrid grid(area, nx, ny);
   NFmiHPlaceDescriptor hdesc(grid);
@@ -284,130 +181,53 @@ NFmiHPlaceDescriptor create_hdesc(double x1,
  */
 // ----------------------------------------------------------------------
 
-NFmiVPlaceDescriptor create_vdesc(const NcFile& /* ncfile */,
-                                  double /* z1 */,
-                                  double /* z2 */,
-                                  int /* nz */)
+NFmiVPlaceDescriptor create_vdesc(const nctools::NcFileExtended& ncfile)
 {
-  NFmiLevelBag bag(kFmiAnyLevelType, 0, 0, 0);
-  NFmiVPlaceDescriptor vdesc(bag);
-  return vdesc;
-}
+  NcVar* z = ncfile.z_axis();
 
-// ----------------------------------------------------------------------
-/*!
- * Parse unit information from time attributes
- */
-// ----------------------------------------------------------------------
-
-void parse_time_units(NcVar* t, boost::posix_time::ptime* origintime, long* timeunit)
-{
-  NcAtt* att = t->get_att("units");
-  if (att == 0) throw std::runtime_error("Time axis has no defined units");
-  if (att->type() != ncChar) throw std::runtime_error("Time axis units must be a string");
-
-  // "units since date [time] [tz]"
-
-  std::string units = att->values()->as_string(0);
-
-  std::vector<std::string> parts;
-  boost::algorithm::split(parts, units, boost::algorithm::is_any_of(" "));
-
-  if (parts.size() < 3 || parts.size() > 5)
-    throw std::runtime_error("Invalid time units string: '" + units + "'");
-
-  std::string unit = boost::algorithm::to_lower_copy(parts[0]);
-
-  if (unit == "second" || unit == "seconds" || unit == "sec" || unit == "secs" || unit == "s")
-    *timeunit = 1;
-  else if (unit == "minute" || unit == "minutes" || unit == "min" || unit == "mins")
-    *timeunit = 60;
-  else if (unit == "hour" || unit == "hours" || unit == "hr" || unit == "h")
-    *timeunit = 60 * 60;
-  else if (unit == "day" || unit == "days" || unit == "d")
-    *timeunit = 24 * 60 * 60;
-  else
-    throw std::runtime_error("Unknown unit in time axis: '" + unit + "'");
-
-  if (boost::algorithm::to_lower_copy(parts[1]) != "since")
-    throw std::runtime_error("Invalid time units string: '" + units + "'");
-
-  std::string datestr = parts[2];
-  std::string timestr = (parts.size() >= 4 ? parts[3] : "00:00:00");
-
-  *origintime = Fmi::TimeParser::parse_iso(datestr + "T" + timestr);
-
-  if (parts.size() == 5) *origintime += boost::posix_time::duration_from_string(parts[4]);
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Construct NFmiMetTime from posix time
- */
-// ----------------------------------------------------------------------
-
-NFmiMetTime tomettime(const boost::posix_time::ptime& t)
-{
-  return NFmiMetTime(static_cast<short>(t.date().year()),
-                     static_cast<short>(t.date().month()),
-                     static_cast<short>(t.date().day()),
-                     static_cast<short>(t.time_of_day().hours()),
-                     static_cast<short>(t.time_of_day().minutes()),
-                     static_cast<short>(t.time_of_day().seconds()),
-                     1);
-}
-
-unsigned long get_units_in_seconds(std::string unit_str)
-{
-  if (unit_str == "day" || unit_str == "days" || unit_str == "d")
-    return 86400;
-  else if (unit_str == "hour" || unit_str == "hours" || unit_str == "h")
-    return 3600;
-  else if (unit_str == "minute" || unit_str == "minutes" || unit_str == "min" || unit_str == "mins")
-    return 60;
-  else if (unit_str == "second" || unit_str == "seconds" || unit_str == "sec" ||
-           unit_str == "secs" || unit_str == "s")
-    return 1;
-  else
+  // Defaults if there are no levels
+  if (z == nullptr)
   {
-    throw std::runtime_error("Invalid time unit used: " + unit_str);
-  }
-}
-
-NFmiTimeList get_tlist(const NcFile& ncfile,
-                       std::string varName = "time",
-                       std::string unitAttrName = "units")
-{
-  NcVar* ncvar = ncfile.get_var(varName.c_str());
-  NcAtt* units_att = ncvar->get_att(unitAttrName.c_str());
-
-  std::string unit_val_value(units_att->as_string(0));
-  delete units_att;
-
-  std::vector<std::string> tokens;
-  boost::split(tokens, unit_val_value, boost::algorithm::is_any_of(" "));
-
-  // convert unit to seconds: day == 86400, hour == 3600, ...
-  unsigned long unit_secs(get_units_in_seconds(tokens[0]));
-  std::string date_str(tokens[2]);
-  if (date_str.find('-') != std::string::npos)
-  {
-    if (isdigit(date_str[5]) && !isdigit(date_str[6])) date_str.insert(5, "0");
-    if (isdigit(date_str[8]) && !isdigit(date_str[9])) date_str.insert(8, "0");
+    if (options.verbose) std::cerr << "  Extracting default level only\n";
+    NFmiLevelBag bag(kFmiAnyLevelType, 0, 0, 0);
+    return NFmiVPlaceDescriptor(bag);
   }
 
-  boost::posix_time::ptime t = Fmi::TimeParser::parse(date_str);
+  // Guess level type from z-axis units
 
-  NFmiTimeList tlist;
-  NcValues* ncvals = ncvar->values();
-  for (int k = 0; k < ncvar->num_vals(); k++)
+  auto leveltype = kFmiAnyLevelType;
+
+  NcAtt* units_att = z->get_att("units");
+  if (units_att != nullptr)
   {
-    boost::posix_time::ptime timestep(t +
-                                      boost::posix_time::seconds(ncvals->as_long(k) * unit_secs));
-    tlist.Add(new NFmiMetTime(tomettime(timestep)));
+    std::string units = units_att->values()->as_string(0);
+    if (units == "Pa" || units == "hPa" || units == "mb")
+      leveltype = kFmiPressureLevel;
+    else if (units == "cm")
+      leveltype = kFmiDepth;
+    else if (units == "m" || units == "km" || units == "Meter")
+      leveltype = kFmiHeight;
   }
 
-  return tlist;
+  // Otherwise collect all levels
+
+  NFmiLevelBag bag;
+
+  NcValues* zvalues = z->values();
+
+  if (options.verbose) std::cerr << "  Extracting " << z->num_vals() << " levels:";
+
+  for (int i = 0; i < z->num_vals(); i++)
+  {
+    auto value = zvalues->as_long(i);
+    if (options.verbose) std::cerr << " " << value << std::flush;
+    NFmiLevel level(leveltype, value);
+    bag.AddLevel(level);
+  }
+
+  if (options.verbose) std::cout << std::endl;
+
+  return NFmiVPlaceDescriptor(bag);
 }
 
 // ----------------------------------------------------------------------
@@ -420,100 +240,177 @@ NFmiTimeList get_tlist(const NcFile& ncfile,
  */
 // ----------------------------------------------------------------------
 
-NFmiTimeDescriptor create_tdesc(const NcFile& ncFile)
+NFmiTimeDescriptor create_tdesc(nctools::NcFileExtended& ncfile)
 {
-  NFmiTimeList tlist(get_tlist(ncFile));
+  NFmiTimeList tlist(ncfile.timeList());
 
   return NFmiTimeDescriptor(tlist.FirstTime(), tlist);
 }
 
-NFmiTimeDescriptor create_tdesc(const NcFile& /* ncfile */, NcVar* t)
+// ----------------------------------------------------------------------
+/*!
+ * \brief Add calculated parameters to the param descriptor
+ */
+// ----------------------------------------------------------------------
+
+void add_calculated_params_to_pbag(NFmiParamBag& pbag)
 {
-  using boost::posix_time::ptime;
-
-  ptime origintime;
-  long timeunit;
-  parse_time_units(t, &origintime, &timeunit);
-
-  // Note the use of longs and units greater than seconds when possible
-  // to avoid integer arithmetic overflows.
-
-  NFmiTimeList tlist;
-  NcValues* values = t->values();
-  for (int i = 0; i < t->num_vals(); i++)
+  for (const auto& name : options.addParams)
   {
-    long timeoffset = values->as_int(i);
+    auto id = nctools::get_enumconverter().ToEnum(name);
 
-    ptime validtime = origintime + boost::posix_time::minutes(options.timeshift);
+    if (id == kFmiBadParameter) throw std::runtime_error("Unknown parameter name '" + name + "'");
 
-    if (timeunit == 1)
-      validtime += boost::posix_time::seconds(timeoffset);
-    else if (timeunit == 60)
-      validtime += boost::posix_time::minutes(timeoffset);
-    else if (timeunit == 60 * 60)
-      validtime += boost::posix_time::hours(timeoffset);
-    else if (timeunit == 24 * 60 * 60)
-      validtime += boost::posix_time::hours(24 * timeoffset);
-    else
-      validtime += boost::posix_time::seconds(timeoffset * timeunit);
+    NFmiParam param(id, name);
 
-    tlist.Add(new NFmiMetTime(tomettime(validtime)));
-  }
-
-  return NFmiTimeDescriptor(tlist.FirstTime(), tlist);
-}
-
-std::string find_projection(const NcFile& ncfile, double& longitudeOfProjectionOrigin)
-{
-  std::string projection_var_name;
-
-  for (int i = 0; i < ncfile.num_vars(); i++)
-  {
-    NcVar* var = ncfile.get_var(i);
-    if (var == 0) continue;
-
-    NcAtt* att = var->get_att("grid_mapping");
-    if (att == 0) continue;
-
-    projection_var_name = att->values()->as_string(0);
-    break;
-  }
-
-  std::string projection_name;
-
-  if (!projection_var_name.empty())
-  {
-    for (int i = 0; i < ncfile.num_vars(); i++)
+    switch (id)
     {
-      NcVar* var = ncfile.get_var(i);
-      if (var == 0) continue;
-
-      if (var->name() == projection_var_name)
+      case kFmiHumidity:
       {
-        NcAtt* name_att = var->get_att("grid_mapping_name");
-        if (name_att != 0) projection_name = name_att->values()->as_string(0);
-
-        NcAtt* lon_att = var->get_att("longitude_of_projection_origin");
-        if (lon_att != 0) longitudeOfProjectionOrigin = lon_att->values()->as_double(0);
+        param.InterpolationMethod(kLinearly);
+        param.MinValue(0);
+        param.MaxValue(100);
         break;
       }
+      default:
+        throw Exception(BCP, "Calculating '" + name + "' from other parameters is not supported");
     }
-  }
 
-  return projection_name;
+    NFmiDataIdent ident(param);
+    const bool check_duplicates = true;
+
+    if (!pbag.Add(ident, check_duplicates))
+      throw Exception(BCP, "Failed to add calculated parameter to parameter descriptor")
+          .addParameter("parameter", name);
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Calculate humidity
+ */
+// ----------------------------------------------------------------------
+
+void calculate_humidity(NFmiFastQueryInfo& info)
+{
+  if (!info.Param(kFmiHumidity))
+    throw Exception(BCP, "Humidity has not been added to the data, internal error");
+
+  const auto rh_idx = info.ParamIndex();
+
+  if (!info.Param(kFmiTemperature))
+    throw Exception(BCP, "Temperature is needed for calculating Humidity");
+
+  const auto t_idx = info.ParamIndex();
+
+  if (info.Param(kFmiDewPoint))
+  {
+    const auto td_idx = info.ParamIndex();
+
+    for (info.ResetLevel(); info.NextLevel();)
+      for (info.ResetLocation(); info.NextLocation();)
+        for (info.ResetTime(); info.NextTime();)
+        {
+          info.ParamIndex(t_idx);
+          auto t = info.FloatValue();
+          info.ParamIndex(td_idx);
+          auto td = info.FloatValue();
+          if (t != kFloatMissing && td != kFloatMissing)
+          {
+            // t -= 273.15;  // we assume Celsius
+            // td -= 273.15;
+            auto rh = 100 * (exp(1.8 + 17.27 * (td / (td + 237.3)))) /
+                      (exp(1.8 + 17.27 * (t / (t + 237.3))));
+            rh = std::max(0.0, std::min(100.0, rh));
+            info.ParamIndex(rh_idx);
+            info.FloatValue(rh);
+          }
+        }
+  }
+  else if (info.Param(kFmiSpecificHumidity))
+  {
+    const auto q_idx = info.ParamIndex();
+    int p_idx = -1;
+
+    if (info.Param(kFmiPressure))
+      p_idx = info.ParamIndex();
+    else
+    {
+      info.FirstLevel();
+      if (info.Level()->LevelType() != kFmiPressureLevel)
+        throw Exception(BCP, "Pressure data is required for calculating humidity");
+    }
+
+    for (info.ResetLevel(); info.NextLevel();)
+      for (info.ResetLocation(); info.NextLocation();)
+        for (info.ResetTime(); info.NextTime();)
+        {
+          float p = kFloatMissing;
+          if (p_idx >= 0)
+          {
+            info.ParamIndex(p_idx);
+            p = info.FloatValue();  // we assume hPa
+          }
+          else
+            p = info.Level()->LevelValue();  // we assume hPa
+
+          info.ParamIndex(t_idx);
+          auto t = info.FloatValue();
+          info.ParamIndex(q_idx);
+          auto q = info.FloatValue();
+
+          if (t != kFloatMissing && q != kFloatMissing && p != kFloatMissing)
+          {
+            // t -= 273.15;  // we assume Celsius
+            // p *= 100;     // we assume hPa
+            q /= 1000;  // g/kg to kg/kg
+            auto e = (t > -5) ? (6.107 * pow(10, 7.5 * t / (237 + t)))
+                              : (6.107 * pow(10, 9.5 * t / (265.5 + t)));
+            auto rh = 100 * (p * q) / (0.622 * e) * (p - e) / (p - q * p / 0.622);
+            rh = std::max(0.0, std::min(100.0, rh));
+
+            info.ParamIndex(rh_idx);
+            info.FloatValue(rh);
+          }
+        }
+  }
+  else
+    throw Exception(
+        BCP, "DewPoint or Pressure and SpecificHumidity is required for calculating humidity");
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Add calculated parameters
+ */
+// ----------------------------------------------------------------------
+
+void calculate_added_params(NFmiFastQueryInfo& info)
+{
+  for (const auto& name : options.addParams)
+  {
+    if (name == "Humidity")
+      calculate_humidity(info);
+    else
+      throw Exception(BCP, "Calculating '" + name + "' from other parameters is not supported");
+  }
 }
 
 // ----------------------------------------------------------------------
 /*!
  * Create parameter descriptor
  *
- * We extract all parameters which are recognized by newbase.
+ * We extract all parameters which are recognized by newbase and use the
+ * axes established by the command line options --xdim etc, or which
+ * have been guessed based on standard names.
  */
 // ----------------------------------------------------------------------
 
-NFmiParamDescriptor create_pdesc(const NcFile& ncfile, const nctools::ParamConversions& paramconvs)
+int add_to_pbag(const nctools::NcFileExtended& ncfile,
+                const nctools::ParamConversions& paramconvs,
+                NFmiParamBag& pbag)
 {
-  NFmiParamBag pbag;
+  unsigned int added_variables = 0;
 
   const float minvalue = kFloatMissing;
   const float maxvalue = kFloatMissing;
@@ -522,6 +419,13 @@ NFmiParamDescriptor create_pdesc(const NcFile& ncfile, const nctools::ParamConve
   const NFmiString precision = "%.1f";
   const FmiInterpolationMethod interpolation = kLinearly;
 
+  // Number of dimensions the parameter must have
+  int wanted_dims = 0;
+  if (ncfile.x_axis() != nullptr) ++wanted_dims;
+  if (ncfile.y_axis() != nullptr) ++wanted_dims;
+  if (ncfile.z_axis() != nullptr) ++wanted_dims;
+  if (ncfile.t_axis() != nullptr) ++wanted_dims;
+
   // Note: We loop over variables the same way as in copy_values
 
   for (int i = 0; i < ncfile.num_vars(); i++)
@@ -529,14 +433,38 @@ NFmiParamDescriptor create_pdesc(const NcFile& ncfile, const nctools::ParamConve
     NcVar* var = ncfile.get_var(i);
     if (var == 0) continue;
 
-    // Here we need to know only the id
-    nctools::ParamInfo pinfo = nctools::parse_parameter(var, paramconvs);
-    if (pinfo.id == kFmiBadParameter)
+    // Skip dimension variables
+    if (ncfile.is_dim(var->name())) continue;
+
+    // Check dimensions
+
+    if (!ncfile.axis_match(var))
     {
       if (options.verbose)
-        std::cout << "Skipping unknown variable '" << nctools::get_name(var) << "'" << std::endl;
+        std::cout << "  Skipping variable " << nctools::get_name(var)
+                  << " for not having requested dimensions\n";
       continue;
     }
+
+    // Here we need to know only the id
+    nctools::ParamInfo pinfo =
+        nctools::parse_parameter(nctools::get_name(var), paramconvs, options.autoid);
+    if (pinfo.id < 1)
+    {
+      if (options.verbose)
+        std::cout << "  Skipping unknown variable '" << nctools::get_name(var) << "'\n";
+      continue;
+    }
+    else if (options.verbose)
+    {
+      std::cout << "  Variable " << nctools::get_name(var) << " has id " << pinfo.id << " and name "
+                << (nctools::get_enumconverter().ToString(pinfo.id).empty()
+                        ? "undefined"
+                        : nctools::get_enumconverter().ToString(pinfo.id))
+                << std::endl;
+    }
+
+    // Check dimensions match
 
     NFmiParam param(pinfo.id,
                     nctools::get_enumconverter().ToString(pinfo.id),
@@ -547,10 +475,10 @@ NFmiParamDescriptor create_pdesc(const NcFile& ncfile, const nctools::ParamConve
                     precision,
                     interpolation);
     NFmiDataIdent ident(param);
-    pbag.Add(ident);
+    if (pbag.Add(ident, true)) added_variables++;
   }
 
-  return NFmiParamDescriptor(pbag);
+  return added_variables;
 }
 
 // ----------------------------------------------------------------------
@@ -561,107 +489,167 @@ NFmiParamDescriptor create_pdesc(const NcFile& ncfile, const nctools::ParamConve
 
 int run(int argc, char* argv[])
 {
-  if (!parse_options(argc, argv, options)) return 0;
-
-  // Default is to exit in some non fatal situations
-  NcError errormode(NcError::silent_nonfatal);
-  NcFile ncfile(options.infile.c_str(), NcFile::ReadOnly);
-
-  if (!ncfile.is_valid())
-    throw std::runtime_error("File '" + options.infile + "' does not contain valid NetCDF");
-
-  // Parameter conversions
-
-  nctools::ParamConversions paramconvs = nctools::read_netcdf_config(options);
-
-#if DEBUG_PRINT
-  debug_output(ncfile);
-#endif
-
-  require_conventions(ncfile, "CF-1.0", 3);
-  double centralLongitude(0);
-  std::string grid_mapping(find_projection(ncfile, centralLongitude));
-  bool isStereographicProjection = (grid_mapping == POLAR_STEREOGRAPHIC);
-
-  NcVar* x = find_axis(ncfile, "x");
-  NcVar* y = find_axis(ncfile, "y");
-  NcVar* z = find_axis(ncfile, "z");
-  NcVar* t = (isStereographicProjection ? 0 : find_axis(ncfile, "T"));
-
-  // Alternate names
-  if (x == 0) x = find_axis(ncfile, "projection_x_coordinate");
-  if (y == 0) y = find_axis(ncfile, "projection_y_coordinate");
-  if (z == 0) z = find_axis(ncfile, "projection_z_coordinate");
-  if (t == 0) t = find_axis(ncfile, "time");
-
-  if (x == 0) throw std::runtime_error("Failed to find X-axis variable");
-  if (y == 0) throw std::runtime_error("Failed to find Y-axis variable");
-  // if (z == 0) throw std::runtime_error("Failed to find Z-axis variable");
-  if (!isStereographicProjection && t == 0)
-    throw std::runtime_error("Failed to find T-axis variable");
-
-  if (x->num_vals() < 1) throw std::runtime_error("X-axis has no values");
-  if (y->num_vals() < 1) throw std::runtime_error("Y-axis has no values");
-  if (z != NULL && z->num_vals() < 1) throw std::runtime_error("Z-axis has no values");
-  if (!isStereographicProjection && t->num_vals() < 1)
-    throw std::runtime_error("T-axis has no values");
-
-  check_xaxis_units(x);
-  check_yaxis_units(y);
-
-  int nx = find_dimension(ncfile, x->name());
-  int ny = find_dimension(ncfile, y->name());
-  int nz = (z == NULL ? 1 : find_dimension(ncfile, z->name()));
-  int nt = (isStereographicProjection ? 0 : find_dimension(ncfile, t->name()));
-
-  if (nx == 0) throw std::runtime_error("X-dimension is of size zero");
-  if (ny == 0) throw std::runtime_error("Y-dimension is of size zero");
-  if (nz == 0) throw std::runtime_error("Z-dimension is of size zero");
-  if (!isStereographicProjection && nt == 0)
-    throw std::runtime_error("T-dimension is of size zero");
-
-  if (nz != 1)
-    throw std::runtime_error(
-        "Z-dimension <> 1 is not supported (yet), sample file is needed first");
-
-  double x1 = 0, x2 = 0, y1 = 0, y2 = 0, z1 = 0, z2 = 0;
-  if (isStereographicProjection)
+  try
   {
-    find_lonlat_bounds(ncfile, x1, y1, x2, y2);
+    // Parse options
+    if (!parse_options(argc, argv, options)) return 0;
+
+    // Parameter conversions
+    const nctools::ParamConversions paramconvs = nctools::read_netcdf_configs(options);
+
+    // Prepare empty target querydata
+    std::unique_ptr<NFmiQueryData> data;
+
+    int file_counter = 0;
+    NFmiHPlaceDescriptor hdesc;
+    NFmiVPlaceDescriptor vdesc;
+    NFmiTimeDescriptor tdesc;
+    NFmiParamBag pbag;
+
+    using NcFileExtendedPtr = std::shared_ptr<nctools::NcFileExtended>;
+    using NcFileExtendedList = std::vector<NcFileExtendedPtr>;
+
+    NcFileExtendedPtr first_ncfile;
+    NcFileExtendedList ncfilelist;
+
+    unsigned int known_variables = 0;
+
+    // Loop through the files once to check and to prepare the descriptors first
+
+    for (std::string infile : options.infiles)
+    {
+      ++file_counter;
+
+      try
+      {
+        NcError errormode(NcError::silent_nonfatal);
+        auto ncfile = std::make_shared<nctools::NcFileExtended>(infile, options.timeshift);
+
+        ncfile->tolerance = options.tolerance;
+
+        if (!ncfile->is_valid())
+          throw Exception(BCP, "File '" + infile + "' does not contain valid NetCDF", nullptr);
+
+        // When --info is given we only print useful metadata instead of generating anything
+        if (options.info)
+        {
+          ncfile->printInfo();
+          continue;
+        }
+
+        // Verify convention requirement
+        ncfile->require_conventions(&(options.conventions));
+
+        // Establish wanted axis parameters, this throws if unsuccesful
+        ncfile->initAxis(options.xdim, options.ydim, options.zdim, options.tdim);
+
+        // Save initialized state for further processing
+        ncfilelist.push_back(ncfile);
+
+        std::string grid_mapping(ncfile->grid_mapping());
+
+        if (ncfile->x_axis()->num_vals() < 1) throw Exception(BCP, "X-axis has no values");
+        if (ncfile->y_axis()->num_vals() < 1) throw Exception(BCP, "Y-axis has no values");
+        if (ncfile->z_axis() != nullptr && ncfile->zsize() < 1)
+          throw Exception(BCP, "Z-axis has no values");
+        if (ncfile->t_axis() != nullptr && ncfile->tsize() < 1)
+          throw Exception(BCP, "T-axis has no values");
+
+        check_xaxis_units(ncfile->x_axis());
+        check_yaxis_units(ncfile->y_axis());
+
+        if (ncfile->xsize() == 0) throw Exception(BCP, "X-dimension is of size zero");
+        if (ncfile->ysize() == 0) throw Exception(BCP, "Y-dimension is of size zero");
+        if (ncfile->zsize() == 0) throw Exception(BCP, "Z-dimension is of size zero");
+
+        // Crate initial descriptors based on the first NetCDF file
+        if (file_counter == 1)
+        {
+          first_ncfile = ncfile;
+
+          tdesc = create_tdesc(*ncfile);
+          hdesc = create_hdesc(*ncfile);
+          vdesc = create_vdesc(*ncfile);
+        }
+        else
+        {
+          // Try to merge times and parameters from other files with the same grid and levels
+          std::vector<std::string> failreasons;
+          if (ncfile->joinable(*first_ncfile, &failreasons) == false)
+          {
+            std::cerr << "Unable to combine " << first_ncfile->path << " and " << infile << ":"
+                      << std::endl;
+            for (auto error : failreasons)
+              std::cerr << "  " << error << std::endl;
+
+            throw Exception(BCP, "Files not joinable", nullptr);
+          }
+
+          auto new_hdesc = create_hdesc(*ncfile);
+          auto new_vdesc = create_vdesc(*ncfile);
+          auto new_tdesc = create_tdesc(*ncfile);
+
+          if (!(new_hdesc == hdesc))
+            throw Exception(BCP, "Hdesc differs from " + first_ncfile->path);
+          if (!(new_vdesc == vdesc))
+            throw Exception(BCP, "Vdesc differs from " + first_ncfile->path);
+
+          tdesc = tdesc.Combine(new_tdesc);
+        }
+        known_variables += add_to_pbag(*ncfile, paramconvs, pbag);
+      }
+      catch (...)
+      {
+        throw Exception(BCP, "File check failed on input " + infile, nullptr);
+      }
+    }
+
+    if (options.info) return 0;
+
+    // Check parameters
+    if (known_variables == 0)
+      throw Exception(BCP,
+                      "No known parameters defined by conversion tables found from input file(s)");
+
+    // Create querydata structures and target file
+    add_calculated_params_to_pbag(pbag);
+    NFmiParamDescriptor pdesc(pbag);
+    NFmiFastQueryInfo qi(pdesc, tdesc, hdesc, vdesc);
+
+    if (options.memorymap)
+      data.reset(NFmiQueryDataUtil::CreateEmptyData(qi, options.outfile, true));
+    else
+      data.reset(NFmiQueryDataUtil::CreateEmptyData(qi));
+
+    NFmiFastQueryInfo info(data.get());
+    info.SetProducer(NFmiProducer(options.producernumber, options.producername));
+
+    // Copy data from input files
+    for (auto i = 0ul; i < options.infiles.size(); i++)
+    {
+      try
+      {
+        const auto& ncfile = ncfilelist[i];
+        ncfile->copy_values(options, info, paramconvs);
+      }
+      catch (...)
+      {
+        throw Exception(BCP, "Operation failed on input " + options.infiles[i], nullptr);
+      }
+    }
+
+    calculate_added_params(info);
+
+    // Save output
+    if (options.outfile == "-")
+      data->Write();
+    else if (!options.memorymap)
+      data->Write(options.outfile);
   }
-  else
+  catch (...)
   {
-    find_axis_bounds(x, nx, &x1, &x2, "x");
-    find_axis_bounds(y, ny, &y1, &y2, "y");
+    throw Exception(BCP, "Operation failed!", nullptr);
   }
-  find_axis_bounds(z, nz, &z1, &z2, "z");
-
-  NFmiHPlaceDescriptor hdesc = create_hdesc(x1, y1, x2, y2, nx, ny, centralLongitude, grid_mapping);
-  NFmiVPlaceDescriptor vdesc = create_vdesc(ncfile, z1, z2, nz);
-  NFmiTimeDescriptor tdesc =
-      (isStereographicProjection ? create_tdesc(ncfile) : create_tdesc(ncfile, t));
-  NFmiParamDescriptor pdesc = create_pdesc(ncfile, paramconvs);
-
-  NFmiFastQueryInfo qi(pdesc, tdesc, hdesc, vdesc);
-  std::unique_ptr<NFmiQueryData> data;
-
-  if (options.memorymap)
-    data.reset(NFmiQueryDataUtil::CreateEmptyData(qi, options.outfile, true));
-  else
-    data.reset(NFmiQueryDataUtil::CreateEmptyData(qi));
-  NFmiFastQueryInfo info(data.get());
-
-  info.SetProducer(NFmiProducer(options.producernumber, options.producername));
-
-  nctools::copy_values(options, ncfile, info, paramconvs);
-
-  // TODO: Handle unit conversions too!
-
-  if (options.outfile == "-")
-    data->Write();
-  else if (!options.memorymap)
-    data->Write(options.outfile);
-
   return 0;
 }
 
@@ -677,14 +665,10 @@ int main(int argc, char* argv[])
   {
     return run(argc, argv);
   }
-  catch (std::exception& e)
-  {
-    std::cerr << "Error: " << e.what() << std::endl;
-    return 1;
-  }
   catch (...)
   {
-    std::cerr << "Error: Caught an unknown exception" << std::endl;
+    Exception e(BCP, "Operation failed!", nullptr);
+    e.printError();
     return 1;
   }
 }

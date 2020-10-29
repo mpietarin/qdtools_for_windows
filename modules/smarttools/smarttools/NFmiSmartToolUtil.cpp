@@ -9,12 +9,11 @@
                                  // merkkiä joka johtuu 'puretuista' STL-template nimistä)
 #endif
 
+#include "NFmiSmartToolUtil.h"
 #include "NFmiInfoOrganizer.h"
 #include "NFmiSmartToolModifier.h"
-#include "NFmiSmartToolUtil.h"
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiQueryData.h>
-#include <newbase/NFmiStreamQueryData.h>
 
 #ifndef UNIX
 #include <direct.h>  // working directory juttuja varten
@@ -25,7 +24,7 @@
 NFmiQueryData *NFmiSmartToolUtil::ModifyData(
     const std::string &theMacroText,
     NFmiQueryData *theModifiedData,
-    const checkedVector<std::string> *theHelperDataFileNames,
+    const std::vector<std::string> *theHelperDataFileNames,
     bool createDrawParamFileIfNotExist,
     bool goThroughLevels,
     bool fMakeStaticIfOneTimeStepData)
@@ -44,7 +43,7 @@ NFmiQueryData *NFmiSmartToolUtil::ModifyData(
     const std::string &theMacroText,
     NFmiQueryData *theModifiedData,
     NFmiTimeDescriptor *theTimes,
-    const checkedVector<std::string> *theHelperDataFileNames,
+    const std::vector<std::string> *theHelperDataFileNames,
     bool createDrawParamFileIfNotExist,
     bool goThroughLevels,
     bool fMakeStaticIfOneTimeStepData)
@@ -109,8 +108,7 @@ NFmiQueryData *NFmiSmartToolUtil::ModifyData(
   }
 
   NFmiQueryData *data = 0;
-  if (editedInfo && editedInfo->RefQueryData())
-    data = editedInfo->RefQueryData()->Clone();
+  if (editedInfo && editedInfo->RefQueryData()) data = editedInfo->RefQueryData()->Clone();
   return data;
 }
 
@@ -152,15 +150,14 @@ std::string NFmiSmartToolUtil::GetWorkingDirectory(void)
   return workingDirectory;
 #else
   static char path[4096];  // we assume 4096 is maximum buffer length
-  if (!::getcwd(path, 4096))
-    throw std::runtime_error("Error: Current path is too long (>4096)");
+  if (!::getcwd(path, 4096)) throw std::runtime_error("Error: Current path is too long (>4096)");
   return std::string(path);
 #endif
 }
 
 bool NFmiSmartToolUtil::InitDataBase(NFmiInfoOrganizer *theDataBase,
                                      NFmiQueryData *theModifiedData,
-                                     const checkedVector<std::string> *theHelperDataFileNames,
+                                     const std::vector<std::string> *theHelperDataFileNames,
                                      bool createDrawParamFileIfNotExist,
                                      bool fMakeStaticIfOneTimeStepData)
 {
@@ -193,7 +190,7 @@ bool NFmiSmartToolUtil::InitDataBase(NFmiInfoOrganizer *theDataBase,
 
 bool NFmiSmartToolUtil::InitDataBaseHelperData(
     NFmiInfoOrganizer &theDataBase,
-    const checkedVector<std::string> &theHelperDataFileNames,
+    const std::vector<std::string> &theHelperDataFileNames,
     bool fMakeStaticIfOneTimeStepData)
 {
   for (unsigned int i = 0; i < theHelperDataFileNames.size(); i++)

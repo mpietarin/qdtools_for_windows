@@ -1,29 +1,3 @@
-/*!
- *  \file
- *  Tekij‰: Marko (19.8.2003)
- *
- *  T‰m‰ ohjelma lukee grib-tiedoston (hallitsee myˆs grib2-formaatin) ja konvertoi sen
- *fqd-tiedostoksi.
- *
- * \code
- * Optiot:
- *
- *  -o output-tiedosto      Oletusarvoisesti tulostetaan sdtout:iin.
- *	-m max-data-size-MB [200] Kuinka suuri data paketti tehd‰‰n
- *                              maksimissaan megatavuissa (vahinkojen varalle)
- *  -l t105v3,t109v255,...   J‰t‰ pois laskuista seuraavat yksitt‰iset levelit (1. type 105, value
- *3, jne.)
- *  -g printed-grid-info-count Eli kuinka monesta ensimm‰isest‰ hilasta haluat tulostaa cerr:iin.
- *Jos count -1, tulostaa kaikista.
- *
- * Esimerkkeja:
- *
- *	grib2ToQD.cpp -o output.fqd input.grib
- *
- *	grib2ToQD.cpp input.grib > output.fqd
- * \endcode
- */
-
 #ifdef _MSC_VER
 #pragma warning(disable : 4786 4996)  // poistaa n kpl VC++ k‰‰nt‰j‰n varoitusta (liian pitk‰ nimi
                                       // >255 merkki‰
@@ -31,41 +5,56 @@
 #endif
 
 #include "GribTools.h"
-
-#include <newbase/NFmiStreamQueryData.h>
-#include <newbase/NFmiGrid.h>
-#include <newbase/NFmiStereographicArea.h>
-#include <newbase/NFmiRotatedLatLonArea.h>
-#include <newbase/NFmiMercatorArea.h>
-#include <newbase/NFmiLatLonArea.h>
-#include <newbase/NFmiCmdLine.h>
-#include <newbase/NFmiTimeList.h>
-#include <newbase/NFmiQueryDataUtil.h>
-#include <newbase/NFmiValueString.h>
-#include <newbase/NFmiTotalWind.h>
-#include <newbase/NFmiStringTools.h>
-#include <newbase/NFmiInterpolation.h>
-#include <newbase/NFmiSettings.h>
-#include <newbase/NFmiAreaFactory.h>
-#include <newbase/NFmiMilliSecondTimer.h>
-#include <newbase/NFmiFileSystem.h>
-#include <newbase/NFmiFileString.h>
-
-#include <grib_api.h>
-
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-
+#include <newbase/NFmiAreaFactory.h>
+#include <newbase/NFmiCmdLine.h>
+#include <newbase/NFmiDataMatrixUtils.h>
+#include <newbase/NFmiFileString.h>
+#include <newbase/NFmiFileSystem.h>
+#include <newbase/NFmiGrid.h>
+#include <newbase/NFmiInterpolation.h>
+#include <newbase/NFmiLambertConformalConicArea.h>
+#include <newbase/NFmiLatLonArea.h>
+#include <newbase/NFmiMercatorArea.h>
+#include <newbase/NFmiMilliSecondTimer.h>
+#include <newbase/NFmiQueryDataUtil.h>
+#include <newbase/NFmiRotatedLatLonArea.h>
+#include <newbase/NFmiSettings.h>
+#include <newbase/NFmiStereographicArea.h>
+#include <newbase/NFmiStreamQueryData.h>
+#include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiTimeList.h>
+#include <newbase/NFmiTotalWind.h>
+#include <newbase/NFmiValueString.h>
+#include <cstdlib>
+#include <functional>
+#include <grib_api.h>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <stdexcept>
-#include <functional>
-#include <set>
-#include <stdlib.h>
 
 using namespace std;
+
+bool jscan_is_negative(grib_handle *theGribHandle)
+{
+  long direction = 0;
+  int status = grib_get_long(theGribHandle, "jScansPositively", &direction);
+  if (status != 0) return false;
+  return (direction == 0);
+}
+
+void check_jscan_direction(grib_handle *theGribHandle)
+{
+  long direction = 0;
+  int status = grib_get_long(theGribHandle, "jScansPositively", &direction);
+  if (status != 0) return;
+  if (direction == 0)
+    throw std::runtime_error("GRIBs with a negative j-scan direction are not supported");
+}
 
 // template<typename T>
 struct PointerDestroyer
@@ -97,8 +86,6 @@ class GridSettingsPackage
   boost::shared_ptr<NFmiGrid> itsHybridGrid;
 };
 
-static const int gMBsize = 1024 * 1024;
-
 class Reduced_ll_grib_exception
 {
   // gribej‰ yritet‰‰n purkaa ensin k‰ytt‰en ECMWF:n grib_api-kirjastoa.
@@ -111,7 +98,6 @@ struct GribFilterOptions
   GribFilterOptions(void)
       : itsOutputFileName(),
         fUseOutputFile(false),
-        itsMaxQDataSizeInBytes(1024 * gMBsize),
         itsReturnStatus(0),
         itsIgnoredLevelList(),
         itsGeneratedDatas(),
@@ -130,6 +116,7 @@ struct GribFilterOptions
         itsWantedPressureProducer(),
         itsWantedHybridProducer(),
         itsHybridPressureInfo(),
+        itsGroundPressureInfo(),
         itsLatlonCropRect(gMissingCropRect),
         itsGridSettings(),
         fVerbose(false),
@@ -155,8 +142,7 @@ struct GribFilterOptions
 
   string itsOutputFileName;  // -o optio tai sitten tulostetann cout:iin
   bool fUseOutputFile;
-  size_t itsMaxQDataSizeInBytes;  // default max koko 1 GB
-  int itsReturnStatus;            // 0 = ok
+  int itsReturnStatus;               // 0 = ok
   NFmiLevelBag itsIgnoredLevelList;  // lista miss‰ yksitt‰isi‰ leveleit‰, mitk‰ halutaan j‰tt‰‰
                                      // pois laskuista
   vector<boost::shared_ptr<NFmiQueryData> > itsGeneratedDatas;
@@ -183,6 +169,7 @@ struct GribFilterOptions
   NFmiProducer itsWantedHybridProducer;
   GeneratedHybridParamInfo itsHybridPressureInfo;
   GeneratedHybridParamInfo itsHybridRelativeHumidityInfo;
+  GeneratedHybridParamInfo itsGroundPressureInfo;
   NFmiRect itsLatlonCropRect;
   GridSettingsPackage itsGridSettings;
   bool fVerbose;
@@ -286,12 +273,14 @@ static bool GetGribLongValue(grib_handle *theGribHandle,
   return grib_get_long(theGribHandle, theDefinitionName.c_str(), &theLongValueOut) == 0;
 }
 
+#if 0
 static bool GetGribDoubleValue(grib_handle *theGribHandle,
                                const std::string &theDefinitionName,
                                double &theDoubleValueOut)
 {
   return grib_get_double(theGribHandle, theDefinitionName.c_str(), &theDoubleValueOut) == 0;
 }
+#endif
 
 static void ReplaceChar(string &theFileName, char replaceThis, char toThis)
 {
@@ -473,7 +462,7 @@ static long GetUsedLevelType(grib_handle *theGribHandle)
     return 119;
   else if (name == "depthBelowSea")
     return 160;
-  else if (name == "entireAtmosphere")
+  else if (name == "entireAtmosphere" || name == "atmosphere")
     return 200;
   else if (name == "entireOcean")
     return 201;
@@ -485,23 +474,29 @@ static NFmiLevel GetLevel(grib_handle *theGribHandle)
 {
   long usedLevelType = ::GetUsedLevelType(theGribHandle);
 
-  double levelValue = 0;
-  bool levelValueOk = ::GetGribDoubleValue(theGribHandle, "vertical.level", levelValue);
+  long levelValue = 0;
+  bool levelValueOk = ::GetGribLongValue(theGribHandle, "vertical.level", levelValue);
 
-  if (levelValueOk)
-    return NFmiLevel(
-        usedLevelType, NFmiStringTools::Convert(levelValue), static_cast<float>(levelValue));
-  else
-    throw runtime_error("Error: Couldn't get level from given grib_handle.");
+  if (!levelValueOk)
+    cerr << "Warning: Couldn't get level from given grib_handle, assuming value zero\n.";
+
+  // Note: a missing value is encoded as a 16-bit -1, which is converted to max int by
+  // grib_get_long. Bizarre API, if there is no better way to test for missing values
+
+  if (levelValue == std::numeric_limits<int>::max())
+    throw runtime_error("Error: MISSING level value in data");
+
+  return NFmiLevel(
+      usedLevelType, NFmiStringTools::Convert(levelValue), static_cast<float>(levelValue));
 }
 
-static double GetMissingValue(grib_handle *theGribHandle)
+static long GetMissingValue(grib_handle *theGribHandle)
 {
   // DUMP(theGribHandle);
   // missingValue is not in edition independent docs
 
-  double missingValue = 0;
-  int status = grib_get_double(theGribHandle, "missingValue", &missingValue);
+  long missingValue = 0;
+  int status = grib_get_long(theGribHandle, "missingValue", &missingValue);
   if (status == 0)
     return missingValue;
   else
@@ -559,7 +554,7 @@ static boost::shared_ptr<NFmiGrid> GetGridFromProjectionStr(string &theProjectio
     }
 
     boost::shared_ptr<NFmiArea> area = NFmiAreaFactory::Create(areaStr);
-    checkedVector<double> values = NFmiStringTools::Split<checkedVector<double> >(gridStr, ",");
+    std::vector<double> values = NFmiStringTools::Split<std::vector<double> >(gridStr, ",");
     if (values.size() != 2)
       throw runtime_error("Given GridSize was invlid, has to be two numbers (e.g. x,y).");
     NFmiPoint gridSize(values[0], values[1]);
@@ -874,20 +869,34 @@ static std::vector<std::string> MakeFullPathFileList(list<string> &theFileNameLi
   return fullFileNameVector;
 }
 
-static vector<string> GetDataFiles(const string &theFileOrPatternOrDirectory)
+static vector<string> GetDataFiles(const NFmiCmdLine &cmdline)
 {
-  string directory = theFileOrPatternOrDirectory;
-  if (NFmiFileSystem::DirectoryExists(directory))
-  {  // jos oli hakemisto, luetaan tieedostolista hakemistosta
-    list<string> dirList = NFmiFileSystem::DirectoryFiles(directory);
-    return ::MakeFullPathFileList(dirList, directory);
+  vector<string> all_files;
+
+  for (int i = 1; i <= cmdline.NumberofParameters(); i++)
+  {
+    auto path = cmdline.Parameter(i);
+
+    if (NFmiFileSystem::DirectoryExists(path))
+    {
+      auto files = NFmiFileSystem::DirectoryFiles(path);
+      auto files2 = ::MakeFullPathFileList(files, path);
+      copy(files2.begin(), files2.end(), back_inserter(all_files));
+    }
+    else if (NFmiFileSystem::FileExists(path))
+    {
+      all_files.push_back(path);
+    }
+    else
+    {
+      auto files = NFmiFileSystem::PatternFiles(path);
+      auto directory = ::GetDirectory(path);
+      auto files2 = ::MakeFullPathFileList(files, directory);
+      copy(files2.begin(), files2.end(), back_inserter(all_files));
+    }
   }
 
-  string filePattern = theFileOrPatternOrDirectory;  // Huom! Myˆs yhden tiedoston tarkkaa nime‰
-                                                     // voidaan pit‰‰ patternina.
-  list<string> patternList = NFmiFileSystem::PatternFiles(filePattern);
-  directory = ::GetDirectory(filePattern);
-  return ::MakeFullPathFileList(patternList, directory);
+  return all_files;
 }
 
 class CombineDataStructureSearcher
@@ -1837,6 +1846,9 @@ static void DoPossibleGlobalLongitudeFixes(double &Lo1,
   if (Lo1 > 180) Lo1 -= 360;
   if (Lo2 > 180) Lo2 -= 360;
 
+  // If input was 0...360 this will fix it back to 0...360 (BAM data)
+  if (Lo1 == Lo2) Lo2 += 360;
+
   // Select Atlantic or Pacific view
 
   if (theGribFilterOptions.fDoAtlanticFix && Lo1 == 0 &&
@@ -1872,6 +1884,12 @@ static NFmiArea *CreateLatlonArea(grib_handle *theGribHandle,
     // We ignore the status of the version check intentionally and assume V2
     long version = 2;
     grib_get_long(theGribHandle, "editionNumber", &version);
+
+    // Fix BAM data which uses zero for both longitudes
+    if (Lo1 == 0 && Lo2 == 0) Lo2 = 360;
+
+    // Not needed:
+    // check_jscan_direction(theGribHandle);
 
     long iScansNegatively = 0;
     int iScansNegativelyStatus =
@@ -1929,6 +1947,9 @@ static NFmiArea *CreateRotatedLatlonArea(grib_handle *theGribHandle,
 
     if (Lo1 > Lo2) std::swap(Lo1, Lo2);
 
+    // Not needed:
+    // check_jscan_direction(theGribHandle);
+
     NFmiPoint bottomleft(Lo1, FmiMin(La1, La2));
     NFmiPoint topright(Lo2, FmiMax(La1, La2));
     NFmiPoint pole(PoleLon, PoleLat);
@@ -1974,6 +1995,9 @@ static NFmiArea *CreateMercatorArea(grib_handle *theGribHandle)
 
     if (status9 == 0 && status6 == 0 && status7 == 0 && status8 == 0)
     {
+      // Not needed:
+      // check_jscan_direction(theGribHandle);
+
       NFmiPoint bottomLeft(Lo1, La1);
       NFmiPoint dummyTopRight(Lo1 + 5, La1 + 5);
       NFmiMercatorArea dummyArea(bottomLeft, dummyTopRight);
@@ -2015,6 +2039,9 @@ static NFmiArea *CreatePolarStereographicArea(grib_handle *theGribHandle)
 
   if (!badLa1 && !badLo1 && !badLov && !badLad && !badNx && !badNy && !badDx && !badDy)
   {
+    // Has to be checked:
+    check_jscan_direction(theGribHandle);
+
     NFmiPoint bottom_left(Lo1, La1);
     NFmiPoint top_left_xy(0, 0);
     NFmiPoint top_right_xy(1, 1);
@@ -2028,6 +2055,54 @@ static NFmiArea *CreatePolarStereographicArea(grib_handle *theGribHandle)
   }
 
   throw runtime_error("Error: Unable to retrieve polster-projection information from grib.");
+}
+
+static NFmiArea *CreateLambertArea(grib_handle *theGribHandle)
+{
+  double La1 = 0, Lo1 = 0, Lov = 0, Lad = 0, Lad1 = 0, Lad2 = 0;
+  int badLa1 = grib_get_double(theGribHandle, "latitudeOfFirstGridPointInDegrees", &La1);
+  int badLo1 = grib_get_double(theGribHandle, "longitudeOfFirstGridPointInDegrees", &Lo1);
+  int badLov = grib_get_double(theGribHandle, "LoVInDegrees", &Lov);
+  int badLad = grib_get_double(theGribHandle, "LaDInDegrees", &Lad);
+  int badLad1 = grib_get_double(theGribHandle, "Latin1InDegrees", &Lad1);
+  int badLad2 = grib_get_double(theGribHandle, "Latin2InDegrees", &Lad2);
+
+  long pcentre = 0;
+  int badPcentre = grib_get_long(theGribHandle, "projectionCentreFlag", &pcentre);
+
+  if (!badPcentre && pcentre != 0)
+    throw runtime_error("Error: South pole not supported for lambert");
+
+  long nx = 0, ny = 0;
+  int badNx = ::grib_get_long(theGribHandle, "numberOfPointsAlongXAxis", &nx);
+  int badNy = ::grib_get_long(theGribHandle, "numberOfPointsAlongYAxis", &ny);
+
+  double dx = 0, dy = 0;
+  int badDx = grib_get_double(theGribHandle, "DxInMetres", &dx);
+  int badDy = grib_get_double(theGribHandle, "DyInMetres", &dy);
+
+  if (!badLa1 && !badLo1 && !badLov && !badLad && !badLad1 && !badLad2 && !badNx && !badNy &&
+      !badDx && !badDy)
+  {
+    // Has to be checked:
+    check_jscan_direction(theGribHandle);
+
+    NFmiPoint bottom_left(Lo1, La1);
+
+    // TODO: Handle the sphere radius
+    std::unique_ptr<NFmiArea> tmparea(new NFmiLambertConformalConicArea(
+        bottom_left, bottom_left + NFmiPoint(1, 1), Lov, Lad, Lad1, Lad2));
+    auto worldxy1 = tmparea->LatLonToWorldXY(bottom_left);
+    auto worldxy2 = worldxy1 + NFmiPoint((nx - 1) * dx, (ny - 1) * dy);
+    auto top_right = tmparea->WorldXYToLatLon(worldxy2);
+
+    // Todo: Establish sphere from GRIB data
+    NFmiArea *area =
+        new NFmiLambertConformalConicArea(bottom_left, top_right, Lov, Lad, Lad1, Lad2);
+    return area;
+  }
+
+  throw runtime_error("Error: Unable to retrieve lambert-projection information from grib.");
 }
 
 // laske sellainen gridi, joka menee originaali hilan hilapisteikˆn mukaan, mutta peitt‰‰ sen
@@ -2078,14 +2153,11 @@ static void FillGridInfoFromGribHandle(grib_handle *theGribHandle,
                                        GribFilterOptions &theGribFilterOptions,
                                        GridSettingsPackage &theGridSettings)
 {
-  long gridDefinitionTemplateNumber =
-      0;  // t‰h‰n tulee projektio tyyppi, ks. qooglesta (grib2 Table 3.1)
-  int status =
-      ::grib_get_long(theGribHandle, "gridDefinitionTemplateNumber", &gridDefinitionTemplateNumber);
-  if (status == 0)
-  {
-    NFmiArea *area = 0;
+  // version independent string from 'gridType'
+  std::string proj_type;
 
+  if (GetGribStringValue(theGribHandle, "gridType", proj_type))
+  {
     // From: definitions/grib2/section.3.def
     //
     // "regular_ll"            = { gridDefinitionTemplateNumber=0;  PLPresent=0;  }
@@ -2093,24 +2165,21 @@ static void FillGridInfoFromGribHandle(grib_handle *theGribHandle,
     // "mercator"              = { gridDefinitionTemplateNumber=10; PLPresent=0;  }
     // "polar_stereographic"   = { gridDefinitionTemplateNumber=20; PLPresent=0;  }
 
-    switch (gridDefinitionTemplateNumber)
-    {
-      case 0:
-        area = ::CreateLatlonArea(theGribHandle, theGribFilterOptions);
-        break;
-      case 1:
-        area = ::CreateRotatedLatlonArea(theGribHandle, theGribFilterOptions);
-        break;
-      case 10:
-        area = ::CreateMercatorArea(theGribHandle);
-        break;
-      case 20:
-        area = ::CreatePolarStereographicArea(theGribHandle);
-        break;
-      default:
-        throw runtime_error(
-            "Error: Handling of projection found from grib is not implemented yet.");
-    }
+    NFmiArea *area = nullptr;
+
+    if (proj_type == "regular_ll")
+      area = ::CreateLatlonArea(theGribHandle, theGribFilterOptions);
+    else if (proj_type == "rotated_ll")
+      area = ::CreateRotatedLatlonArea(theGribHandle, theGribFilterOptions);
+    else if (proj_type == "mercator")
+      area = ::CreateMercatorArea(theGribHandle);
+    else if (proj_type == "polar_stereographic")
+      area = ::CreatePolarStereographicArea(theGribHandle);
+    else if (proj_type == "lambert")
+      area = ::CreateLambertArea(theGribHandle);
+    else
+      throw std::runtime_error("Error: Handling of projection " + proj_type +
+                               " found from grib is not implemented yet.");
 
     long numberOfPointsAlongAParallel = 0;
     int status1 = ::grib_get_long(
@@ -2230,7 +2299,7 @@ static void ChangeParamSettingsIfNeeded(vector<ParamChangeItem> &theParamChangeT
       if (paramChangeItem.itsOriginalParamId ==
           static_cast<long>(theGribData->itsParam.GetParamIdent()))
       {
-        if (paramChangeItem.itsLevel != NULL)
+        if (paramChangeItem.itsLevel != nullptr)
         {
           if ((*paramChangeItem.itsLevel) == theGribData->itsLevel)
           {
@@ -2451,8 +2520,8 @@ static void ProjectData(GridRecordData *theGridRecordData,
         locationCacheMatrix[targetGrid.Index() % targetXSize][targetGrid.Index() / targetXSize];
     int destX = counter % theGridRecordData->itsGrid.itsNX;
     int destY = counter / theGridRecordData->itsGrid.itsNX;
-    theGridRecordData->itsGridData[destX][destY] =
-        theOrigValues.InterpolatedValue(locCache.itsGridPoint, relativeRect, param, true, interp);
+    theGridRecordData->itsGridData[destX][destY] = DataMatrixUtils::InterpolatedValue(
+        theOrigValues, locCache.itsGridPoint, relativeRect, param, true, interp);
   }
 }
 
@@ -2808,7 +2877,7 @@ NFmiParamDescriptor GetParamDesc(vector<GridRecordData *> &theGribRecordDatas,
     ::AddGeneratedHybridParam(parBag, theGribFilterOptions.itsHybridPressureInfo);
     ::AddGeneratedHybridParam(parBag, theGribFilterOptions.itsHybridRelativeHumidityInfo);
   }
-  else if (wantedLevelType == kFmiPressureLevel)
+  else if ((wantedLevelType == kFmiPressureLevel) || (wantedLevelType == kFmiGroundSurface))
   {
     ::AddGeneratedHybridParam(parBag, theGribFilterOptions.itsHybridRelativeHumidityInfo);
   }
@@ -2881,29 +2950,6 @@ NFmiTimeDescriptor GetTimeDesc(vector<GridRecordData *> &theGribRecordDatas,
     return NFmiTimeDescriptor(theGribRecordDatas[0]->itsOrigTime, timeList);
 }
 
-void CheckInfoSize(const NFmiQueryInfo &theInfo, size_t theMaxQDataSizeInBytes)
-{
-  size_t infoSize = theInfo.Size();
-  size_t infoSizeInBytes = infoSize * sizeof(float);
-  if (theMaxQDataSizeInBytes < infoSizeInBytes)
-  {
-    stringstream ss;
-    ss << "Data would be too big:" << endl;
-    ss << "The result would be " << infoSizeInBytes << " bytes." << endl;
-    ss << "The limit is set to " << theMaxQDataSizeInBytes << " bytes." << endl;
-
-    unsigned long paramSize = theInfo.SizeParams();
-    ss << "Number of parameters: " << paramSize << endl;
-    unsigned long timeSize = theInfo.SizeTimes();
-    ss << "Number of timesteps: " << timeSize << endl;
-    unsigned long locSize = theInfo.SizeLocations();
-    ss << "Number of points: " << locSize << endl;
-    unsigned long levelSize = theInfo.SizeLevels();
-    ss << "Number of levels: " << levelSize << endl;
-    throw runtime_error(ss.str());
-  }
-}
-
 bool FillQDataWithGribRecords(boost::shared_ptr<NFmiQueryData> &theQData,
                               vector<GridRecordData *> &theGribRecordDatas,
                               bool verbose)
@@ -2946,7 +2992,6 @@ boost::shared_ptr<NFmiQueryData> CreateQueryData(vector<GridRecordData *> &theGr
     if (params.Size() == 0 || times.Size() == 0)
       return qdata;  // turha jatkaa jos toinen n‰ist‰ on tyhj‰
     NFmiQueryInfo innerInfo(params, times, theHplace, theVplace);
-    CheckInfoSize(innerInfo, theGribFilterOptions.itsMaxQDataSizeInBytes);
     qdata = boost::shared_ptr<NFmiQueryData>(NFmiQueryDataUtil::CreateEmptyData(innerInfo));
     bool anyDataFilled =
         FillQDataWithGribRecords(qdata, theGribRecordDatas, theGribFilterOptions.fVerbose);
@@ -3009,6 +3054,23 @@ static boost::shared_ptr<NFmiQueryData> GetPressureData(
     theQdatas[i]->Info()->FirstLevel();
     if (theQdatas[i]->Info()->Level()->LevelType() ==
         kFmiPressureLevel)  // pit‰‰ olla pressure tyyppi‰
+    {
+      data = theQdatas[i];
+      break;
+    }
+  }
+  return data;
+}
+
+static boost::shared_ptr<NFmiQueryData> GetGroundData(
+    vector<boost::shared_ptr<NFmiQueryData> > &theQdatas)
+{
+  boost::shared_ptr<NFmiQueryData> data;
+  for (size_t i = 0; i < theQdatas.size(); i++)
+  {
+    theQdatas[i]->Info()->FirstLevel();
+    if (theQdatas[i]->Info()->Level()->LevelType() ==
+        kFmiGroundSurface)  // pit‰‰ olla ground tyyppi‰
     {
       data = theQdatas[i];
       break;
@@ -3154,7 +3216,8 @@ static void CalcRelativeHumidityData(FmiParameterName RH_id,
 // HUOM! T‰m‰ pit‰‰ ajaa vasta jos ensin on laskettu paine parametri hybridi dataan!!!
 static void CalcRelativeHumidityData(vector<boost::shared_ptr<NFmiQueryData> > &theQdatas,
                                      const GeneratedHybridParamInfo &theHybridRelativeHumidityInfo,
-                                     const GeneratedHybridParamInfo &theHybridPressureInfo)
+                                     const GeneratedHybridParamInfo &theHybridPressureInfo,
+                                     const GeneratedHybridParamInfo &theGroundPressureInfo)
 {
   if (theHybridRelativeHumidityInfo.fCalcHybridParam)
   {
@@ -3166,6 +3229,9 @@ static void CalcRelativeHumidityData(vector<boost::shared_ptr<NFmiQueryData> > &
     boost::shared_ptr<NFmiQueryData> pressureData = ::GetPressureData(theQdatas);
     ::CalcRelativeHumidityData(
         RH_id, pressureData, theHybridRelativeHumidityInfo, theHybridPressureInfo);
+    boost::shared_ptr<NFmiQueryData> groundData = ::GetGroundData(theQdatas);
+    ::CalcRelativeHumidityData(
+        RH_id, groundData, theHybridRelativeHumidityInfo, theGroundPressureInfo);
   }
 }
 
@@ -3277,7 +3343,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
 
   try
   {
-    grib_handle *gribHandle = NULL;
+    grib_handle *gribHandle = nullptr;
     grib_context *gribContext = grib_context_get_default();
     grib_multi_support_on(0);
 
@@ -3288,7 +3354,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
     NFmiMetTime firstValidTime;
 
     while ((gribHandle = grib_handle_new_from_file(
-                gribContext, theGribFilterOptions.itsInputFile, &err)) != NULL)
+                gribContext, theGribFilterOptions.itsInputFile, &err)) != nullptr)
     {
       if (err != GRIB_SUCCESS)
         throw runtime_error("Failed to open grib handle in file  " +
@@ -3298,6 +3364,9 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
 
       if (theGribFilterOptions.fVerbose) cerr << counter << " ";
       GridRecordData *tmpData = new GridRecordData;
+
+      theGribFilterOptions.fDoYAxisFlip = jscan_is_negative(gribHandle);
+
       tmpData->itsLatlonCropRect = theGribFilterOptions.itsLatlonCropRect;
       try
       {
@@ -3418,7 +3487,7 @@ static void ConvertSingleGribFile(const GribFilterOptions &theGribFilterOptionsI
   GribFilterOptions gribFilterOptionsLocal = theGribFilterOptionsIn;
   gribFilterOptionsLocal.itsInputFileNameStr = theGribFileName;
   if ((gribFilterOptionsLocal.itsInputFile =
-           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == NULL)
+           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == nullptr)
   {
     cerr << "could not open input file: " << gribFilterOptionsLocal.itsInputFileNameStr << endl;
     return;
@@ -4325,8 +4394,7 @@ NFmiTimeDescriptor GetTimeDesc(vector<GridRecordData *> &theGribRecordDatas)
 
 boost::shared_ptr<NFmiQueryData> CreateQueryData(vector<GridRecordData *> &theGribRecordDatas,
                                                  NFmiHPlaceDescriptor &theHplace,
-                                                 NFmiVPlaceDescriptor &theVplace,
-                                                 int theMaxQDataSizeInBytes)
+                                                 NFmiVPlaceDescriptor &theVplace)
 {
   boost::shared_ptr<NFmiQueryData> qdata;
   int gribCount = static_cast<int>(theGribRecordDatas.size());
@@ -4337,7 +4405,6 @@ boost::shared_ptr<NFmiQueryData> CreateQueryData(vector<GridRecordData *> &theGr
     if (params.Size() == 0 || times.Size() == 0)
       return qdata;  // turha jatkaa jos toinen n‰ist‰ on tyhj‰
     NFmiQueryInfo innerInfo(params, times, theHplace, theVplace);
-    ::CheckInfoSize(innerInfo, theMaxQDataSizeInBytes);
     qdata.reset(NFmiQueryDataUtil::CreateEmptyData(innerInfo));
     bool anyDataFilled = wgrib2qd::FillQDataWithGribRecords(*qdata, theGribRecordDatas);
     if (anyDataFilled == false)
@@ -4349,7 +4416,7 @@ boost::shared_ptr<NFmiQueryData> CreateQueryData(vector<GridRecordData *> &theGr
 }
 
 vector<boost::shared_ptr<NFmiQueryData> > CreateQueryDatas(
-    vector<GridRecordData *> &theGribRecordDatas, int theMaxQDataSizeInBytes, bool useOutputFile)
+    vector<GridRecordData *> &theGribRecordDatas, bool useOutputFile)
 {
   vector<boost::shared_ptr<NFmiQueryData> > qdatas;
   int gribCount = static_cast<int>(theGribRecordDatas.size());
@@ -4364,7 +4431,7 @@ vector<boost::shared_ptr<NFmiQueryData> > CreateQueryDatas(
       for (unsigned int i = 0; i < hPlaceDescriptors.size(); i++)
       {
         boost::shared_ptr<NFmiQueryData> qdata = wgrib2qd::CreateQueryData(
-            theGribRecordDatas, hPlaceDescriptors[i], vPlaceDescriptors[j], theMaxQDataSizeInBytes);
+            theGribRecordDatas, hPlaceDescriptors[i], vPlaceDescriptors[j]);
         if (qdata) qdatas.push_back(qdata);
       }
     }
@@ -4397,7 +4464,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
 
   vector<GridRecordData *> gribRecordDatas;
 
-  if ((buffer = (unsigned char *)malloc(BUFF_ALLOC0)) == NULL)
+  if ((buffer = (unsigned char *)malloc(BUFF_ALLOC0)) == nullptr)
     throw runtime_error("buffer 0, not enough memory\n");
   buffer_size = BUFF_ALLOC0;
 
@@ -4413,14 +4480,14 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
     for (;;)
     {
       msg = seek_grib(theGribFilterOptions.itsInputFile, &pos, &len_grib, buffer, MSEEK);
-      if (msg == NULL) break;  // tultiin recordien loppuun
+      if (msg == nullptr) break;  // tultiin recordien loppuun
 
       /* read all whole grib record */
       if (len_grib + msg - buffer > buffer_size)
       {
         buffer_size = static_cast<long>(len_grib + msg - buffer + 1000);
         buffer = (unsigned char *)realloc((void *)buffer, buffer_size);
-        if (buffer == NULL) throw runtime_error("ran out of memory");
+        if (buffer == nullptr) throw runtime_error("ran out of memory");
       }
       read_grib(theGribFilterOptions.itsInputFile, pos, len_grib, buffer);
 
@@ -4436,7 +4503,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
       }
       else
       {
-        gds = NULL;
+        gds = nullptr;
       }
 
       if (PDS_HAS_BMS(pds))
@@ -4451,7 +4518,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
       }
       else
       {
-        bms = NULL;
+        bms = nullptr;
       }
 
       bds = pointer;
@@ -4477,11 +4544,11 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
       }
 
       // figure out size of array
-      if (gds != NULL)
+      if (gds != nullptr)
       {
         GDS_grid(gds, bds, &nx, &ny, &nxny, variableLengthRows, &usedOutputGridRowLength);
       }
-      else if (bms != NULL)
+      else if (bms != nullptr)
       {
         nxny = nx = BMS_nxny(bms);
         ny = 1;
@@ -4504,7 +4571,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
       if (nxny > last_nxny)  // tarkistetaan pit‰‰kˆ varata isompi taulukko
       {
         if (array) free(array);
-        if ((array = (float *)malloc(sizeof(float) * nxny)) == NULL)
+        if ((array = (float *)malloc(sizeof(float) * nxny)) == nullptr)
           throw runtime_error("End of memory, exiting...");
         last_nxny = nxny;
       }
@@ -4617,7 +4684,7 @@ void ConvertSingleGribFile(const GribFilterOptions &theGribFilterOptionsIn,
   GribFilterOptions gribFilterOptionsLocal = theGribFilterOptionsIn;
   gribFilterOptionsLocal.itsInputFileNameStr = theGribFileName;
   if ((gribFilterOptionsLocal.itsInputFile =
-           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == NULL)
+           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == nullptr)
   {
     cerr << "could not open input file: " << gribFilterOptionsLocal.itsInputFileNameStr << endl;
     return;
@@ -4641,7 +4708,7 @@ void ConvertSingleGribFile(const GribFilterOptions &theGribFilterOptionsIn,
   }
 }
 
-}  // wgrib2qd -namespace ends
+}  // namespace wgrib2qd
 // **************************************************************************
 
 static void MakeTotalCombineQDatas(
@@ -4701,7 +4768,8 @@ static void MakeTotalCombineQDatas(
   // tarvittavia parametreja
   ::CalcRelativeHumidityData(theGribFilterOptionsOut.itsGeneratedDatas,
                              theGribFilterOptionsOut.itsHybridRelativeHumidityInfo,
-                             theGribFilterOptionsOut.itsHybridPressureInfo);
+                             theGribFilterOptionsOut.itsHybridPressureInfo,
+                             theGribFilterOptionsOut.itsGroundPressureInfo);
 }
 
 static int BuildAndStoreAllDatas(vector<string> &theFileList,
@@ -4750,11 +4818,12 @@ static int BuildAndStoreAllDatas(vector<string> &theFileList,
 
 void Usage(void)
 {
-  cerr << "Usage: grib2qd [options] inputgribfile  > outputqdata" << endl
+  cerr << "Usage: grib2qd [options] inputfile1 [inputfile2 ...]  > outputqdata" << endl
+       << endl
+       << "Convert GRIB files to querydata." << endl
        << endl
        << "Options:" << endl
        << endl
-       << "\t-m <max-data-sizeMB>\tMax size of generated data, default = 1024 MB" << endl
        << "\t-o output\tDefault data is writen to stdout." << endl
        << "\t-l t105v3,t109v255,...\tIgnore following individual levels" << endl
        << "\t\t(e.g. 1. type 105, value 3, 2. type 109, value 255, etc.)" << endl
@@ -4773,7 +4842,6 @@ void Usage(void)
        << "\t-n   Names output files by level type. E.g. output.sqd_levelType_100" << endl
        << "\t-t   Reports run-time to the stderr at the end of execution" << endl
        << "\t-v   verbose mode" << endl
-       << "\t-y   do y-axis flip" << endl
        << "\t-C   try to combine larger areas" << endl
        << "\t-z   read data lines in zig-zag fashion, starting left to rigth" << endl
        << "\t-i   Ignore reduced_ll data, keep using grib_api for conversion" << endl
@@ -4809,11 +4877,10 @@ void Usage(void)
        << "\t\t pressure- and hybrid-data. Give two or three projections " << endl
        << "\t\t separated by semicolons ';'. E.g." << endl
        << "\t\t proj1:gridSize1[;proj2:gridSize2][;proj3:gridSize3]" << endl
-
        << endl;
 }
 
-static bool DoCommandLineCheck(NFmiCmdLine &theCmdLine, std::string &theFilePatternOrDirectoryOut)
+static bool DoCommandLineCheck(NFmiCmdLine &theCmdLine)
 {
   if (theCmdLine.Status().IsError())
   {
@@ -4824,14 +4891,13 @@ static bool DoCommandLineCheck(NFmiCmdLine &theCmdLine, std::string &theFilePatt
     return false;
   }
 
-  if (theCmdLine.NumberofParameters() != 1)
+  if (theCmdLine.NumberofParameters() < 1)
   {
-    cerr << "Error: 1 parameter expected, 'inputfile'\n\n";
+    cerr << "Error: At least 1 input file or directory expected\n\n";
     ::Usage();
     return false;
   }
-  else
-    theFilePatternOrDirectoryOut = theCmdLine.Parameter(1);
+
   return true;
 }
 
@@ -4925,10 +4991,16 @@ static int GetOptions(NFmiCmdLine &theCmdLine, GribFilterOptions &theGribFilterO
   if (theCmdLine.isOption('A')) theGribFilterOptions.fDoPacificFix = true;
   if (theGribFilterOptions.fDoAtlanticFix && theGribFilterOptions.fDoPacificFix)
     throw runtime_error(
-        "Error with pacific and atlantic fix options, both 'a' and 'A' options can't be on at the "
+        "Error with pacific and atlantic fix options, both 'a' and 'A' options can't be on at "
+        "the "
         "same time");
 
-  if (theCmdLine.isOption('y')) theGribFilterOptions.fDoYAxisFlip = true;
+  if (theCmdLine.isOption('y'))
+  {
+    std::cerr << "Warning: Option -y is deprecated. The need to flip grib data is now detected "
+                 "automatically from 'jScansPositively' setting"
+              << std::endl;
+  }
 
   if (theCmdLine.isOption('S')) theGribFilterOptions.fDoLeftRightSwap = true;
 
@@ -4950,9 +5022,11 @@ static int GetOptions(NFmiCmdLine &theCmdLine, GribFilterOptions &theGribFilterO
       ::GetGeneratedHybridParamInfo(theCmdLine, 'H', kFmiPressure, "P");
   theGribFilterOptions.itsHybridRelativeHumidityInfo =
       ::GetGeneratedHybridParamInfo(theCmdLine, 'r', kFmiHumidity, "RH");
+  theGribFilterOptions.itsGroundPressureInfo =
+      ::GetGeneratedHybridParamInfo(theCmdLine, 'r', kFmiPressureAtStationLevel, "P");
 
   if (theCmdLine.isOption('m'))
-    theGribFilterOptions.itsMaxQDataSizeInBytes = GetIntegerOptionValue(theCmdLine, 'm') * gMBsize;
+    std::cerr << "Warning: option -m is deprecated, sizes are now unlimited\n";
 
   if (theCmdLine.isOption('G'))
   {
@@ -4976,22 +5050,18 @@ int Run(int argc, const char **argv, bool &fReportExecutionTime)
 
   NFmiCmdLine cmdline(argc, argv, "o!m!l!g!p!aASnL!G!c!dvP!D!tH!r!yzCiR!");
 
-  // Tarkistetaan optioiden oikeus:
-  std::string filePatternOrDirectory;  // ohjelman 1. argumentti sis‰lt‰‰ joko tiedoston nimen,
-                                       // patternin tai hakemiston.
   // Jonkin n‰ist‰ avulla muodostetaan lista, jossa voi olla 0-n kpl tiedoston nimi‰.
-  if (::DoCommandLineCheck(cmdline, filePatternOrDirectory) == false) return 1;
+  if (::DoCommandLineCheck(cmdline) == false) return 1;
 
   if (cmdline.isOption('t')) fReportExecutionTime = true;
   if (::GribDefinitionPath(cmdline) == false) return 1;
   int status = ::GetOptions(cmdline, gribFilterOptions);
   if (status != 0) return status;
 
-  vector<string> fileList = ::GetDataFiles(filePatternOrDirectory);
+  vector<string> fileList = ::GetDataFiles(cmdline);
+
   if (fileList.empty())
-    throw runtime_error(string("Error there were no matching grib files or given directory was "
-                               "empty, see parameter:\n") +
-                        filePatternOrDirectory);
+    throw runtime_error("Error there were no matching grib files or given directory was empty");
 
   return ::BuildAndStoreAllDatas(fileList, gribFilterOptions);
 }

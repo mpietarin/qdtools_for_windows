@@ -9,8 +9,8 @@
 
 #include <newbase/NFmiStation.h>
 
-#include <string>
 #include <map>
+#include <string>
 
 class NFmiAviationStation : public NFmiStation
 {
@@ -29,6 +29,7 @@ class NFmiAviationStation : public NFmiStation
   const std::string &IcaoStr(void) const { return itsIcaoStr; }
   void IcaoStr(const std::string &newValue) { itsIcaoStr = newValue; }
   NFmiLocation *Clone(void) const { return new NFmiAviationStation(*this); }
+
  private:
   std::string itsIcaoStr;  // icao tunnus (esim. EFHK)
 };
@@ -51,6 +52,7 @@ class NFmiAviationStationInfoSystem
   NFmiAviationStation *FindStation(const std::string &theIcaoId);
   NFmiAviationStation *FindStation(long theWmoId);
   bool WmoStationsWanted(void) const { return fWmoStationsWanted; }
+
  private:
   std::string
       itsInitLogMessage;  // onnistuneen initialisoinnin viesti, missä voi olla varoituksia lokiin.
@@ -59,6 +61,5 @@ class NFmiAviationStationInfoSystem
   bool fWmoStationsWanted;  // tämä päättää, käytetäänkö luokassa WMO vai ICAO asemia
   bool fVerboseMode;
 };
-
 
 // ======================================================================

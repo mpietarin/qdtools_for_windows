@@ -12,7 +12,8 @@
 #include <list>
 #include <string>
 
-extern "C" {
+extern "C"
+{
 #include <unistd.h>  // sleep
 }
 
@@ -403,7 +404,7 @@ class tests : public tframe::tests
   }
 };
 
-}  // namespace NFmiFileSystemtest
+}  // namespace NFmiFileSystemTest
 
 //! The main program
 int main(void)

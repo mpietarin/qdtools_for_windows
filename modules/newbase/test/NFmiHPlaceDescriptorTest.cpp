@@ -8,7 +8,6 @@
 #include "NFmiHPlaceDescriptor.h"
 #include "NFmiQueryData.h"
 #include "NFmiStringTools.h"
-#include <boost/foreach.hpp>
 #include <regression/tframe.h>
 #include <fstream>
 #include <stdexcept>
@@ -117,15 +116,6 @@ void isinside()
       TEST_FAILED("Should have found coordinate 25,60 with a 10 km radius");
     if (h.IsInside(NFmiPoint(0, 0), 10 * 1000))
       TEST_FAILED("Should not have found 0,0 from the grid data");
-  }
-
-  // Test current data
-  {
-    NFmiQueryData qd("/smartmet/data/pal/skandinavia/pinta_xh/querydata/");
-    const NFmiHPlaceDescriptor& h = qd.Info()->HPlaceDescriptor();
-
-    if (h.IsInside(NFmiPoint(5.58, 52.14), 10 * 1000))
-      TEST_FAILED("Should have failed for coordinate 5.58 52.14");
   }
 
   TEST_PASSED();

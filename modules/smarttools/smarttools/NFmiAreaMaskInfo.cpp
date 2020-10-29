@@ -37,7 +37,7 @@ NFmiAreaMaskInfo::NFmiAreaMaskInfo(const std::string &theOrigLineText)
       itsCalculationOperator(NFmiAreaMask::NotOperation),
       itsBinaryOperator(NFmiAreaMask::kNoValue),
       itsDataType(NFmiInfoData::kNoDataType),
-      itsLevel(0),
+      itsLevel(nullptr),
       itsMaskText(),
       itsOrigLineText(theOrigLineText),
       itsFunctionType(NFmiAreaMask::NotFunction),
@@ -49,7 +49,8 @@ NFmiAreaMaskInfo::NFmiAreaMaskInfo(const std::string &theOrigLineText)
       itsIntegrationFunctionType(0),
       itsFunctionArgumentCount(0),
       itsSoundingParameter(kSoundingParNone),
-      itsModelRunIndex(1)
+      itsModelRunIndex(1),
+      itsSimpleConditionInfo()
 {
 }
 
@@ -61,7 +62,7 @@ NFmiAreaMaskInfo::NFmiAreaMaskInfo(const NFmiAreaMaskInfo &theOther)
       itsCalculationOperator(theOther.itsCalculationOperator),
       itsBinaryOperator(theOther.itsBinaryOperator),
       itsDataType(theOther.itsDataType),
-      itsLevel(theOther.itsLevel ? new NFmiLevel(*theOther.itsLevel) : 0),
+      itsLevel(theOther.itsLevel ? new NFmiLevel(*theOther.itsLevel) : nullptr),
       itsMaskText(theOther.itsMaskText),
       itsOrigLineText(theOther.itsOrigLineText),
       itsFunctionType(theOther.itsFunctionType),
@@ -73,17 +74,22 @@ NFmiAreaMaskInfo::NFmiAreaMaskInfo(const NFmiAreaMaskInfo &theOther)
       itsIntegrationFunctionType(theOther.itsIntegrationFunctionType),
       itsFunctionArgumentCount(theOther.itsFunctionArgumentCount),
       itsSoundingParameter(theOther.itsSoundingParameter),
-      itsModelRunIndex(theOther.itsModelRunIndex)
+      itsModelRunIndex(theOther.itsModelRunIndex),
+      itsSimpleConditionInfo(theOther.itsSimpleConditionInfo),
+      itsTimeOffsetInHours(theOther.itsTimeOffsetInHours)
 {
 }
 
-NFmiAreaMaskInfo::~NFmiAreaMaskInfo(void)
-{
-  delete itsLevel;
-}
+NFmiAreaMaskInfo::~NFmiAreaMaskInfo(void) { delete itsLevel; }
 
 void NFmiAreaMaskInfo::SetLevel(NFmiLevel *theLevel)
 {
   delete itsLevel;
-  itsLevel = theLevel ? new NFmiLevel(*theLevel) : 0;
+  itsLevel = theLevel ? new NFmiLevel(*theLevel) : nullptr;
+}
+
+bool NFmiAreaMaskInfo::AllowSimpleCondition() const
+{
+  return (itsSimpleConditionRule == NFmiAreaMask::SimpleConditionRule::Allowed ||
+          itsSimpleConditionRule == NFmiAreaMask::SimpleConditionRule::MustHave);
 }

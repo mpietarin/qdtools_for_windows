@@ -237,6 +237,7 @@ bool NFmiCommentStripper::ReadAndStripFile(const string& theFileName)
 
 bool NFmiCommentStripper::Strip()
 {
+  StripBomMarkersFromStart();
   string filt_elem2("/*"), filt_elem3("*/");
   if (fStripSlashAst)
   {
@@ -283,6 +284,15 @@ bool NFmiCommentStripper::Strip()
   return true;
 }
 
+void NFmiCommentStripper::StripBomMarkersFromStart()
+{
+  const std::string bomMarkers =
+      "\xEF\xBB\xBF";  // BOM characters ï»¿ must be given with hexa escape format because this cpp
+                       // file is Utf-8 encoded
+  auto pos = itsString.find(bomMarkers);
+  if (pos == 0) itsString = std::string(itsString.begin() + bomMarkers.size(), itsString.end());
+}
+
 // ----------------------------------------------------------------------
 /*!
  * \param theString Undocumented
@@ -307,8 +317,8 @@ bool NFmiCommentStripper::Strip(const std::string& theString)
 bool NFmiCommentStripper::CollectAndStripNested(const string& theBeginDirective,
                                                 const string& theEndDirective)
 {
-  checkedVector<unsigned long> posStartFilts;
-  checkedVector<unsigned long> posEndFilts;
+  std::vector<unsigned long> posStartFilts;
+  std::vector<unsigned long> posEndFilts;
 
   if (CollectStringPositions(theBeginDirective, posStartFilts) &&
       CollectStringPositions(theEndDirective, posEndFilts))
@@ -471,8 +481,8 @@ bool NFmiCommentStripper::StripSubStrings(const string& theString)
  */
 // ----------------------------------------------------------------------
 
-bool NFmiCommentStripper::StripNested(checkedVector<unsigned long> theBeginPositions,
-                                      checkedVector<unsigned long> theEndPositions)
+bool NFmiCommentStripper::StripNested(std::vector<unsigned long> theBeginPositions,
+                                      std::vector<unsigned long> theEndPositions)
 {
   auto startFiltsInd = theBeginPositions.begin();
   auto endFiltsInd = theEndPositions.begin();
@@ -525,7 +535,7 @@ bool NFmiCommentStripper::StripNested(checkedVector<unsigned long> theBeginPosit
 // ----------------------------------------------------------------------
 
 bool NFmiCommentStripper::CollectStringPositions(const string& theSearchString,
-                                                 checkedVector<unsigned long>& theResVector)
+                                                 std::vector<unsigned long>& theResVector)
 {
   string aString(itsString);
   string::size_type filtLen = theSearchString.length();

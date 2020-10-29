@@ -18,13 +18,14 @@
 #include "NFmiGlobals.h"
 #include "NFmiStringTools.h"
 
-extern "C" {
+extern "C"
+{
 #include <sys/timeb.h>
 }
 
 //! Luokka koodin nopeusmittauksia varten
 
-class _FMI_DLL NFmiMilliSecondTimer
+class NFmiMilliSecondTimer
 {
  public:
   NFmiMilliSecondTimer();

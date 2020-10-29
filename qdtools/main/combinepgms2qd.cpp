@@ -8,17 +8,17 @@
 #include "Pgm2QueryData.h"
 
 #include <newbase/NFmiCmdLine.h>
-#include <newbase/NFmiStringTools.h>
 #include <newbase/NFmiFileSystem.h>
 #include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiQueryDataUtil.h>
 #include <newbase/NFmiStreamQueryData.h>
+#include <newbase/NFmiStringTools.h>
 
 #include <boost/shared_ptr.hpp>
 
-#include <list>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <string>
 
 using namespace std;
@@ -136,7 +136,7 @@ int domain(int argc, const char *argv[])
   if (data == 0)
     throw std::runtime_error(std::string("Error, unable to create combined queryData"));
 
-  std::auto_ptr<NFmiQueryData> dataPtr(data);  // tuhoaa automaattisesti datan lopuksi
+  std::unique_ptr<NFmiQueryData> dataPtr(data);  // tuhoaa automaattisesti datan lopuksi
   NFmiStreamQueryData sQData;
   if (sQData.WriteData(options.outdata, data, static_cast<long>(data->InfoVersion())) == false)
     throw std::runtime_error(std::string("Error, unable to store combined queryData to file:\n") +

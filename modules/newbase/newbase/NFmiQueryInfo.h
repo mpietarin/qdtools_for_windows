@@ -18,6 +18,7 @@
 #include "NFmiTimeBag.h"
 #include "NFmiTimeDescriptor.h"
 #include "NFmiVPlaceDescriptor.h"
+#include "NFmiVersion.h"
 
 class NFmiQueryData;
 class NFmiCombinedParam;
@@ -32,12 +33,12 @@ class NFmiStation;
 #define HEADERMAX 3  // Poistetaan
 
 //! Undocumented
-class _FMI_DLL NFmiQueryInfo
+class NFmiQueryInfo
 {
  public:
   virtual ~NFmiQueryInfo();
 
-  NFmiQueryInfo(double theInfoVersion = 7.);
+  NFmiQueryInfo(double theInfoVersion = DefaultFmiInfoVersion);
 
   NFmiQueryInfo(const NFmiQueryInfo &theInfo);
 
@@ -45,7 +46,7 @@ class _FMI_DLL NFmiQueryInfo
                 const NFmiTimeDescriptor &theTimeDescriptor,
                 const NFmiHPlaceDescriptor &theHPlaceDescriptor = NFmiHPlaceDescriptor(),
                 const NFmiVPlaceDescriptor &theVPlaceDescriptor = NFmiVPlaceDescriptor(),
-                double theInfoVersion = 7.);
+                double theInfoVersion = DefaultFmiInfoVersion);
 
   NFmiQueryInfo(NFmiQueryData *data,
                 NFmiParamDescriptor *theParamDescriptor = 0,
@@ -121,12 +122,12 @@ class _FMI_DLL NFmiQueryInfo
 
   //! Hakee listan paikkaindeksi/etäisyys metreinä pareja. Listaan haetaan annettua paikkaa lähimmat
   //! datapisteet.
-  checkedVector<std::pair<int, double> > NearestLocations(
+  std::vector<std::pair<int, double> > NearestLocations(
       const NFmiLocation &theLocation,
       int theMaxWantedLocations,
       double theMaxDistance = kFloatMissing) const;
 
-  checkedVector<std::pair<int, double> > NearestLocations(
+  std::vector<std::pair<int, double> > NearestLocations(
       const NFmiPoint &theLatLonPoint,
       int theMaxWantedLocations,
       double theMaxDistance = kFloatMissing) const;
@@ -188,25 +189,24 @@ class _FMI_DLL NFmiQueryInfo
   // ****** HUOM!!!! *******************************************
 
   // ****** Cached interpolation methods ***********************
-  // 17.09.2013 Anssi.R changed method to virtual to be able to override in NFmiMultiQueryInfo
+
   virtual float CachedInterpolation(const NFmiLocationCache &theLocationCache,
                                     const NFmiTimeCache &theTimeCache);
   float CachedInterpolation(const NFmiLocationCache &theLocationCache);
   float CachedInterpolation(const NFmiTimeCache &theTimeCache);
   void GetCachedValues(const NFmiLocationCache &theLocationCache,
                        const NFmiTimeCache &theTimeCache,
-                       std::vector<float> &theValues);
+                       std::array<float,4> &theValues1,
+                       std::array<float,4> &theValues2);
   void GetCachedValues(const NFmiLocationCache &theLocationCache,
-                       std::vector<float> &theValues,
-                       size_t theStartIndex = 0);
-  void GetCachedValues(const NFmiTimeCache &theTimeCache, std::vector<float> &theValues);
+                       std::array<float,4> &theValues);
+  void GetCachedValues(const NFmiTimeCache &theTimeCache, std::array<float,2> &theValues);
   float CachedTimeInterpolatedValue(float theValue1,
                                     float theValue2,
                                     const NFmiTimeCache &theTimeCache,
                                     FmiInterpolationMethod theInterpolatioMethod,
                                     FmiParameterName theParId);
-  float CachedLocationInterpolatedValue(std::vector<float> &theValues,
-                                        size_t theStartIndex,
+  float CachedLocationInterpolatedValue(std::array<float,4> &theValues,
                                         const NFmiLocationCache &theLocationCache,
                                         FmiInterpolationMethod theInterpolatioMethod,
                                         FmiParameterName theParId);
@@ -217,15 +217,15 @@ class _FMI_DLL NFmiQueryInfo
   float CachedPressureLevelValue(float P, const NFmiTimeCache &theTimeCache);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiLocationCache &theLocationCache,
-                                    std::vector<float> &theValues,
-                                    size_t theStartIndex = 0);
+                                    std::array<float,4> &theValues);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiTimeCache &theTimeCache,
-                                    std::vector<float> &theValues);
+                                    std::array<float,2> &theValues);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiLocationCache &theLocationCache,
                                     const NFmiTimeCache &theTimeCache,
-                                    std::vector<float> &theValues);
+                                    std::array<float,4> &theValues1,
+                                    std::array<float,4> &theValues2);
   // ****** Cached interpolation methods ***********************
 
   void SetLocalTimes(const float theLongitude);  // Muuttaa ajan iteroinnin paikalliseksi
@@ -500,10 +500,6 @@ class _FMI_DLL NFmiQueryInfo
   // Lapsi luokat tarvitsevat tälläiset maski-metodit, tässä toteutetaan vain dummyna.
   virtual void MaskType(unsigned long /* theMaskType */){};
   virtual unsigned long MaskType() { return 0; };
-#ifndef NDEBUG
-  static int itsConstructorCalls;  // tämä on yritys tutkia mahdollisia vuotoja ohjelmissä
-  static int itsDestructorCalls;   // kuinka monta oliota on luotu ja tuhottu
-#endif                             // NDEBUG
 
   float CalcTimeOffsetToLastTime(const NFmiMetTime &theTime,
                                  const NFmiMetTime &time1,
@@ -513,8 +509,8 @@ class _FMI_DLL NFmiQueryInfo
   NFmiLocationCache CalcLocationCache(const NFmiPoint &theLatlon,
                                       unsigned long thePossibleSourceSizeX = gMissingIndex,
                                       unsigned long thePossibleSourceSizeY = gMissingIndex);
-  bool CalcTimeCache(NFmiQueryInfo &theTargetInfo, checkedVector<NFmiTimeCache> &theTimeCache);
-  // 17.09.2013 Anssi.R changed method to virtual to be able to override in NFmiMultiQueryInfo
+  bool CalcTimeCache(NFmiQueryInfo &theTargetInfo, std::vector<NFmiTimeCache> &theTimeCache);
+
   virtual NFmiTimeCache CalcTimeCache(const NFmiMetTime &theTime);
 
   bool HasNonFiniteValueSet(void) const { return fHasNonFiniteValueSet; }
@@ -590,6 +586,10 @@ class _FMI_DLL NFmiQueryInfo
   // 1999.08.20/Marko
   virtual float SubParamFloatValue() const;
   virtual bool SubParamFloatValue(float theFloatData);
+
+  // Muuntaa floatin subvalueksi
+  float SubValueFromFloat(float fValue) const;
+
   virtual float IndexFloatValue(
       size_t theIndex) const;  // palauttaa suoraan arvon ilman aliparametri tarkasteluja
   virtual bool IndexFloatValue(
@@ -1227,6 +1227,9 @@ inline const NFmiPoint NFmiQueryInfo::RelativePoint() const
 
 inline size_t NFmiQueryInfo::Size() const
 {
+  if (!itsParamDescriptor || !itsHPlaceDescriptor || !itsTimeDescriptor || !itsVPlaceDescriptor)
+    return 0;
+
   return (itsParamDescriptor->Size() * itsHPlaceDescriptor->Size() * itsTimeDescriptor->Size() *
           itsVPlaceDescriptor->Size());
 }

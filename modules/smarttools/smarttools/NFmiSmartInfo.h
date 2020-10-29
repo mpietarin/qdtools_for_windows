@@ -4,8 +4,7 @@
 // Uusi luokka on tarkoitettu vain SmartMetissa olevan
 // editoitavan datan käsittely. Eli täällä on tietoa mm.
 // valitusta maskista (selction, display jne.).
-// Undo/Redo toiminnot ja Harmonisaattorin vastaava
-// kirjanpito.
+// Undo/Redo toiminnot.
 // Luokka tehdään uusiksi siksi, että sitä yksinkertaistetaan
 // ja että esim. undo/redo datojen omistus ja tuhoaminen tehdään
 // automaattisesti smart-pointtereilla eikä niin kuin nykyisin
@@ -16,7 +15,6 @@
 #include "NFmiOwnerInfo.h"
 
 class NFmiModifiableQDatasBookKeeping;
-class NFmiHarmonizerBookKeepingData;
 
 class NFmiSmartInfo : public NFmiOwnerInfo
 {
@@ -41,12 +39,11 @@ class NFmiSmartInfo : public NFmiOwnerInfo
       const boost::shared_ptr<NFmiFastQueryInfo> &theInfo);
   bool NextLocation(void);
 
-  bool SnapShotData(const std::string &theAction,
-                    const NFmiHarmonizerBookKeepingData &theCurrentHarmonizerBookKeepingData);
+  bool SnapShotData(const std::string &theAction);
   bool Undo(void);
   bool Redo(void);
-  bool UndoData(const NFmiHarmonizerBookKeepingData &theHarmonizerBookKeepingData);
-  bool RedoData(void);
+  bool UndoData(std::string &modificationDescription);
+  bool RedoData(std::string &modificationDescription);
   void UndoLevel(long theDepth);
 
   bool LocationSelectionSnapShot(void);                  // ota maskit talteen
@@ -59,8 +56,6 @@ class NFmiSmartInfo : public NFmiOwnerInfo
   void LoadedFromFile(bool loadedFromFile);
   bool IsDirty(void) const;
   void Dirty(bool newState);
-  const NFmiHarmonizerBookKeepingData *CurrentHarmonizerBookKeepingData(
-      void) const;  // palauttaa nyt käytössä olevan harmonisaattori parambagin
 
   int MaskedCount(unsigned long theMaskType, unsigned long theIndex, const NFmiRect &theSearchArea);
   void InverseMask(unsigned long theMaskType);

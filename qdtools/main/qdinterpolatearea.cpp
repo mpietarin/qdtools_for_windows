@@ -26,6 +26,7 @@
 #include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiQueryDataUtil.h>
 #include <newbase/NFmiStringTools.h>
+#include <newbase/NFmiWindFix.h>
 #include <algorithm>
 #include <fstream>
 
@@ -152,8 +153,11 @@ void run(int argc, const char *argv[])
   NFmiQueryData qd(inputfile);
 
   boost::shared_ptr<NFmiQueryData> newData(
-      NFmiQueryDataUtil::Interpolate2OtherGrid(&qd, wantedGrid, NULL));
+      NFmiQueryDataUtil::Interpolate2OtherGrid(&qd, wantedGrid, nullptr));
 
+  // Temporary fix until newbase interpolation has been corrected
+  NFmiWindFix::FixWinds(*newData); 
+  
   newData->Write(outputfile);
 }
 

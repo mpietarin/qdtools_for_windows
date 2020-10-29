@@ -12,8 +12,8 @@
 
 #include "NFmiLambertEqualArea.h"
 #include "NFmiStringTools.h"
+#include <fmt/format.h>
 #include <cmath>
-#include <iomanip>
 
 using namespace std;
 
@@ -72,13 +72,13 @@ NFmiLambertEqualArea::NFmiLambertEqualArea(const NFmiPoint &theBottomLeftLatLon,
 }
 
 /*!
-* Constructor
-*
-* \param theCenterLatLon Undocumented
-* \param theRadialRangeInMeters Undocumented
-* \param theTopLeftXY Undocumented
-* \param theBottomRightXY Undocumented
-*/
+ * Constructor
+ *
+ * \param theCenterLatLon Undocumented
+ * \param theRadialRangeInMeters Undocumented
+ * \param theTopLeftXY Undocumented
+ * \param theBottomRightXY Undocumented
+ */
 NFmiLambertEqualArea::NFmiLambertEqualArea(double theRadialRangeInMeters,
                                            const NFmiPoint &theCenterLatLon,
                                            const NFmiPoint &theTopLeftXY,
@@ -232,7 +232,7 @@ else
 
   if (delta <= -1.0) return kFloatMissing;
 
-  return sqrt(2. / (1. + delta));
+  return kRearth * sqrt(2. / (1. + delta));
 }
 
 // ----------------------------------------------------------------------
@@ -247,7 +247,7 @@ double NFmiLambertEqualArea::CalcDelta(const double xyDistance) const
   // Calculates the delta angle for LambertEqual projection.
   // See details in ref. [2] p. 13.
 
-  return 2.0 * asin(FmiMax(-1.0, FmiMin(1.0, xyDistance / 2.0)));
+  return 2.0 * asin(FmiMax(-1.0, FmiMin(1.0, xyDistance / (2 * kRearth))));
   // 11.5.98/EL: delta is always computed for tangential plane only --> itsTrueLatitude.Sin() == 1
 }
 
@@ -428,33 +428,44 @@ const std::string NFmiLambertEqualArea::AreaStr() const
 
 const std::string NFmiLambertEqualArea::WKT() const
 {
-  std::ostringstream ret;
-
   if (itsCentralLatitude.Value() != 90)
   {
-    ret << std::setprecision(16) << R"(PROJCS["FMI_LambertEqual",)"
-        << R"(GEOGCS["FMI_Sphere",)"
-        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
-        << R"(PRIMEM["Greenwich",0],)"
-        << R"(UNIT["Degree",0.0174532925199433]],)"
-        << R"(PROJECTION["LambertEqual"],)"
-        << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
-        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
-        << R"(UNIT["Metre",1.0]])";
+    const char *fmt = R"(PROJCS["FMI_LambertEqual",)"
+                      R"(GEOGCS["FMI_Sphere",)"
+                      R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
+                      R"(PRIMEM["Greenwich",0],)"
+                      R"(UNIT["Degree",0.0174532925199433]],)"
+                      R"(PROJECTION["Lambert_Azimuthal_Equal_Area"],)"
+                      R"(PARAMETER["latitude_of_origin",{}],)"
+                      R"(PARAMETER["central_meridian",{}],)"
+                      R"(UNIT["Metre",1.0]])";
+    return fmt::format(fmt, kRearth, itsCentralLatitude.Value(), itsCentralLongitude);
   }
   else
   {
-    ret << std::setprecision(16) << R"(PROJCS["FMI_LambertEqual",)"
-        << R"(GEOGCS["FMI_Sphere",)"
-        << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
-        << R"(PRIMEM["Greenwich",0],)"
-        << R"(UNIT["Degree",0.0174532925199433]],)"
-        << R"(PROJECTION["LambertEqual"],)"
-        << R"(PARAMETER["latitude_of_origin",)" << itsTrueLatitude.Value() << "],"
-        << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
-        << R"(UNIT["Metre",1.0]])";
+    const char *fmt = R"(PROJCS["FMI_LambertEqual",)"
+                      R"(GEOGCS["FMI_Sphere",)"
+                      R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
+                      R"(PRIMEM["Greenwich",0],)"
+                      R"(UNIT["Degree",0.0174532925199433]],)"
+                      R"(PROJECTION["Lambert_Azimuthal_Equal_Area"],)"
+                      R"(PARAMETER["latitude_of_origin",{}],)"
+                      R"(PARAMETER["central_meridian",{}],)"
+                      R"(UNIT["Metre",1.0]])";
+    return fmt::format(fmt, kRearth, itsTrueLatitude.Value(), itsCentralLongitude);
   }
-  return ret.str();
 }
 
+// ----------------------------------------------------------------------
+/*!
+ * \brief Hash value
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiLambertEqualArea::HashValue() const
+{
+  std::size_t hash = NFmiAzimuthalArea::HashValue();
+  // no private members
+  return hash;
+}
 // ======================================================================

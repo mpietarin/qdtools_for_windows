@@ -12,11 +12,15 @@
 #include <cmath>
 
 //! Tyyppimääritelmä kulmayksiköille.
-typedef enum { kDeg, kRad } FmiAngleUnit;
+typedef enum
+{
+  kDeg,
+  kRad
+} FmiAngleUnit;
 
 //! Yleinen kulman määrittely perusluokka
 
-class _FMI_DLL NFmiAngle
+class NFmiAngle
 {
  public:
   //! Destruktori
@@ -72,6 +76,8 @@ class _FMI_DLL NFmiAngle
     return atan(ToRad());
   }
 
+  std::size_t HashValue() const;
+
  protected:
   //! Itse kulma asteissa.
   double itsValue;
@@ -92,7 +98,7 @@ class _FMI_DLL NFmiAngle
 
 //! Tuulen suunnan esitysluokka
 
-class _FMI_DLL NFmiWindDirection : public NFmiAngle
+class NFmiWindDirection : public NFmiAngle
 {
  public:
   //! Konstruktori suunnan perusteella
@@ -120,7 +126,7 @@ class _FMI_DLL NFmiWindDirection : public NFmiAngle
 
 //! Latitudin esitysluokka
 
-class _FMI_DLL NFmiLatitude : public NFmiAngle
+class NFmiLatitude : public NFmiAngle
 {
  public:
   //! Konstruktori
@@ -159,7 +165,7 @@ class _FMI_DLL NFmiLatitude : public NFmiAngle
 
 //! Longitudin esitysluokka
 
-class _FMI_DLL NFmiLongitude : public NFmiAngle
+class NFmiLongitude : public NFmiAngle
 {
  public:
   //! Konstruktori

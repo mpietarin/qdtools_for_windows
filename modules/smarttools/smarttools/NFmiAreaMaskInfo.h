@@ -7,13 +7,14 @@
 //
 //**********************************************************
 
-#include <newbase/NFmiAreaMask.h>
-#include <newbase/NFmiDataIdent.h>
-#include <newbase/NFmiCalculationCondition.h>
-#include <newbase/NFmiPoint.h>
 #include "NFmiSoundingIndexCalculator.h"
+#include <newbase/NFmiAreaMask.h>
+#include <newbase/NFmiCalculationCondition.h>
+#include <newbase/NFmiDataIdent.h>
+#include <newbase/NFmiPoint.h>
 
 class NFmiLevel;
+class NFmiSimpleConditionInfo;
 
 class NFmiAreaMaskInfo
 {
@@ -86,6 +87,23 @@ class NFmiAreaMaskInfo
   void SoundingParameter(FmiSoundingParameters newValue) { itsSoundingParameter = newValue; }
   int ModelRunIndex(void) const { return itsModelRunIndex; }
   void ModelRunIndex(int newValue) { itsModelRunIndex = newValue; }
+  bool AllowSimpleCondition() const;
+  NFmiAreaMask::SimpleConditionRule SimpleConditionRule() const { return itsSimpleConditionRule; }
+  void SimpleConditionRule(NFmiAreaMask::SimpleConditionRule newValue)
+  {
+    itsSimpleConditionRule = newValue;
+  }
+  boost::shared_ptr<NFmiSimpleConditionInfo> SimpleConditionInfo() const
+  {
+    return itsSimpleConditionInfo;
+  }
+  void SimpleConditionInfo(boost::shared_ptr<NFmiSimpleConditionInfo>& theSimpleConditionInfo)
+  {
+    itsSimpleConditionInfo = theSimpleConditionInfo;
+  }
+  float TimeOffsetInHours() const { return itsTimeOffsetInHours; }
+  void TimeOffsetInHours(float newValue) { itsTimeOffsetInHours = newValue; }
+
  private:
   NFmiDataIdent itsDataIdent;
   bool fUseDefaultProducer;
@@ -99,7 +117,7 @@ class NFmiAreaMaskInfo
   NFmiAreaMask::BinaryOperator itsBinaryOperator;
   NFmiInfoData::Type itsDataType;  // jos kyseessä infoVariable, tarvitaan vielä datan tyyppi, että
                                    // parametri saadaan tietokannasta (=infoOrganizerista)
-  NFmiLevel* itsLevel;             // mahd. level tieto, omistaa ja tuhoaa
+  NFmiLevel* itsLevel;  // mahd. level tieto, omistaa ja tuhoaa
   std::string itsMaskText;  // originaali teksti, mistä tämä maskinfo on tulkittu, tämä on siis vain
                             // yksi sana tai luku
   std::string itsOrigLineText;  // originaali koko rivin teksti, mistä tämä currentti sana
@@ -125,4 +143,11 @@ class NFmiAreaMaskInfo
   // jne....).
   FmiSoundingParameters itsSoundingParameter;
   int itsModelRunIndex;
+  // Onko jollekin areaMask funktiolla sallittua tai pakollista olla ns. SimpleCondition ehto
+  // lauseke, oletuksena ei.
+  NFmiAreaMask::SimpleConditionRule itsSimpleConditionRule =
+      NFmiAreaMask::SimpleConditionRule::NotAllowed;
+  // Tietyillä funktioilla voi olla simple-condition-info osio, joka talletetaan tähän
+  boost::shared_ptr<NFmiSimpleConditionInfo> itsSimpleConditionInfo;
+  float itsTimeOffsetInHours = 0;
 };

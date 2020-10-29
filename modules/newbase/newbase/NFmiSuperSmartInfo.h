@@ -20,7 +20,7 @@ class NFmiDataModifierDescriptor;
 class NFmiBitmapAreaMask;
 
 //! Undocumented
-class _FMI_DLL NFmiSuperSmartInfo : public NFmiFastQueryInfo
+class NFmiSuperSmartInfo : public NFmiFastQueryInfo
 {
  public:
   // Accesslevel määrää millä tasolla dataa haetaan kulloisellakin hetkellä SSInfosta.
@@ -277,7 +277,7 @@ class _FMI_DLL NFmiSuperSmartInfo : public NFmiFastQueryInfo
   NFmiRect itsXYMaskBoundingBox;
 
   // tähän talletetaan eri epävarmuus kertoimilla lasketut apumaskit (omistaa, tuhoaa)
-  checkedVector<NFmiBitmapAreaMask*> itsHelperBinaryMaskList;
+  std::vector<NFmiBitmapAreaMask*> itsHelperBinaryMaskList;
 
   // Tämä osaa luoda käyttäjän pyytämiä speciaali maskeja ja osaa mm.
   // hoitaa optimoinnin binaarimaskin rakentamisen.

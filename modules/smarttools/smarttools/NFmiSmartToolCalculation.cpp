@@ -30,12 +30,12 @@
 #include "NFmiSmartToolCalculation.h"
 #include "NFmiAreaMaskInfo.h"
 #include "NFmiCalculationConstantValue.h"
-#include <newbase/NFmiFastQueryInfo.h>
+#include "NFmiDictionaryFunction.h"
 #include <newbase/NFmiDataModifierClasses.h>
+#include <newbase/NFmiFastQueryInfo.h>
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
-#include "NFmiDictionaryFunction.h"
 
 using namespace std;
 
@@ -84,9 +84,7 @@ NFmiSmartToolCalculation::NFmiSmartToolCalculation(const NFmiSmartToolCalculatio
 {
 }
 
-NFmiSmartToolCalculation::~NFmiSmartToolCalculation(void)
-{
-}
+NFmiSmartToolCalculation::~NFmiSmartToolCalculation(void) {}
 
 //--------------------------------------------------------
 // Calculate
@@ -140,6 +138,59 @@ void NFmiSmartToolCalculation::Calculate(const NFmiCalculationParams &theCalcula
     theMacroParamValue.itsValue = static_cast<float>(value);
 }
 
+// Poista kommentti tästä, jos haluat lokittaa jokaisen laskennan debuggausmielessä
+// Huom! myös kirjaston CMakeLists.txt:stä pitää poistaa kommentit Catlogin kohdilta
+//#define LOG_ALL_CALCULATIONS_VERY_HEAVY_AND_SLOW 1
+
+#ifdef LOG_ALL_CALCULATIONS_VERY_HEAVY_AND_SLOW
+#include <catlog\catlog.h>
+
+static std::string MakeDebugInfoIndexString(boost::shared_ptr<NFmiFastQueryInfo> &resultInfo,
+                                            const NFmiCalculationParams &theCalculationParams)
+{
+  std::string str = "(at loc:";
+  if (resultInfo)
+    str += std::to_string(resultInfo->LocationIndex());
+  else
+    str += std::to_string(theCalculationParams.itsLocationIndex);
+  str += ", at time:";
+  if (resultInfo)
+    str += std::to_string(resultInfo->TimeIndex());
+  else
+    str += std::to_string(theCalculationParams.itsTimeIndex);
+  str += ")";
+  return str;
+}
+
+static void MakeCalculateDebugLogging_SUPER_HEAVY(NFmiSmartToolCalculation &calculation,
+                                                  boost::shared_ptr<NFmiFastQueryInfo> &resultInfo,
+                                                  const NFmiCalculationParams &theCalculationParams,
+                                                  double value,
+                                                  bool fAllowMissingValueAssignment)
+{
+  std::string loggedMessage = "Calc: '";
+  loggedMessage += calculation.GetCalculationText();
+  loggedMessage += "' => ";
+  if (value == kFloatMissing)
+  {
+    loggedMessage += "missing";
+    if (fAllowMissingValueAssignment)
+      loggedMessage += " (was allowed)";
+    else
+      loggedMessage += " (wasn't allowed)";
+  }
+  else
+  {
+    loggedMessage += std::to_string(value);
+  }
+
+  loggedMessage += " ";
+  loggedMessage += ::MakeDebugInfoIndexString(resultInfo, theCalculationParams);
+
+  CatLog::logMessage(loggedMessage, CatLog::Severity::Debug, CatLog::Category::Editing);
+}
+#endif
+
 void NFmiSmartToolCalculation::Calculate_ver2(const NFmiCalculationParams &theCalculationParams)
 {
   double value = eval_exp(theCalculationParams);
@@ -175,13 +226,17 @@ void NFmiSmartToolCalculation::Calculate_ver2(const NFmiCalculationParams &theCa
           static_cast<float>(value));  // nyt voidaan asettaa puuttuva arvo dataan
     }
   }
+
+#ifdef LOG_ALL_CALCULATIONS_VERY_HEAVY_AND_SLOW
+  ::MakeCalculateDebugLogging_SUPER_HEAVY(
+      *this, itsResultInfo, theCalculationParams, value, fAllowMissingValueAssignment);
+#endif
 }
 
 // ei ota huomioon missing arvoa, koska se pitää ottaa huomioon jo ennen tämän kutsua.
 float NFmiSmartToolCalculation::GetInsideLimitsValue(float theValue)
 {
-  if (theValue == kFloatMissing)
-    return theValue;
+  if (theValue == kFloatMissing) return theValue;
 
   if (fDoLimitCheck)
   {
@@ -211,9 +266,32 @@ void NFmiSmartToolCalculation::SetLimits(float theLowerLimit,
   }
 }
 
+#ifdef LOG_ALL_CALCULATIONS_VERY_HEAVY_AND_SLOW
+static void MakeMaskDebugLogging_SUPER_HEAVY(NFmiSmartToolCalculation &calculation,
+                                             boost::shared_ptr<NFmiFastQueryInfo> &resultInfo,
+                                             const NFmiCalculationParams &theCalculationParams,
+                                             bool value)
+{
+  std::string loggedMessage = "Condition: '";
+  loggedMessage += calculation.GetCalculationText();
+  loggedMessage += "' => ";
+  loggedMessage += value ? "true" : "false";
+  loggedMessage += " ";
+  loggedMessage += ::MakeDebugInfoIndexString(resultInfo, theCalculationParams);
+
+  CatLog::logMessage(loggedMessage, CatLog::Severity::Debug, CatLog::Category::Editing);
+}
+#endif
+
 bool NFmiSmartToolCalculation::IsMasked(const NFmiCalculationParams &theCalculationParams)
 {
-  return bin_eval_exp(theCalculationParams);
+  auto returnValue = bin_eval_exp(theCalculationParams);
+
+#ifdef LOG_ALL_CALCULATIONS_VERY_HEAVY_AND_SLOW
+  ::MakeMaskDebugLogging_SUPER_HEAVY(*this, itsResultInfo, theCalculationParams, returnValue);
+#endif
+
+  return returnValue;
 }
 
 void NFmiSmartToolCalculation::AddCalculation(const boost::shared_ptr<NFmiAreaMask> &theCalculation)
@@ -347,12 +425,10 @@ void NFmiSmartToolCalculation::eval_exp5(double &result,
                                          const NFmiCalculationParams &theCalculationParams)
 {
   NFmiAreaMask::CalculationOperator op = token->GetCalculationOperator();
-  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub)
-    get_token();
+  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub) get_token();
   eval_exp6(result, theCalculationParams);
 
-  if (op == NFmiAreaMask::Sub && result != kFloatMissing)
-    result = -result;
+  if (op == NFmiAreaMask::Sub && result != kFloatMissing) result = -result;
 }
 
 #if 0
@@ -440,8 +516,8 @@ void NFmiSmartToolCalculation::eval_ThreeArgumentFunction(
         if (endTime.DifferenceInMinutes(startTime) / usedTimeResolutionInMinutes > 250)
           throw runtime_error(::GetDictionaryString("SmartToolCalculationErrorTimeCalcOverRun"));
         // 5. funktiosta riippuva datamodifier min, max jne.
-        boost::shared_ptr<NFmiDataModifier> modifier =
-            CreateIntegrationFuction(func);  // tämä palauttaa aina jotain, tai heittää poikkeuksen
+        boost::shared_ptr<NFmiDataModifier> modifier = NFmiInfoAreaMask::CreateIntegrationFuction(
+            func);  // tämä palauttaa aina jotain, tai heittää poikkeuksen
         try
         {
           NFmiCalculationParams modifiedCalculationParams(theCalculationParams);
@@ -498,8 +574,7 @@ static float GetCurrentHeightStep(float theHeight)
 template <typename T>
 static bool IsEqualEnough(T value1, T value2, T usedEpsilon)
 {
-  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon)
-    return true;
+  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon) return true;
   return false;
 }
 void NFmiSmartToolCalculation::eval_ThreeArgumentFunctionZ(
@@ -531,8 +606,8 @@ void NFmiSmartToolCalculation::eval_ThreeArgumentFunctionZ(
       if ((argument2 - argument1) > 35000)
         throw runtime_error(::GetDictionaryString("SmartToolCalculationErrorHeightCalcOverRun"));
       // 5. funktiosta riippuva datamodifier min, max jne.
-      boost::shared_ptr<NFmiDataModifier> modifier =
-          CreateIntegrationFuction(func);  // tämä palauttaa aina jotain, tai heittää poikkeuksen
+      boost::shared_ptr<NFmiDataModifier> modifier = NFmiInfoAreaMask::CreateIntegrationFuction(
+          func);  // tämä palauttaa aina jotain, tai heittää poikkeuksen
       try
       {
         fUseHeightCalculation = true;
@@ -584,32 +659,15 @@ void NFmiSmartToolCalculation::eval_ThreeArgumentFunctionZ(
   }
 }
 
-// Muista jos tulee päivityksiä, smanlainen funktio löytyy myös NFmiSmartToolModifier-luokasta
-boost::shared_ptr<NFmiDataModifier> NFmiSmartToolCalculation::CreateIntegrationFuction(
-    NFmiAreaMask::FunctionType func)
+#include <random>
+namespace
 {
-  boost::shared_ptr<NFmiDataModifier> modifier;
-  switch (func)
-  {
-    case NFmiAreaMask::Avg:
-      modifier = boost::shared_ptr<NFmiDataModifier>(new NFmiDataModifierAvg());
-      break;
-    case NFmiAreaMask::Min:
-      modifier = boost::shared_ptr<NFmiDataModifier>(new NFmiDataModifierMin());
-      break;
-    case NFmiAreaMask::Max:
-      modifier = boost::shared_ptr<NFmiDataModifier>(new NFmiDataModifierMax());
-      break;
-    case NFmiAreaMask::Sum:
-      modifier = boost::shared_ptr<NFmiDataModifier>(new NFmiDataModifierSum());
-      break;
-    // HUOM!!!! Tee WAvg-modifier myös, joka on peritty Avg-modifieristä ja tee joku kerroin juttu
-    // painotukseen.
-    default:
-      throw runtime_error(::GetDictionaryString("SmartToolCalculationErrorIntegrationFunction"));
-  }
-  return modifier;
-}
+std::random_device rd;
+std::mt19937 mt(rd());
+std::uniform_real_distribution<double> uniformDistribution0to1(0, 1);
+
+double GetRandomNumber(double maxValue) { return maxValue * uniformDistribution0to1(mt); }
+}  // namespace
 
 // HUOM! trigonometriset funktiot tehdään asteille, joten annettu luku pitää konvertoida
 // c++ funktioille jotka odottavat kulmaa radiaaneille.
@@ -688,8 +746,8 @@ void NFmiSmartToolCalculation::eval_math_function(double &result, int theFunctio
         result = fabs(result);
         break;
       case NFmiAreaMask::Rand:
-        result = (static_cast<double>(rand()) / RAND_MAX) *
-                 result;  // palauttaa luvun 0 ja result:in väliltä
+        // palauttaa luvun 0 ja result:in väliltä
+        result = ::GetRandomNumber(result);
         break;
       default:
         throw runtime_error(::GetDictionaryString("SmartToolCalculationErrorMathFunction") + ":\n" +
@@ -698,10 +756,35 @@ void NFmiSmartToolCalculation::eval_math_function(double &result, int theFunctio
   }
 }
 
+bool NFmiSmartToolCalculation::IsCrossSectionVariableCase(
+    const NFmiCalculationParams &theCalculationParams)
+{
+  return (theCalculationParams.fCrossSectionCase &&
+          token->GetDataType() == NFmiInfoData::Type::kScriptVariableData);
+}
+
+// Oletus: ensin tarkistetaan IsCrossSectionVariableCase metodilla onko tarvetta tälle operaatiolle.
+double NFmiSmartToolCalculation::CrossSectionVariableCaseValue(
+    const NFmiCalculationParams &theCalculationParams)
+{
+  // Erikoistapaus: poikkileikkaus macroParam laskuissa var -muuttuja pitää ottaa vain suoraan
+  // infosta ilman mitään interpolaatioita
+  auto info = token->Info();
+  if (info)
+  {
+    info->TimeIndex(theCalculationParams.itsTimeIndex);
+    info->LocationIndex(theCalculationParams.itsLocationIndex);
+    return info->FloatValue();
+  }
+  return kFloatMissing;  // Ei pitäisi mennä tänne
+}
+
 void NFmiSmartToolCalculation::atom(double &result,
                                     const NFmiCalculationParams &theCalculationParams)
 {
-  if (fUseHeightCalculation)
+  if (IsCrossSectionVariableCase(theCalculationParams))
+    result = CrossSectionVariableCaseValue(theCalculationParams);
+  else if (fUseHeightCalculation)
     result = token->HeightValue(itsHeightValue, theCalculationParams);
   else if (fUsePressureLevelCalculation)
     result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
@@ -922,12 +1005,10 @@ void NFmiSmartToolCalculation::bin_eval_exp5(bool &maskresult,
                                              const NFmiCalculationParams &theCalculationParams)
 {
   NFmiAreaMask::CalculationOperator op = token->GetCalculationOperator();
-  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub)
-    get_token();
+  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub) get_token();
   bin_eval_exp6(maskresult, result, theCalculationParams);
 
-  if (op == NFmiAreaMask::Sub && result != kFloatMissing)
-    result = -result;
+  if (op == NFmiAreaMask::Sub && result != kFloatMissing) result = -result;
 }
 
 void NFmiSmartToolCalculation::CalcThreeArgumentFunction(
@@ -1037,7 +1118,9 @@ void NFmiSmartToolCalculation::bin_atom(bool &maskresult,
                                         double &result,
                                         const NFmiCalculationParams &theCalculationParams)
 {
-  if (fUseHeightCalculation)
+  if (IsCrossSectionVariableCase(theCalculationParams))
+    result = CrossSectionVariableCaseValue(theCalculationParams);
+  else if (fUseHeightCalculation)
     result = token->HeightValue(itsHeightValue, theCalculationParams);
   else if (fUsePressureLevelCalculation)
     result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
@@ -1054,7 +1137,8 @@ void NFmiSmartToolCalculation::CheckIfModularParameter(void)
   itsCircularValueModulor = kFloatMissing;
   if (itsResultInfo)
   {
-    if (itsResultInfo->Param().GetParamIdent() == kFmiWindDirection)
+    auto paramName = itsResultInfo->Param().GetParamIdent();
+    if (paramName == kFmiWindDirection || paramName == kFmiWaveDirection)
     {
       fCircularValue = true;
       itsCircularValueModulor = 360;
@@ -1074,10 +1158,10 @@ double NFmiSmartToolCalculation::FixCircularValues(double theValue)
   return theValue;
 }
 
-checkedVector<boost::shared_ptr<NFmiSmartToolCalculation> > NFmiSmartToolCalculation::DoShallowCopy(
-    const checkedVector<boost::shared_ptr<NFmiSmartToolCalculation> > &theCalculationVector)
+std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > NFmiSmartToolCalculation::DoShallowCopy(
+    const std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > &theCalculationVector)
 {
-  checkedVector<boost::shared_ptr<NFmiSmartToolCalculation> > returnVector(
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > returnVector(
       theCalculationVector.size());
   for (size_t i = 0; i < theCalculationVector.size(); i++)
     returnVector[i] = boost::shared_ptr<NFmiSmartToolCalculation>(

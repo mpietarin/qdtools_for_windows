@@ -64,6 +64,7 @@
 // ======================================================================
 
 #include "NFmiKKJArea.h"
+#include <boost/functional/hash.hpp>
 #include <cmath>
 #include <cstdlib>
 #include <stdexcept>
@@ -165,13 +166,13 @@ NFmiKKJArea::NFmiKKJArea(const NFmiPoint &theBottomLeftLatLon,
 }
 
 /*!
-* Constructor
-*
-* \param theRadialRangeInMeters Undocumented
-* \param theCenterLatLon Undocumented
-* \param theTopLeftXY Undocumented
-* \param theBottomRightXY Undocumented
-*/
+ * Constructor
+ *
+ * \param theRadialRangeInMeters Undocumented
+ * \param theCenterLatLon Undocumented
+ * \param theTopLeftXY Undocumented
+ * \param theBottomRightXY Undocumented
+ */
 NFmiKKJArea::NFmiKKJArea(double /* theRadialRangeInMeters */,
                          const NFmiPoint & /* theCenterLatLon */,
                          const NFmiPoint &theTopLeftXY,
@@ -670,4 +671,21 @@ const std::string NFmiKKJArea::WKT() const
   throw std::runtime_error("WKT not available for generic KKJ projections");
 }
 
+// ----------------------------------------------------------------------
+/*!
+ * \brief Hash value
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiKKJArea::HashValue() const
+{
+  std::size_t hash = NFmiArea::HashValue();
+  boost::hash_combine(hash, itsTopRightLatLon.HashValue());
+  boost::hash_combine(hash, itsBottomLeftLatLon.HashValue());
+  // no need to handle a, p, b, e, dn, dn2, dn3, dn4, a1, h1 or h2 here
+  boost::hash_combine(hash, boost::hash_value(itsXScaleFactor));
+  boost::hash_combine(hash, boost::hash_value(itsYScaleFactor));
+  boost::hash_combine(hash, itsWorldRect.HashValue());
+  return hash;
+}
 // ======================================================================

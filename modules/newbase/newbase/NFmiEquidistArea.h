@@ -12,7 +12,7 @@
 
 //! Undocumented
 
-class _FMI_DLL NFmiEquidistArea : public NFmiAzimuthalArea
+class NFmiEquidistArea : public NFmiAzimuthalArea
 {
  public:
   virtual ~NFmiEquidistArea(void);
@@ -66,6 +66,8 @@ class _FMI_DLL NFmiEquidistArea : public NFmiAzimuthalArea
   virtual const char* ClassName(void) const;
   const std::string AreaStr(void) const;
   virtual const std::string WKT() const;
+
+  std::size_t HashValue() const;
 
  protected:
   virtual double K(const double delta) const;

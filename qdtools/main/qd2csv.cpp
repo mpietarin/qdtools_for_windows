@@ -19,8 +19,8 @@
 // ======================================================================
 
 #include <iostream>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiStreamQueryData.h>
@@ -70,8 +70,10 @@ const string makename(const NFmiFastQueryInfo& theQ)
       break;
     case kFmiHeight:
       name << "_H" << level.LevelValue();
+      break;
     case kFmiHybridLevel:
       name << "_L" << level.LevelValue();
+      break;
     case kFmi:
     case kFmiAnyLevelType:
       break;

@@ -64,7 +64,7 @@ class tests : public tframe::tests
   void test(void) { TEST(name); }
 };
 
-}  // namespace NFmiTypeNameTraitstest
+}  // namespace NFmiTypeNameTraitsTest
 
 //! The main program
 int main(void)

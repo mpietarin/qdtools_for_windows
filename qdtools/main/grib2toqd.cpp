@@ -43,6 +43,7 @@
 #include <newbase/NFmiAreaFactory.h>
 #include <newbase/NFmiCmdLine.h>
 #include <newbase/NFmiCommentStripper.h>
+#include <newbase/NFmiDataMatrixUtils.h>
 #include <newbase/NFmiFileString.h>
 #include <newbase/NFmiFileSystem.h>
 #include <newbase/NFmiGrid.h>
@@ -67,14 +68,24 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include <stdlib.h>
 #include <functional>
 #include <iomanip>
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <stdlib.h>
 
 using namespace std;
+
+void check_jscan_direction(grib_handle *theGribHandle)
+{
+  long direction = 0;
+  int status = grib_get_long(theGribHandle, "jScansPositively", &direction);
+  if (status != 0) return;
+  if (direction == 0)
+    throw std::runtime_error("GRIBs with a negative j-scan direction are not supported");
+  return;
+}
 
 // template<typename T>
 struct PointerDestroyer
@@ -193,6 +204,7 @@ class TotalQDataCollector
 
   Container &TotalGeneratedQDatas(void) { return itsTotalGeneratedQDatas; }
   int AddCount(void) const { return itsAddCount; }
+
  private:
   MutexType itsMutex;
   int itsAddCount;                    // kuinka monta 'onnistunutta' data lisäystä on tehty
@@ -349,7 +361,7 @@ static boost::shared_ptr<NFmiGrid> GetGridFromProjectionStr(string &theProjectio
     }
 
     boost::shared_ptr<NFmiArea> area = NFmiAreaFactory::Create(areaStr);
-    checkedVector<double> values = NFmiStringTools::Split<checkedVector<double> >(gridStr, ",");
+    std::vector<double> values = NFmiStringTools::Split<std::vector<double> >(gridStr, ",");
     if (values.size() != 2)
       throw runtime_error("Given GridSize was invlid, has to be two numbers (e.g. x,y).");
     NFmiPoint gridSize(values[0], values[1]);
@@ -1078,7 +1090,7 @@ static void ConvertSingleGribFile(const GribFilterOptions &theGribFilterOptionsI
   GribFilterOptions gribFilterOptionsLocal = theGribFilterOptionsIn;
   gribFilterOptionsLocal.itsInputFileNameStr = theGribFileName;
   if ((gribFilterOptionsLocal.itsInputFile =
-           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == NULL)
+           ::fopen(gribFilterOptionsLocal.itsInputFileNameStr.c_str(), "rb")) == nullptr)
   {
     cerr << "could not open input file: " << gribFilterOptionsLocal.itsInputFileNameStr << endl;
     return;
@@ -1318,6 +1330,9 @@ static NFmiArea *CreateLatlonArea(grib_handle *theGribHandle, bool doAtlanticFix
     int iScansNegativelyStatus =
         grib_get_long(theGribHandle, "iScansNegatively", &iScansNegatively);
 
+    // Not needed:
+    // check_jscan_direction(theGribHandle);
+
     if (doAtlanticFix && Lo1 == 0 && (Lo2 < 0 || Lo2 > 350))
     {
       Lo1 = -180;
@@ -1395,6 +1410,9 @@ static NFmiArea *CreateMercatorArea(grib_handle *theGribHandle)
 
   else if (status1 == 0 && status2 == 0)
   {
+    // Not needed:
+    // check_jscan_direction(theGribHandle);
+
     long nx = 0;
     long ny = 0;
     int status9 = ::grib_get_long(theGribHandle, "numberOfPointsAlongAParallel", &nx);
@@ -1463,6 +1481,9 @@ static NFmiArea *CreatePolarStereographicArea(grib_handle *theGribHandle)
 
   if (!badLa1 && !badLo1 && !badLov && !usedBadLad && !badNx && !badNy && !badDx && !badDy)
   {
+    // Has to be done, or corners should be recalculated:
+    // check_jscan_direction(theGribHandle);
+
     NFmiPoint bottom_left(Lo1, La1);
     NFmiPoint top_left_xy(0, 0);
     NFmiPoint top_right_xy(1, 1);
@@ -2095,8 +2116,8 @@ static void ProjectData(GridRecordData *theGridRecordData,
         locationCacheMatrix[targetGrid.Index() % targetXSize][targetGrid.Index() / targetXSize];
     int destX = counter % theGridRecordData->itsGrid.itsNX;
     int destY = counter / theGridRecordData->itsGrid.itsNX;
-    theGridRecordData->itsGridData[destX][destY] =
-        theOrigValues.InterpolatedValue(locCache.itsGridPoint, relativeRect, param, true);
+    theGridRecordData->itsGridData[destX][destY] = DataMatrixUtils::InterpolatedValue(
+        theOrigValues, locCache.itsGridPoint, relativeRect, param, true);
   }
 }
 
@@ -2213,7 +2234,7 @@ static void ChangeParamSettingsIfNeeded(vector<ParamChangeItem> &theParamChangeT
       }
       else if (paramChangeItem.itsOriginalParamId ==
                    static_cast<long>(theGribData->itsParam.GetParamIdent()) &&
-               paramChangeItem.itsLevel == NULL)
+               paramChangeItem.itsLevel == nullptr)
       {
         if (verbose)
         {
@@ -2323,7 +2344,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
 
   try
   {
-    grib_handle *gribHandle = NULL;
+    grib_handle *gribHandle = nullptr;
     grib_context *gribContext = grib_context_get_default();
 
     int err = 0;
@@ -2333,7 +2354,7 @@ void ConvertGrib2QData(GribFilterOptions &theGribFilterOptions)
     NFmiMetTime firstValidTime;
 
     while ((gribHandle = grib_handle_new_from_file(
-                gribContext, theGribFilterOptions.itsInputFile, &err)) != NULL)
+                gribContext, theGribFilterOptions.itsInputFile, &err)) != nullptr)
     {
       if (err != GRIB_SUCCESS)
         throw runtime_error("Failed to open grib handle in file  " +

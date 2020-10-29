@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7.1)
+cmake_minimum_required(VERSION 3.14.4)
 project(qdtools)
 
 set(
@@ -17,7 +17,15 @@ set(
 )
 
 add_subdirectory(
+	main-cmake-lists/flash2qd
+)
+
+add_subdirectory(
 	main-cmake-lists/qdclimatologydatasmoother
+)
+
+add_subdirectory(
+	main-cmake-lists/qdcrop
 )
 
 add_subdirectory(
@@ -29,5 +37,13 @@ add_subdirectory(
 )
 
 add_subdirectory(
-	main-cmake-lists/qdversionchange
+	main-cmake-lists/qdsoundingindex
+)
+
+add_subdirectory(
+	main-cmake-lists/qdinterpolatetime
+)
+
+add_subdirectory(
+	main-cmake-lists/qddiff
 )

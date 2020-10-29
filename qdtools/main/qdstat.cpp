@@ -1,34 +1,39 @@
 #include "TimeTools.h"
-
+#include <boost/algorithm/string.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/program_options.hpp>
+#include <fmt/format.h>
+#include <macgyver/StringConversion.h>
+#include <macgyver/TimeParser.h>
 #include <newbase/NFmiEnumConverter.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiMetTime.h>
 #include <newbase/NFmiParameterName.h>
 #include <newbase/NFmiQueryData.h>
-
-#include <macgyver/StringConversion.h>
-#include <macgyver/TimeParser.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/program_options.hpp>
-
 #include <cmath>
 #include <iomanip>
-#include <list>
 #include <limits>
+#include <list>
 #include <map>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
+#ifdef UNIX
+#include <sys/ioctl.h>
+#endif
+
 // This is global so that we can not just parse but also print errors
 NFmiEnumConverter converter;
+
+const int column_width = 10;
+
+const std::set<std::string> ignored_params{"WindVectorMS"};
+
+bool ignore_param(const std::string& p) { return (ignored_params.find(p) != ignored_params.end()); }
 
 // ----------------------------------------------------------------------
 /*!
@@ -38,46 +43,26 @@ NFmiEnumConverter converter;
 
 struct Options
 {
-  Options();
+  Options() = default;
 
-  std::string infile;
+  std::string infile = "-";
 
-  bool all_times;
-  bool all_stations;
-  bool percentages;
-  bool distribution;
-  std::size_t bins;
-  std::size_t barsize;
-  double ignored_value;
+  bool all_times = false;
+  bool all_stations = false;
+  bool all_levels = false;
+  bool percentages = false;
+  bool distribution = false;
+  std::size_t bins = 20;
+  std::size_t barsize = 60;
+  double ignored_value = std::numeric_limits<double>::quiet_NaN();  // never compares ==
 
   std::set<boost::posix_time::ptime> these_times;
   std::set<FmiParameterName> these_params;
   std::set<int> these_stations;
+  std::set<float> these_levels;
 };
 
 Options options;
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Default options
- */
-// ----------------------------------------------------------------------
-
-Options::Options()
-    : infile("-"),
-      all_times(false),
-      all_stations(false),
-      percentages(false),
-      distribution(false),
-      bins(20),
-      barsize(60),
-      ignored_value(std::numeric_limits<double>::quiet_NaN())  // never compares ==
-      ,
-      these_times(),
-      these_params(),
-      these_stations()
-{
-}
 
 // ----------------------------------------------------------------------
 /*!
@@ -94,7 +79,7 @@ std::set<boost::posix_time::ptime> parse_times(const std::string& str)
   std::list<std::string> parts;
   boost::algorithm::split(parts, str, boost::is_any_of(","));
 
-  BOOST_FOREACH (const auto& stamp, parts)
+  for (const auto& stamp : parts)
   {
     ret.insert(Fmi::TimeParser::parse(stamp));
   }
@@ -117,7 +102,7 @@ std::set<FmiParameterName> parse_params(const std::string& str)
   std::list<std::string> parts;
   boost::algorithm::split(parts, str, boost::is_any_of(","));
 
-  BOOST_FOREACH (const auto& param, parts)
+  for (const auto& param : parts)
   {
     FmiParameterName p = FmiParameterName(converter.ToEnum(param));
     if (p == kFmiBadParameter) throw std::runtime_error("Bad parameter name: '" + param + "'");
@@ -142,9 +127,32 @@ std::set<int> parse_stations(const std::string& str)
   std::list<std::string> parts;
   boost::algorithm::split(parts, str, boost::is_any_of(","));
 
-  BOOST_FOREACH (const auto& str, parts)
+  for (const auto& str : parts)
   {
     ret.insert(Fmi::stoi(str));
+  }
+
+  return ret;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Parse a list of levels
+ */
+// ----------------------------------------------------------------------
+
+std::set<float> parse_levels(const std::string& str)
+{
+  std::set<float> ret;
+
+  if (str.empty()) return ret;
+
+  std::list<std::string> parts;
+  boost::algorithm::split(parts, str, boost::is_any_of(","));
+
+  for (const auto& str : parts)
+  {
+    ret.insert(Fmi::stof(str));
   }
 
   return ret;
@@ -165,12 +173,22 @@ bool parse_options(int argc, char* argv[])
   std::string opt_stamps;
   std::string opt_params;
   std::string opt_stations;
+  std::string opt_levels;
 
-  po::options_description desc("Available options");
+#ifdef UNIX
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  const int desc_width = (wsz.ws_col < 80 ? 80 : wsz.ws_col);
+#else
+  const int desc_width = 100;
+#endif
+
+  po::options_description desc("Available options", desc_width);
   desc.add_options()("help,h", "print out help message")("version,V", "display version number")(
       "infile,i", po::value(&options.infile), "input querydata")(
       "alltimes,T", po::bool_switch(&options.all_times), "for all times")(
       "allstations,W", po::bool_switch(&options.all_stations), "for all stations")(
+      "allevels,Z", po::bool_switch(&options.all_levels), "for all levels")(
       "percentages,r",
       po::bool_switch(&options.percentages),
       "print percentages instead of counts")(
@@ -180,7 +198,8 @@ bool parse_options(int argc, char* argv[])
       "barsize,B", po::value(&options.barsize), "width of the bar distribution")(
       "times,t", po::value(&opt_stamps), "times to process")(
       "params,p", po::value(&opt_params), "parameters to process")(
-      "stations,w", po::value(&opt_stations), "stations to process");
+      "stations,w", po::value(&opt_stations), "stations to process")(
+      "levels,z", po::value(&opt_levels), "levels to process");
 
   po::positional_options_description p;
   p.add("infile", 1);
@@ -192,18 +211,18 @@ bool parse_options(int argc, char* argv[])
 
   if (opt.count("version") != 0)
   {
-    std::cout << "qdstat v1.0 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
+    std::cout << "qdstat v1.1 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
   }
 
   if (opt.count("help"))
   {
-    std::cout << "Usage: qdstat [options] querydata" << std::endl
-              << "       qdstat -i querydata [options]" << std::endl
-              << "       qdstat [options] < querydata" << std::endl
-              << "       cat querydata | qdstat [options]" << std::endl
-              << std::endl
-              << "Calculate statistics on querydata values." << std::endl
-              << std::endl
+    std::cout << "Usage: qdstat [options] querydata\n"
+                 "       qdstat -i querydata [options]\n"
+                 "       qdstat [options] < querydata\n"
+                 "       cat querydata | qdstat [options]\n"
+                 "\n"
+                 "Calculate statistics on querydata values.\n"
+                 "\n"
               << desc << std::endl;
     return false;
   }
@@ -219,6 +238,7 @@ bool parse_options(int argc, char* argv[])
   options.these_times = parse_times(opt_stamps);
   options.these_params = parse_params(opt_params);
   options.these_stations = parse_stations(opt_stations);
+  options.these_levels = parse_levels(opt_levels);
 
   // Check invalid values
 
@@ -233,6 +253,9 @@ bool parse_options(int argc, char* argv[])
 
   if (options.all_stations && !options.these_stations.empty())
     throw std::runtime_error("Cannot use options -W and -w simultaneously");
+
+  if (options.all_levels && !options.these_levels.empty())
+    throw std::runtime_error("Cannot use options -Z and -z simultaneously");
 
   return true;
 }
@@ -312,10 +335,12 @@ void Stats::operator()(double value)
 std::string Stats::header()
 {
   std::ostringstream out;
-  out << std::setw(10) << std::right << "Min" << std::setw(10) << std::right << "Mean"
-      << std::setw(10) << std::right << "Max" << std::setw(10) << std::right << "Count"
-      << std::setw(10) << std::right << "Valid" << std::setw(10) << std::right << "Miss"
-      << std::setw(10) << std::right << "NaN" << std::setw(10) << std::right << "Inf";
+  out << std::setw(column_width + 1) << std::right << "Min" << std::setw(column_width + 1)
+      << std::right << "Mean" << std::setw(column_width + 1) << std::right << "Max"
+      << std::setw(column_width + 1) << std::right << "Count" << std::setw(column_width + 1)
+      << std::right << "Valid" << std::setw(column_width + 1) << std::right << "Miss"
+      << std::setw(column_width) << std::right << "NaN" << std::setw(column_width) << std::right
+      << "Inf";
   return out.str();
 }
 
@@ -324,6 +349,7 @@ const char* Stats::desc(double value) const
   switch (itsParam)
   {
     case kFmiPrecipitationForm:
+    case kFmiPotentialPrecipitationForm:
     {
       switch (static_cast<int>(value))
       {
@@ -341,6 +367,10 @@ const char* Stats::desc(double value) const
           return " freezing rain";
         case 6:
           return " hail";
+        case 7:
+          return " snow grains";
+        case 8:
+          return " ice pellets";
         default:
           return "";
       }
@@ -349,6 +379,20 @@ const char* Stats::desc(double value) const
     {
       switch (static_cast<int>(value))
       {
+        case 1:
+          return " large scale";
+        case 2:
+          return " convetive";
+        default:
+          return "";
+      }
+    }
+    case kFmiPotentialPrecipitationType:
+    {
+      switch (static_cast<int>(value))
+      {
+        case 0:
+          return " large scale or convective";
         case 1:
           return " large scale";
         case 2:
@@ -367,6 +411,8 @@ const char* Stats::desc(double value) const
           return " moderate fog";
         case 2:
           return " dense fog";
+        case 3:
+          return " sandstorm";
         default:
           return "";
       }
@@ -745,9 +791,190 @@ const char* Stats::desc(double value) const
           return "";
       }
     }
+    case kFmiSmartSymbol:
+    {
+      switch (static_cast<int>(value))
+      {
+        case 10000000:
+          return "clear";
+        case 10000020:
+          return "mostly clear";
+        case 10000030:
+          return "partly cloudy";
+        case 10000060:
+          return "mostly cloudy";
+        case 10000080:
+          return "overcast";
+        case 10000100:
+          return "fog";
+        case 11000000:
+          return "isolated thundershowers";
+        case 11000060:
+          return "scattered thundershowers";
+        case 11000080:
+          return "thundershowers";
+        case 10121000:
+          return "isolated showers";
+        case 10121060:
+          return "scattered showers";
+        case 10121080:
+          return "showers";
+        case 10401000:
+          return "freezing drizzle";
+        case 10501000:
+          return "freezing rain";
+        case 10001000:
+          return "drizzle";
+        case 10111000:
+          return "periods of light rain";
+        case 10111060:
+          return "periods of light rain";
+        case 10111080:
+          return "light rain";
+        case 10113000:
+          return "periods of moderate rain";
+        case 10113060:
+          return "periods of moderate rain";
+        case 10113080:
+          return "moderate rain";
+        case 10116000:
+          return "periods of heavy rain";
+        case 10116060:
+          return "periods of heavy rain";
+        case 10116080:
+          return "heavy rain";
+        case 10201000:
+          return "isolated light sleet showers";
+        case 10201060:
+          return "scattered light sleet showers";
+        case 10201080:
+          return "light sleet";
+        case 10203000:
+          return "isolated moderate sleet showers";
+        case 10203060:
+          return "scattered moderate sleet showers";
+        case 10203080:
+          return "moderate sleet";
+        case 10204000:
+          return "isolated heavy sleet showers";
+        case 10204060:
+          return "scattered heavy sleet showers";
+        case 10204080:
+          return "heavy sleet";
+        case 10301000:
+          return "isolated light snow showers";
+        case 10301060:
+          return "scattered light snow showers";
+        case 10301080:
+          return "light snowfall";
+        case 10303000:
+          return "isolated moderate snow showers";
+        case 10303060:
+          return "scattered moderate snow showers";
+        case 10303080:
+          return "moderate snowfall";
+        case 10304000:
+          return "isolated heavy snow showers";
+        case 10304060:
+          return "scattered heavy snow showers";
+        case 10304080:
+          return "heavy snowfall";
+        case 10601000:
+          return "isolated hail showers";
+        case 10601060:
+          return "scattered hail showers";
+        case 10601080:
+          return "hail showers";
+        default:
+          return "";
+      }
+    }
     default:
       return "";
   }
+}
+
+// Select nice step size for binning
+
+void autotick(double theRange, std::size_t maxbins, double& tick, int& precision)
+{
+  if (theRange == 0)
+  {
+    tick = 0;
+    precision = 0;
+  }
+  else
+  {
+    double xx = theRange / maxbins;
+    double xlog = log10(xx);
+    int ilog = static_cast<int>(xlog);
+    if (xlog < 0) --ilog;
+    precision = -ilog;
+
+    double pwr = pow(10, ilog);
+    double frac = xx / pwr;
+    if (frac <= 2)
+      tick = 2 * pwr;
+    else if (frac <= 5)
+      tick = 5 * pwr;
+    else
+    {
+      tick = 10 * pwr;
+      --precision;
+    }
+    // Handle tick >= 10
+    precision = std::max(0, precision);
+  }
+}
+
+// Autoscale binning to get nice min/max values
+void autoscale(const double theMin,
+               const double theMax,
+               std::size_t maxbins,
+               double& newmin,
+               double& newmax,
+               double& tick,
+               int& precision)
+{
+  newmin = theMin;
+  newmax = theMax;
+
+  if (theMin == theMax)
+  {
+    newmin = std::floor(theMin);
+    if (newmin == theMin) newmin -= 1;
+    newmax = std::ceil(theMax);
+    if (newmax == theMax) newmax += 1;
+    tick = 1;
+    precision = 0;
+  }
+  else
+  {
+    autotick(newmax - newmin, maxbins, tick, precision);
+    newmin = tick * std::floor(newmin / tick);
+    newmax = tick * std::ceil(newmax / tick);
+  }
+}
+
+// Estimate precision for a parameter with a small number of different values
+int estimate_precision(const std::map<double, std::size_t>& theCounts)
+{
+  int precision = 0;
+  for (const auto& value_count : theCounts)
+  {
+    double value = value_count.first;
+    if (std::floor(value) != value)
+    {
+      // We assume some parameters may have values with steps of 0.1 or 0.01, but nothing
+      // smaller than that. This assumption works also for Precipitation1h when packed
+      // into a WeatherAndCloudiness parameter - all the printed values are unique.
+      // Checking whether the accuracy is 10**N for some negative N does not seem to
+      // be worth the trouble.
+      precision = 2;
+    }
+  }
+
+  return precision;
 }
 
 std::string Stats::report() const
@@ -759,44 +986,54 @@ std::string Stats::report() const
 
   if (options.percentages)
   {
-    out << std::fixed << std::setprecision(2) << std::setw(10) << std::right << itsMin
-        << std::setprecision(2) << std::setw(10) << std::right << mean << std::setprecision(2)
-        << std::setw(10) << std::right << itsMax << std::setw(10) << std::right << itsCount
-        << std::setw(10) << std::right << 100.0 * itsValidCount / itsCount << std::setw(10)
-        << std::right << 100.0 * itsMissingCount / itsCount << std::setw(10) << std::right
-        << 100.0 * itsNaNCount / itsCount << std::setw(10) << std::right
+    out << std::fixed << std::setprecision(2) << ' ' << std::setw(column_width) << std::right
+        << itsMin << std::setprecision(2) << ' ' << std::setw(column_width) << std::right << mean
+        << std::setprecision(2) << ' ' << std::setw(column_width) << std::right << itsMax
+        << std::setw(column_width + 1) << std::right << itsCount << std::setw(column_width + 1)
+        << std::right << 100.0 * itsValidCount / itsCount << std::setw(column_width + 1)
+        << std::right << 100.0 * itsMissingCount / itsCount << std::setw(column_width) << std::right
+        << 100.0 * itsNaNCount / itsCount << std::setw(column_width) << std::right
         << 100.0 * itsInfCount / itsCount;
   }
   else
   {
-    out << std::fixed << std::setprecision(2) << std::setw(10) << std::right << itsMin
-        << std::setprecision(2) << std::setw(10) << std::right << mean << std::setprecision(2)
-        << std::setw(10) << std::right << itsMax << std::setw(10) << std::right << itsCount
-        << std::setw(10) << std::right << itsValidCount << std::setw(10) << std::right
-        << itsMissingCount << std::setw(10) << std::right << itsNaNCount << std::setw(10)
-        << std::right << itsInfCount;
+    out << std::fixed << std::setprecision(2) << ' ' << std::setw(column_width) << std::right
+        << itsMin << std::setprecision(2) << ' ' << std::setw(column_width) << std::right << mean
+        << std::setprecision(2) << ' ' << std::setw(column_width) << std::right << itsMax
+        << std::setw(column_width + 1) << std::right << itsCount << std::setw(column_width + 1)
+        << std::right << itsValidCount << std::setw(column_width + 1) << std::right
+        << itsMissingCount << std::setw(column_width) << std::right << itsNaNCount
+        << std::setw(column_width) << std::right << itsInfCount;
   }
 
   if (!itsCounts.empty())
   {
     out << std::endl << std::endl;
 
-    if (itsCounts.size() < options.bins)
+    // We need special handling if the number of unique values is smallish. Usually this
+    // happens only for enumerated values. 50 is enough for example to cover wind direction
+    // in steps of 10 degrees.
+
+    const int max_parameter_values = 50;
+
+    if (itsCounts.size() < options.bins || itsCounts.size() < max_parameter_values)
     {
-      BOOST_FOREACH (const auto& value_count, itsCounts)
+      const int precision = estimate_precision(itsCounts);
+
+      for (const auto& value_count : itsCounts)
       {
         double value = value_count.first;
         std::size_t count = value_count.second;
 
         if (options.percentages)
         {
-          out << std::fixed << std::setprecision(2) << std::setw(10) << std::right << value
-              << std::setw(10) << std::right << 100.0 * count / itsValidCount;
+          out << std::fixed << std::setprecision(precision) << std::setw(10) << std::right << value
+              << std::setw(column_width + 1) << std::right << 100.0 * count / itsValidCount;
         }
         else
         {
-          out << std::fixed << std::setprecision(2) << std::setw(10) << std::right << value
-              << std::setw(10) << std::right << count;
+          out << std::fixed << std::setprecision(precision) << std::setw(10) << std::right << value
+              << std::setw(column_width + 1) << std::right << count;
         }
 
         int w = static_cast<int>(std::round(options.barsize * count / itsValidCount));
@@ -806,27 +1043,34 @@ std::string Stats::report() const
     }
     else
     {
-      double delta = (itsMax - itsMin) / options.bins;
-      for (std::size_t i = 0; i < options.bins; i++)
+      double binmin, binmax, tick;
+      int precision;
+      autoscale(itsMin, itsMax, options.bins, binmin, binmax, tick, precision);
+
+      for (std::size_t i = 0;; i++)
       {
-        double minvalue = itsMin + i * delta;
-        double maxvalue = minvalue + delta;
+        double minvalue = binmin + i * tick;
+        if (minvalue >= itsMax) break;
+        double maxvalue = minvalue + tick;
         std::size_t count = 0;
-        BOOST_FOREACH (const auto& value_count, itsCounts)
+        for (const auto& value_count : itsCounts)
         {
           double value = value_count.first;
-          if ((value >= minvalue && value < maxvalue) || value == itsMax)
+          // The max value must be counted into the last bin
+          if ((value >= minvalue && value < maxvalue))
+            count += value_count.second;
+          else if (value == itsMax && value == maxvalue)
             count += value_count.second;
         }
 
         std::ostringstream range;
-        range << std::fixed << std::setprecision(2) << minvalue << "..." << maxvalue;
+        range << std::fixed << std::setprecision(precision) << minvalue << "..." << maxvalue;
 
         out << std::setw(20) << std::right << range.str();
         if (options.percentages)
-          out << std::setw(10) << std::right << 100.0 * count / itsValidCount;
+          out << std::setw(column_width + 1) << std::right << 100.0 * count / itsValidCount;
         else
-          out << std::setw(10) << std::right << count;
+          out << std::setw(column_width + 1) << std::right << count;
 
         int w = static_cast<int>(std::round(options.barsize * count / itsValidCount));
         out << std::setw(5) << std::right << '|' << std::string(w, '=')
@@ -861,10 +1105,11 @@ std::string station_header(NFmiFastQueryInfo& qi)
 std::size_t max_param_width(NFmiFastQueryInfo& qi)
 {
   std::size_t widest = 0;
-  BOOST_FOREACH (auto p, options.these_params)
+  for (auto p : options.these_params)
   {
     qi.Param(p);
     std::string name = converter.ToString(qi.Param().GetParam()->GetIdent());
+    if (name.empty()) name = Fmi::to_string(qi.Param().GetParam()->GetIdent());
     widest = std::max(widest, name.size());
   }
   return widest;
@@ -879,12 +1124,28 @@ std::size_t max_param_width(NFmiFastQueryInfo& qi)
 std::size_t max_station_width(NFmiFastQueryInfo& qi)
 {
   std::size_t widest = 0;
-  BOOST_FOREACH (int wmo, options.these_stations)
+  for (int wmo : options.these_stations)
   {
     qi.Location(wmo);
     widest = std::max(widest, station_header(qi).size());
   }
   return widest;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Set the desired level
+ */
+// ----------------------------------------------------------------------
+
+void set_level(NFmiFastQueryInfo& qi, float levelvalue)
+{
+  for (qi.ResetLevel(); qi.NextLevel();)
+  {
+    if (qi.Level()->LevelValue() == levelvalue) return;
+  }
+  throw std::runtime_error("Level value " + Fmi::to_string(levelvalue) +
+                           " not available in the data");
 }
 
 // ----------------------------------------------------------------------
@@ -897,21 +1158,48 @@ void stat_locations_times(NFmiFastQueryInfo& qi)
 {
   int param_width = max_param_width(qi);
 
-  std::cout << std::setw(param_width) << std::right << "Parameter" << Stats::header() << std::endl;
-  BOOST_FOREACH (auto p, options.these_params)
+  if (options.these_levels.empty())
+    std::cout << std::setw(param_width) << std::right << "Parameter" << Stats::header()
+              << std::endl;
+  else
+    std::cout << std::setw(param_width) << std::right << "Parameter" << std::setw(column_width)
+              << "Level" << Stats::header() << std::endl;
+
+  for (auto p : options.these_params)
   {
     qi.Param(p);
     std::string name = converter.ToString(qi.Param().GetParam()->GetIdent());
+    if (name.empty()) name = Fmi::to_string(qi.Param().GetParam()->GetIdent());
 
-    Stats stats;
-    stats.param(p);
+    if (ignore_param(name)) continue;
 
-    for (qi.ResetLocation(); qi.NextLocation();)
-      for (qi.ResetLevel(); qi.NextLevel();)
-        for (qi.ResetTime(); qi.NextTime();)
-          stats(qi.FloatValue());
+    if (options.these_levels.empty())
+    {
+      Stats stats;
+      stats.param(p);
 
-    std::cout << std::setw(param_width) << name << stats.report() << std::endl;
+      for (qi.ResetLocation(); qi.NextLocation();)
+        for (qi.ResetLevel(); qi.NextLevel();)
+          for (qi.ResetTime(); qi.NextTime();)
+            stats(qi.FloatValue());
+      std::cout << std::setw(param_width) << name << stats.report() << std::endl;
+    }
+    else
+    {
+      for (auto levelvalue : options.these_levels)
+      {
+        set_level(qi, levelvalue);
+
+        Stats stats;
+        stats.param(p);
+
+        for (qi.ResetLocation(); qi.NextLocation();)
+          for (qi.ResetTime(); qi.NextTime();)
+            stats(qi.FloatValue());
+        std::cout << std::setw(param_width) << name << std::setw(column_width) << levelvalue
+                  << stats.report() << std::endl;
+      }
+    }
   }
 }
 
@@ -925,28 +1213,55 @@ void stat_locations_these_times(NFmiFastQueryInfo& qi)
 {
   int param_width = max_param_width(qi);
 
-  BOOST_FOREACH (auto p, options.these_params)
+  for (auto p : options.these_params)
   {
     qi.Param(p);
     std::string name = converter.ToString(qi.Param().GetParam()->GetIdent());
+    if (name.empty()) name = Fmi::to_string(qi.Param().GetParam()->GetIdent());
 
-    std::cout << std::setw(param_width) << std::right << "Parameter" << std::setw(18) << std::right
-              << "Time" << Stats::header() << std::endl;
+    if (ignore_param(name)) continue;
 
-    BOOST_FOREACH (const auto& pt, options.these_times)
+    if (options.these_levels.empty())
+      std::cout << std::setw(param_width) << std::right << "Parameter" << std::setw(18)
+                << std::right << "Time" << Stats::header() << std::endl;
+    else
+      std::cout << std::setw(param_width) << std::right << "Parameter" << std::setw(column_width)
+                << "Level" << std::setw(18) << std::right << "Time" << Stats::header() << std::endl;
+
+    for (const auto& pt : options.these_times)
     {
       NFmiMetTime t = pt;
       qi.Time(t);
 
-      Stats stats;
-      stats.param(p);
+      if (options.these_levels.empty())
+      {
+        Stats stats;
+        stats.param(p);
 
-      for (qi.ResetLocation(); qi.NextLocation();)
-        for (qi.ResetLevel(); qi.NextLevel();)
-          stats(qi.FloatValue());
+        for (qi.ResetLocation(); qi.NextLocation();)
+          for (qi.ResetLevel(); qi.NextLevel();)
+            stats(qi.FloatValue());
 
-      std::cout << std::setw(param_width) << std::right << name << std::setw(18) << std::right
-                << to_iso_string(t.PosixTime()) << stats.report() << std::endl;
+        std::cout << std::setw(param_width) << std::right << name << std::setw(18) << std::right
+                  << to_iso_string(t.PosixTime()) << stats.report() << std::endl;
+      }
+      else
+      {
+        for (auto levelvalue : options.these_levels)
+        {
+          set_level(qi, levelvalue);
+
+          Stats stats;
+          stats.param(p);
+
+          for (qi.ResetLocation(); qi.NextLocation();)
+            stats(qi.FloatValue());
+
+          std::cout << std::setw(param_width) << std::right << name << std::setw(column_width)
+                    << levelvalue << std::setw(18) << std::right << to_iso_string(t.PosixTime())
+                    << stats.report() << std::endl;
+        }
+      }
     }
     std::cout << std::endl;
   }
@@ -960,28 +1275,30 @@ void stat_locations_these_times(NFmiFastQueryInfo& qi)
 
 void stat_these_stations_these_times(NFmiFastQueryInfo& qi)
 {
-  BOOST_FOREACH (auto p, options.these_params)
+  for (auto p : options.these_params)
   {
     std::cout << std::setw(20) << "" << Stats::header() << std::endl;
 
     qi.Param(p);
     std::string name = converter.ToString(qi.Param().GetParam()->GetIdent());
+    if (name.empty()) name = Fmi::to_string(qi.Param().GetParam()->GetIdent());
+    if (ignore_param(name)) continue;
+
     std::cout << name << std::endl;
 
-    BOOST_FOREACH (int wmo, options.these_stations)
+    for (int wmo : options.these_stations)
     {
       qi.Location(wmo);
 
       std::cout << "  " << station_header(qi) << std::endl;
 
-      BOOST_FOREACH (const auto& pt, options.these_times)
+      for (const auto& pt : options.these_times)
       {
         NFmiMetTime t = pt;
         qi.Time(t);
 
         Stats stats;
         stats.param(p);
-
         for (qi.ResetLevel(); qi.NextLevel();)
           stats(qi.FloatValue());
         std::cout << "    " << to_iso_string(t.PosixTime()) << ' ' << stats.report() << std::endl;
@@ -1004,12 +1321,15 @@ void stat_these_stations_times(NFmiFastQueryInfo& qi)
   std::cout << std::setw(station_width) << std::right << "Station" << std::setw(param_width + 1)
             << std::right << "Parameter" << Stats::header() << std::endl;
 
-  BOOST_FOREACH (auto p, options.these_params)
+  for (auto p : options.these_params)
   {
     qi.Param(p);
     std::string name = converter.ToString(qi.Param().GetParam()->GetIdent());
+    if (name.empty()) name = Fmi::to_string(qi.Param().GetParam()->GetIdent());
 
-    BOOST_FOREACH (int wmo, options.these_stations)
+    if (ignore_param(name)) continue;
+
+    for (int wmo : options.these_stations)
     {
       qi.Location(wmo);
 
@@ -1054,13 +1374,18 @@ int run(int argc, char* argv[])
   else
   {
     // Otherwise validate the parameters first
-    BOOST_FOREACH (auto p, options.these_params)
+    for (auto p : options.these_params)
     {
       if (!qi.Param(p))
         throw std::runtime_error("Requested parameter not available in the data: '" +
                                  converter.ToString(p) + "'");
     }
   }
+
+  // Validate levels
+
+  for (auto levelvalue : options.these_levels)
+    set_level(qi, levelvalue);
 
   // If all times were requested, update the specific list
 
@@ -1074,10 +1399,19 @@ int run(int argc, char* argv[])
     for (qi.ResetLocation(); qi.NextLocation();)
       options.these_stations.insert(qi.Location()->GetIdent());
 
+  // If all levels were requested, update the specific list
+
+  if (options.all_levels)
+    for (qi.ResetLevel(); qi.NextLevel();)
+      options.these_levels.insert(qi.Level()->LevelValue());
+
   // We can never summarize parameters collectively, there is always a loop
 
   if (!options.these_stations.empty())
   {
+    if (!options.these_levels.empty())
+      throw std::runtime_error("Levels options not supported for station data");
+
     if (!options.these_times.empty())
       stat_these_stations_these_times(qi);
     else
@@ -1104,7 +1438,7 @@ int main(int argc, char* argv[]) try
 {
   return run(argc, argv);
 }
-catch (std::exception& e)
+catch (const std::exception& e)
 {
   std::cerr << "Error: " << e.what() << std::endl;
   return 1;

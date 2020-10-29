@@ -11,7 +11,7 @@
 #include "NFmiArea.h"
 
 //! Undocumented
-class _FMI_DLL NFmiMercatorArea : public NFmiArea
+class NFmiMercatorArea : public NFmiArea
 {
  public:
   virtual ~NFmiMercatorArea(void);
@@ -46,6 +46,8 @@ class _FMI_DLL NFmiMercatorArea : public NFmiArea
   virtual bool operator==(const NFmiArea &theArea) const;
   virtual std::ostream &Write(std::ostream &file) const;
   virtual std::istream &Read(std::istream &file);
+
+  std::size_t HashValue() const;
 
  protected:
   NFmiPoint itsBottomLeftLatLon;

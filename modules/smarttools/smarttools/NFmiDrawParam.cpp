@@ -31,14 +31,16 @@
 //
 //**********************************************************
 #include "NFmiDrawParam.h"
-#include "NFmiDataStoringHelpers.h"
 #include "NFmiColorSpaces.h"
+#include "NFmiDataStoringHelpers.h"
 
 #include <fstream>
 
+const NFmiColor gLabelBoxDefaultFillColor(1., 1., 0.);  // keltainen
+
 float NFmiDrawParam::itsFileVersionNumber = 3.0;
-const float NFmiDrawParam::itsMinAlpha =
-    5.f;  // 5:kaan ei oikein erota enää mitään, on niin läpinäkyvä
+// 5:kaan ei oikein erota enää mitään, on niin läpinäkyvä
+const float NFmiDrawParam::itsMinAlpha = 5.f;
 
 //--------------------------------------------------------
 // NFmiDrawParam(void)
@@ -49,45 +51,32 @@ NFmiDrawParam::NFmiDrawParam()
       itsParameterAbbreviation("?"),
       itsPriority(1),
       itsInitFileName(""),
-      itsViewType(NFmiMetEditorTypes::kFmiIsoLineView),
-      itsStationDataViewType(NFmiMetEditorTypes::kFmiTextView),
+      itsViewType(NFmiMetEditorTypes::View::kFmiIsoLineView),
+      itsStationDataViewType(NFmiMetEditorTypes::View::kFmiTextView),
       itsFrameColor(NFmiColor(0., 0., 0.))  // musta
       ,
       itsFillColor(NFmiColor(0., 0., 0.))  // musta
       ,
-      itsIsolineLabelBoxFillColor(NFmiColor(1., 1., 0.))  // keltainen
-      ,
-      itsContourLabelBoxFillColor(NFmiColor(1., 1., 0.))  // keltainen
-      ,
-      itsRelativeSize(NFmiPoint(1, 1)),
-      itsRelativePositionOffset(NFmiPoint(0, 0)),
+      itsIsolineLabelBoxFillColor(gLabelBoxDefaultFillColor),
+      itsContourLabelBoxFillColor(gLabelBoxDefaultFillColor),
       itsOnlyOneSymbolRelativeSize(NFmiPoint(1, 1)),
       itsOnlyOneSymbolRelativePositionOffset(NFmiPoint(0, 0)),
       fUseIsoLineGabWithCustomContours(false),
       fUseContourGabWithCustomContours(false),
       itsIsoLineGab(1.),
       itsContourGab(1.),
-      itsModifyingStep(1.)
-      //, fModifyingUnit						 (true)
-      ,
+      itsModifyingStep(1.),
       itsTimeSerialModifyingLimit(10),
       itsIsolineColor(NFmiColor(0., 0., 0.)),
       itsContourColor(NFmiColor(0., 0., 0.)),
       itsIsolineTextColor(NFmiColor(0., 0., 0.)),
       itsContourTextColor(NFmiColor(0., 0., 0.)),
-      itsSecondaryIsolineColor(0.6f, 0.6f, 0.6f)  // tehdään secondary väreistä aina harmaita
-      ,
-      itsSecondaryIsolineTextColor(0.6f, 0.6f, 0.6f)  // tehdään secondary väreistä aina harmaita
-      ,
-      fUseSecondaryColors(false),
       itsAbsoluteMinValue(-1000000000),
       itsAbsoluteMaxValue(1000000000),
       itsTimeSeriesScaleMin(0),
       itsTimeSeriesScaleMax(100),
       itsPossibleViewTypeCount(2),
       fShowNumbers(true),
-      fShowMasks(false)  // tämä on turha
-      ,
       fShowColors(false),
       fShowColoredNumbers(false),
       fZeroColorMean(false),
@@ -101,7 +90,7 @@ NFmiDrawParam::NFmiDrawParam()
       fUseSymbolsInTextMode(false),
       itsUsedSymbolListIndex(0),
       itsSymbolIndexingMapListIndex(-1),
-      itsGridDataPresentationStyle(2),
+      itsGridDataPresentationStyle(NFmiMetEditorTypes::View::kFmiIsoLineView),
       fUseIsoLineFeathering(false),
       fUseContourFeathering(false),
       fIsoLineLabelsOverLapping(true),
@@ -143,10 +132,6 @@ NFmiDrawParam::NFmiDrawParam()
       itsSpecialContourColorIndexies(),
       itsSpecialIsoLineShowLabelBox(),
       fDrawOnlyOverMask(false),
-      fUseCustomColorContouring(false),
-      fUseCustomIsoLineing(false),
-      itsSpecialColorContouringValues(),
-      itsSpecialColorContouringColorIndexies(),
       itsColorContouringColorShadeLowValue(0),
       itsColorContouringColorShadeMidValue(50),
       itsColorContouringColorShadeHighValue(100),
@@ -179,7 +164,6 @@ NFmiDrawParam::NFmiDrawParam()
       fEditedParam(false),
       itsUnit("?"),
       fActive(false),
-      fShowDifference(false),
       fShowDifferenceToOriginalData(false),
       itsDataType(NFmiInfoData::kNoDataType),
       fViewMacroDrawParam(false),
@@ -187,12 +171,12 @@ NFmiDrawParam::NFmiDrawParam()
       itsModelOriginTime(NFmiMetTime::gMissingTime),
       itsModelRunIndex(0),
       itsTimeSerialModelRunCount(0),
-      itsModelRunDifferenceIndex(0),
-      itsDataComparisonProdId(0),
-      itsDataComparisonType(NFmiInfoData::kNoDataType)
+      fUseTransparentFillColor(true),
+      fUseViewMacrosSettingsForMacroParam(false),
+      fDoSparseSymbolVisualization(false)
 {
-  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::kFmiTextView;
-  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::kFmiIsoLineView;
+  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::View::kFmiTextView;
+  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::View::kFmiIsoLineView;
 }
 
 //-------------------------------------------------------
@@ -207,18 +191,14 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       itsParameterAbbreviation("?"),
       itsPriority(thePriority),
       itsInitFileName(""),
-      itsViewType(NFmiMetEditorTypes::kFmiIsoLineView),
-      itsStationDataViewType(NFmiMetEditorTypes::kFmiTextView),
+      itsViewType(NFmiMetEditorTypes::View::kFmiIsoLineView),
+      itsStationDataViewType(NFmiMetEditorTypes::View::kFmiTextView),
       itsFrameColor(NFmiColor(0., 0., 0.))  // musta
       ,
       itsFillColor(NFmiColor(0., 0., 0.))  // musta
       ,
-      itsIsolineLabelBoxFillColor(NFmiColor(1., 1., 0.))  // keltainen
-      ,
-      itsContourLabelBoxFillColor(NFmiColor(1., 1., 0.))  // keltainen
-      ,
-      itsRelativeSize(NFmiPoint(1, 1)),
-      itsRelativePositionOffset(NFmiPoint(0, 0)),
+      itsIsolineLabelBoxFillColor(gLabelBoxDefaultFillColor),
+      itsContourLabelBoxFillColor(gLabelBoxDefaultFillColor),
       itsOnlyOneSymbolRelativeSize(NFmiPoint(1, 1)),
       itsOnlyOneSymbolRelativePositionOffset(NFmiPoint(0, 0)),
       fUseIsoLineGabWithCustomContours(false),
@@ -233,19 +213,12 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       itsContourColor(NFmiColor(0., 0., 0.)),
       itsIsolineTextColor(NFmiColor(0., 0., 0.)),
       itsContourTextColor(NFmiColor(0., 0., 0.)),
-      itsSecondaryIsolineColor(0.6f, 0.6f, 0.6f)  // tehdään secondary väreistä aina harmaita
-      ,
-      itsSecondaryIsolineTextColor(0.6f, 0.6f, 0.6f)  // tehdään secondary väreistä aina harmaita
-      ,
-      fUseSecondaryColors(false),
       itsAbsoluteMinValue(-1000000000),
       itsAbsoluteMaxValue(1000000000),
       itsTimeSeriesScaleMin(0),
       itsTimeSeriesScaleMax(100),
       itsPossibleViewTypeCount(2),
       fShowNumbers(true),
-      fShowMasks(false)  // tämä on turha
-      ,
       fShowColors(false),
       fShowColoredNumbers(false),
       fZeroColorMean(false),
@@ -259,7 +232,7 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       fUseSymbolsInTextMode(false),
       itsUsedSymbolListIndex(0),
       itsSymbolIndexingMapListIndex(-1),
-      itsGridDataPresentationStyle(2),
+      itsGridDataPresentationStyle(NFmiMetEditorTypes::View::kFmiIsoLineView),
       fUseIsoLineFeathering(false),
       fUseContourFeathering(false),
       fIsoLineLabelsOverLapping(true),
@@ -301,10 +274,6 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       itsSpecialContourColorIndexies(),
       itsSpecialIsoLineShowLabelBox(),
       fDrawOnlyOverMask(false),
-      fUseCustomColorContouring(false),
-      fUseCustomIsoLineing(false),
-      itsSpecialColorContouringValues(),
-      itsSpecialColorContouringColorIndexies(),
       itsColorContouringColorShadeLowValue(0),
       itsColorContouringColorShadeMidValue(50),
       itsColorContouringColorShadeHighValue(100),
@@ -335,7 +304,6 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       fEditedParam(false),
       itsUnit("?"),
       fActive(false),
-      fShowDifference(false),
       fShowDifferenceToOriginalData(false),
       itsDataType(theDataType),
       fViewMacroDrawParam(false),
@@ -347,12 +315,12 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDataIdent& theParam,
       itsModelOriginTime(NFmiMetTime::gMissingTime),
       itsModelRunIndex(0),
       itsTimeSerialModelRunCount(0),
-      itsModelRunDifferenceIndex(0),
-      itsDataComparisonProdId(0),
-      itsDataComparisonType(NFmiInfoData::kNoDataType)
+      fUseTransparentFillColor(true),
+      fUseViewMacrosSettingsForMacroParam(false),
+      fDoSparseSymbolVisualization(false)
 {
-  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::kFmiTextView;
-  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::kFmiIsoLineView;
+  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::View::kFmiTextView;
+  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::View::kFmiIsoLineView;
 }
 
 NFmiDrawParam::NFmiDrawParam(const NFmiDrawParam& other)
@@ -368,32 +336,24 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDrawParam& other)
       itsFillColor(other.itsFillColor),
       itsIsolineLabelBoxFillColor(other.itsIsolineLabelBoxFillColor),
       itsContourLabelBoxFillColor(other.itsContourLabelBoxFillColor),
-      itsRelativeSize(other.itsRelativeSize),
-      itsRelativePositionOffset(other.itsRelativePositionOffset),
       itsOnlyOneSymbolRelativeSize(other.itsOnlyOneSymbolRelativeSize),
       itsOnlyOneSymbolRelativePositionOffset(other.itsOnlyOneSymbolRelativePositionOffset),
       fUseIsoLineGabWithCustomContours(other.fUseIsoLineGabWithCustomContours),
       fUseContourGabWithCustomContours(other.fUseContourGabWithCustomContours),
       itsIsoLineGab(other.itsIsoLineGab),
       itsContourGab(other.itsContourGab),
-      itsModifyingStep(other.itsModifyingStep)
-      //, fModifyingUnit(other.fModifyingUnit)
-      ,
+      itsModifyingStep(other.itsModifyingStep),
       itsTimeSerialModifyingLimit(other.itsTimeSerialModifyingLimit),
       itsIsolineColor(other.itsIsolineColor),
       itsContourColor(other.itsContourColor),
       itsIsolineTextColor(other.itsIsolineTextColor),
       itsContourTextColor(other.itsContourTextColor),
-      itsSecondaryIsolineColor(other.itsSecondaryIsolineColor),
-      itsSecondaryIsolineTextColor(other.itsSecondaryIsolineTextColor),
-      fUseSecondaryColors(other.fUseSecondaryColors),
       itsAbsoluteMinValue(other.itsAbsoluteMinValue),
       itsAbsoluteMaxValue(other.itsAbsoluteMaxValue),
       itsTimeSeriesScaleMin(other.itsTimeSeriesScaleMin),
       itsTimeSeriesScaleMax(other.itsTimeSeriesScaleMax),
       itsPossibleViewTypeCount(other.itsPossibleViewTypeCount),
       fShowNumbers(other.fShowNumbers),
-      fShowMasks(other.fShowMasks),
       fShowColors(other.fShowColors),
       fShowColoredNumbers(other.fShowColoredNumbers),
       fZeroColorMean(other.fZeroColorMean)
@@ -454,10 +414,6 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDrawParam& other)
       itsSpecialContourColorIndexies(other.itsSpecialContourColorIndexies),
       itsSpecialIsoLineShowLabelBox(other.itsSpecialIsoLineShowLabelBox),
       fDrawOnlyOverMask(other.fDrawOnlyOverMask),
-      fUseCustomColorContouring(other.fUseCustomColorContouring),
-      fUseCustomIsoLineing(other.fUseCustomIsoLineing),
-      itsSpecialColorContouringValues(other.itsSpecialColorContouringValues),
-      itsSpecialColorContouringColorIndexies(other.itsSpecialColorContouringColorIndexies),
       itsColorContouringColorShadeLowValue(other.itsColorContouringColorShadeLowValue),
       itsColorContouringColorShadeMidValue(other.itsColorContouringColorShadeMidValue),
       itsColorContouringColorShadeHighValue(other.itsColorContouringColorShadeHighValue),
@@ -492,7 +448,6 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDrawParam& other)
       fEditedParam(other.fEditedParam),
       itsUnit(other.itsUnit),
       fActive(other.fActive),
-      fShowDifference(other.fShowDifference),
       fShowDifferenceToOriginalData(other.fShowDifferenceToOriginalData),
       itsDataType(other.itsDataType),
       fViewMacroDrawParam(other.fViewMacroDrawParam),
@@ -508,21 +463,19 @@ NFmiDrawParam::NFmiDrawParam(const NFmiDrawParam& other)
       itsModelOriginTime(other.itsModelOriginTime),
       itsModelRunIndex(other.itsModelRunIndex),
       itsTimeSerialModelRunCount(other.itsTimeSerialModelRunCount),
-      itsModelRunDifferenceIndex(other.itsModelRunDifferenceIndex),
-      itsDataComparisonProdId(other.itsDataComparisonProdId),
-      itsDataComparisonType(other.itsDataComparisonType)
+      fUseTransparentFillColor(other.fUseTransparentFillColor),
+      fUseViewMacrosSettingsForMacroParam(other.fUseViewMacrosSettingsForMacroParam),
+      fDoSparseSymbolVisualization(other.fDoSparseSymbolVisualization)
 {
   Alpha(itsAlpha);  // varmistus että pysytään rajoissa
-  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::kFmiTextView;
-  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::kFmiIsoLineView;
+  itsPossibleViewTypeList[0] = NFmiMetEditorTypes::View::kFmiTextView;
+  itsPossibleViewTypeList[1] = NFmiMetEditorTypes::View::kFmiIsoLineView;
 }
 
 //-------------------------------------------------------
 // ~NFmiDrawParam
 //-------------------------------------------------------
-NFmiDrawParam::~NFmiDrawParam(void)
-{
-}
+NFmiDrawParam::~NFmiDrawParam(void) {}
 
 //-------------------------------------------------------
 // Init
@@ -550,9 +503,6 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
       itsModelOriginTime = theDrawParam->itsModelOriginTime;
       itsModelRunIndex = theDrawParam->itsModelRunIndex;
       itsTimeSerialModelRunCount = theDrawParam->itsTimeSerialModelRunCount;
-      itsModelRunDifferenceIndex = theDrawParam->itsModelRunDifferenceIndex;
-      itsDataComparisonProdId = theDrawParam->itsDataComparisonProdId;
-      itsDataComparisonType = theDrawParam->itsDataComparisonType;
     }
     itsPriority = theDrawParam->Priority();
 
@@ -563,8 +513,6 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
     itsFillColor = NFmiColor(theDrawParam->FillColor());
     itsIsolineLabelBoxFillColor = NFmiColor(theDrawParam->IsolineLabelBoxFillColor());
 
-    itsRelativeSize = NFmiPoint(theDrawParam->RelativeSize());
-    itsRelativePositionOffset = NFmiPoint(theDrawParam->RelativePositionOffset());
     itsOnlyOneSymbolRelativeSize = NFmiPoint(theDrawParam->OnlyOneSymbolRelativeSize());
     itsOnlyOneSymbolRelativePositionOffset =
         NFmiPoint(theDrawParam->OnlyOneSymbolRelativePositionOffset());
@@ -573,7 +521,6 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
     fUseContourGabWithCustomContours = theDrawParam->UseContourGabWithCustomContours();
     itsIsoLineGab = theDrawParam->IsoLineGab();
     itsModifyingStep = theDrawParam->ModifyingStep();
-    //		fModifyingUnit =  theDrawParam->ModifyingUnit();
     itsTimeSerialModifyingLimit = theDrawParam->TimeSerialModifyingLimit();
 
     itsIsolineColor = theDrawParam->IsolineColor();
@@ -603,11 +550,9 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
     itsUnit = theDrawParam->Unit();
 
     fShowNumbers = theDrawParam->ShowNumbers();
-    fShowMasks = theDrawParam->ShowMasks();
     fShowColors = theDrawParam->ShowColors();
     fShowColoredNumbers = theDrawParam->ShowColoredNumbers();
     fZeroColorMean = theDrawParam->ZeroColorMean();
-    fShowDifference = theDrawParam->ShowDifference();
     fShowDifferenceToOriginalData = theDrawParam->ShowDifferenceToOriginalData();
 
     //***********************************************
@@ -654,9 +599,6 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
     itsSpecialIsoLineColorIndexies = theDrawParam->SpecialIsoLineColorIndexies();
     itsSpecialIsoLineShowLabelBox = theDrawParam->SpecialIsoLineShowLabelBox();
     fDrawOnlyOverMask = theDrawParam->DrawOnlyOverMask();
-    fUseCustomColorContouring = theDrawParam->UseCustomColorContouring();
-    itsSpecialColorContouringValues = theDrawParam->SpecialColorContouringValues();
-    itsSpecialColorContouringColorIndexies = theDrawParam->SpecialColorContouringColorIndexies();
     itsColorContouringColorShadeLowValue = theDrawParam->ColorContouringColorShadeLowValue();
     itsColorContouringColorShadeMidValue = theDrawParam->ColorContouringColorShadeMidValue();
     itsColorContouringColorShadeHighValue = theDrawParam->ColorContouringColorShadeHighValue();
@@ -710,12 +652,14 @@ void NFmiDrawParam::Init(const NFmiDrawParam* theDrawParam, bool fInitOnlyDrawin
     itsSpecialContourWidth = theDrawParam->itsSpecialContourWidth;
     itsSpecialContourStyle = theDrawParam->itsSpecialContourStyle;
     itsSpecialContourColorIndexies = theDrawParam->itsSpecialContourColorIndexies;
-    fUseCustomIsoLineing = theDrawParam->fUseCustomIsoLineing;
     itsContourLabelDigitCount = theDrawParam->itsContourLabelDigitCount;
     //***********************************************
     //********** 'versio 3' parametreja *************
     //***********************************************
     Alpha(theDrawParam->itsAlpha);
+    fUseTransparentFillColor = theDrawParam->fUseTransparentFillColor;
+    fUseViewMacrosSettingsForMacroParam = theDrawParam->fUseViewMacrosSettingsForMacroParam;
+    fDoSparseSymbolVisualization = theDrawParam->fDoSparseSymbolVisualization;
   }
   return;
 }
@@ -851,10 +795,10 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
   file << "'TimeSeriesScaleMax'" << endl;  // selittävä teksti
   file << itsTimeSeriesScaleMax << endl;
 
-  file << "'RelativeSize'" << endl;  // selittävä teksti
-  file << itsRelativeSize;
-  file << "'RelativePositionOffset'" << endl;  // selittävä teksti
-  file << itsRelativePositionOffset;
+  file << "'RelativeSize'" << endl;               // selittävä teksti
+  file << NFmiPoint(1, 1);                        // legacy dataa on kirjoitettava
+  file << "'RelativePositionOffset'" << endl;     // selittävä teksti
+  file << NFmiPoint(0, 0);                        // legacy dataa on kirjoitettava
   file << "'OnlyOneSymbolRelativeSize'" << endl;  // selittävä teksti
   file << itsOnlyOneSymbolRelativeSize;
   file << "'OnlyOneSymbolRelativePositionOffset'" << endl;  // selittävä teksti
@@ -879,7 +823,7 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
   // lukuun 100. Luettaessa vähennetään tuo 100. Jos luku tällöin
   // on pienempi kuin 1, annetaan arvoksi 1.
   file << "'StationDataViewType'" << endl;  // selittävä teksti
-  file << static_cast<int>(itsStationDataViewType + 100) << endl;
+  file << (static_cast<int>(itsStationDataViewType) + 100) << endl;
   file << "'EditableParam'" << endl;  // selittävä teksti
   file << false << endl;     // tämä muuttuja poistettu, muttä jokin arvo laitettava tähän
   file << "'Unit'" << endl;  // selittävä teksti
@@ -889,7 +833,7 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
   file << fShowNumbers << endl;
 
   file << "'ShowMasks'" << endl;  // selittävä teksti
-  file << fShowMasks << endl;
+  file << false << endl;
   file << "'ShowColors'" << endl;  // selittävä teksti
   file << fShowColors << endl;
   file << "'ShowColoredNumbers'" << endl;  // selittävä teksti
@@ -897,6 +841,9 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
   file << "'ZeroColorMean'" << endl;  // selittävä teksti
   file << fZeroColorMean << endl;
 
+  bool dummyLegacyValue = false;
+  std::vector<float> dummyLegacyFloatVectorValues;
+  std::vector<int> dummyLegacyIntVectorValues;
   if (itsFileVersionNumber >= 2.)  // tämä on vain esimerkki siitä mitä joskus tulee olemaan
   {
     //***********************************************
@@ -912,7 +859,7 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
     file << fUseSymbolsInTextMode << endl;
     file << itsUsedSymbolListIndex << endl;
     file << itsSymbolIndexingMapListIndex << endl;
-    file << itsGridDataPresentationStyle << endl;
+    file << static_cast<int>(itsGridDataPresentationStyle) << endl;
     file << fUseIsoLineFeathering << endl;
     file << fIsoLineLabelsOverLapping << endl;
     file << fShowColorLegend << endl;
@@ -972,18 +919,18 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
     file << endl;
 
     file << fDrawOnlyOverMask << endl;
-    file << fUseCustomColorContouring << endl;
+    file << dummyLegacyValue << endl;
 
-    size = itsSpecialColorContouringValues.size();
+    size = dummyLegacyFloatVectorValues.size();
     file << size << endl;
     for (i = 0; i < size; i++)
-      file << itsSpecialColorContouringValues[i] << " ";
+      file << dummyLegacyFloatVectorValues[i] << " ";
     file << endl;
 
-    size = itsSpecialColorContouringColorIndexies.size();
+    size = dummyLegacyIntVectorValues.size();
     file << size << endl;
     for (i = 0; i < size; i++)
-      file << itsSpecialColorContouringColorIndexies[i] << " ";
+      file << dummyLegacyIntVectorValues[i] << " ";
     file << endl;
 
     file << itsColorContouringColorShadeLowValue << endl;
@@ -1040,32 +987,42 @@ std::ostream& NFmiDrawParam::Write(std::ostream& file) const
     NFmiDataStoringHelpers::WriteContainer(itsSpecialContourColorIndexies, file, std::string(" "));
     file << endl;
 
-    file << fUseCustomIsoLineing << " " << itsContourLabelDigitCount << endl;
+    file << dummyLegacyValue << " " << itsContourLabelDigitCount << endl;
 
-    NFmiDataStoringHelpers::NFmiExtraDataStorage extraData;  // lopuksi vielä mahdollinen extra data
-    // Kun tulee uusia muuttujia, tee tähän extradatan täyttöä, jotta se saadaan talteen tiedopstoon
-    // siten että
+    // Lopuksi vielä mahdollinen extra data. Kun tulee uusia muuttujia, tee tähän extradatan
+    // täyttöä, jotta se saadaan talteen tiedopstoon siten että
     // edelliset versiot eivät mene solmuun vaikka on tullut uutta dataa.
-    extraData.Add(itsAlpha);          // alpha on siis 1. uusista double-extra-parametreista
-    extraData.Add(itsModelRunIndex);  // modelRunIndex on 2. uusista double-extra-parametreista
-    extraData.Add(
-        itsTimeSerialModelRunCount);  // modelRunIndex on 3. uusista double-extra-parametreista
-    extraData.Add(itsModelRunDifferenceIndex);  // itsModelRunDifferenceIndex on 4. uusista
-                                                // double-extra-parametreista
-    extraData.Add(static_cast<double>(itsDataComparisonProdId));  // itsDataComparisonProdId on 5.
-                                                                  // uusista
-                                                                  // double-extra-parametreista
-    extraData.Add(
-        itsDataComparisonType);  // itsDataComparisonType on 6. uusista double-extra-parametreista
+    NFmiDataStoringHelpers::NFmiExtraDataStorage extraData;
+    // alpha on siis 1. uusista double-extra-parametreista
+    extraData.Add(itsAlpha);
+    // modelRunIndex on 2. uusista double-extra-parametreista
+    extraData.Add(itsModelRunIndex);
+    // modelRunIndex on 3. uusista double-extra-parametreista
+    extraData.Add(itsTimeSerialModelRunCount);
+    // itsModelRunDifferenceIndex on 4. uusista double-extra-parametreista
+    // HUOM! Nyt jo poistettu ominaisuus, josta piti jättää dummy arvon talletus
+    double removedOption_ModelRunDifferenceIndex = 0.;
+    extraData.Add(removedOption_ModelRunDifferenceIndex);
+    // itsDataComparisonProdId on 5. uusista double-extra-parametreista
+    // HUOM! Nyt jo poistettu ominaisuus, josta piti jättää dummy talletus
+    double removedOption_DataComparisonProdId = 0.;
+    extraData.Add(static_cast<double>(removedOption_DataComparisonProdId));
+    // itsDataComparisonType on 6. uusista double-extra-parametreista
+    // HUOM! Nyt jo poistettu ominaisuus, josta piti jättää dummy talletus
+    double removedOption_DataComparisonType = 0.;
+    extraData.Add(removedOption_DataComparisonType);
+    // fUseTransparentFillColor on 7. uusista double-extra-parametreista
+    extraData.Add(static_cast<double>(fUseTransparentFillColor));
+    // fDoSparseSymbolVisualization on 8. uusista double-extra-parametreista
+    extraData.Add(static_cast<double>(fDoSparseSymbolVisualization));
 
-    extraData.Add(::MetTime2String(
-        itsModelOriginTime));  // modelRunIndex on 1. uusista string-extra-parametreista
+    // modelRunIndex on 1. uusista string-extra-parametreista
+    extraData.Add(::MetTime2String(itsModelOriginTime));
 
     file << "possible_extra_data" << std::endl;
     file << extraData;
 
-    if (file.fail())
-      throw std::runtime_error("NFmiDrawParam::Write failed");
+    if (file.fail()) throw std::runtime_error("NFmiDrawParam::Write failed");
     //***********************************************
     //********** 'versio 3' parametreja *************
     //***********************************************
@@ -1097,8 +1054,7 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
   char temp[80];
   std::string tmpStr;
   int number;
-  if (!file)
-    return file;
+  if (!file) return file;
   file >> temp;
   if (std::string(temp) == std::string("Version"))
   {
@@ -1110,8 +1066,7 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
 
     if (itsInitFileVersionNumber >= 1.)  // tämä on vain esimerkki siitä mitä joskus tulee olemaan
     {
-      if (!file)
-        return file;
+      if (!file) return file;
       file >> temp;                // luetaan nimike pois
       std::getline(file, tmpStr);  // luetaan ed. rivinvaihto pois jaloista
       std::getline(file, tmpStr);  // luetaan rivin loppuun, jos lyhenteessä spaceja mahdollisesti
@@ -1167,18 +1122,18 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
       file >> temp;  // luetaan nimike pois
       file >> itsAbsoluteMaxValue;
 
-      if (!file)
-        return file;
+      if (!file) return file;
 
       file >> temp;  // luetaan nimike pois
       file >> itsTimeSeriesScaleMin;
       file >> temp;  // luetaan nimike pois
       file >> itsTimeSeriesScaleMax;
 
+      file >> temp;               // luetaan nimike pois
+      NFmiPoint legacyDataPoint;  // legacy data on myös luettava
+      file >> legacyDataPoint;
       file >> temp;  // luetaan nimike pois
-      file >> itsRelativeSize;
-      file >> temp;  // luetaan nimike pois
-      file >> itsRelativePositionOffset;
+      file >> legacyDataPoint;
       file >> temp;  // luetaan nimike pois
       file >> itsOnlyOneSymbolRelativeSize;
       file >> temp;  // luetaan nimike pois
@@ -1187,16 +1142,14 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
       file >> temp;  // luetaan nimike pois
       file >> itsPossibleViewTypeCount;
       file >> temp;  // luetaan nimike pois
-      if (!file)
-        return file;
+      if (!file) return file;
       for (int ind = 0; ind < itsPossibleViewTypeCount; ind++)
       {
         file >> number;
         itsPossibleViewTypeList[ind] = NFmiMetEditorTypes::View(number);
       }
 
-      if (!file)
-        return file;
+      if (!file) return file;
 
       file >> temp;  // luetaan nimike pois
       file >> itsTimeSerialModifyingLimit;
@@ -1213,8 +1166,7 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
       // on pienempi kuin 1, annetaan arvoksi 1.
       file >> number;
       number -= 100;
-      if (number < 1)
-        number = 1;
+      if (number < 1) number = 1;
       itsStationDataViewType = NFmiMetEditorTypes::View(number);
       file >> temp;  // luetaan nimike pois
       bool tmpBool = false;
@@ -1222,14 +1174,14 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
 
       file >> temp;  // luetaan nimike pois
       file >> temp;
-      if (!file)
-        return file;
+      if (!file) return file;
       itsUnit = std::string(temp);
 
       file >> temp;  // luetaan nimike pois
       file >> fShowNumbers;
       file >> temp;  // luetaan nimike pois
-      file >> fShowMasks;
+      bool legacyBoolValue = false;
+      file >> legacyBoolValue;
       file >> temp;  // luetaan nimike pois
       file >> fShowColors;
       file >> temp;  // luetaan nimike pois
@@ -1237,13 +1189,15 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
       file >> temp;  // luetaan nimike pois
       file >> fZeroColorMean;
 
+      bool dummyLegacyValue = false;
+      std::vector<float> dummyLegacyFloatVectorValues;
+      std::vector<int> dummyLegacyIntVectorValues;
       //***********************************************
       //********** 'versio 2' parametreja *************
       //***********************************************
       if (itsInitFileVersionNumber >= 2.)  // tämä on vain esimerkki siitä mitä joskus tulee olemaan
       {
-        if (!file)
-          return file;
+        if (!file) return file;
         file >> itsStationSymbolColorShadeLowValue;
         file >> itsStationSymbolColorShadeMidValue;
         file >> itsStationSymbolColorShadeHighValue;
@@ -1254,7 +1208,8 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         file >> fUseSymbolsInTextMode;
         file >> itsUsedSymbolListIndex;
         file >> itsSymbolIndexingMapListIndex;
-        file >> itsGridDataPresentationStyle;
+        file >> number;
+        itsGridDataPresentationStyle = static_cast<NFmiMetEditorTypes::View>(number);
         file >> fUseIsoLineFeathering;
         file >> fIsoLineLabelsOverLapping;
         file >> fShowColorLegend;
@@ -1276,8 +1231,7 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         file >> itsSimpleIsoLineColorShadeHighValueColor;
         file >> itsSimpleIsoLineColorShadeClassCount;
 
-        if (!file)
-          return file;
+        if (!file) return file;
         int i = 0;
         int size;
         file >> size;
@@ -1315,24 +1269,21 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
           itsSpecialIsoLineShowLabelBox[i] = foobar;
         }
 
-        if (!file)
-          return file;
+        if (!file) return file;
         file >> fDrawOnlyOverMask;
-        file >> fUseCustomColorContouring;
+        file >> dummyLegacyValue;
 
         file >> size;
-        if (!file)
-          return file;
-        itsSpecialColorContouringValues.resize(size);
+        if (!file) return file;
+        dummyLegacyFloatVectorValues.resize(size);
         for (i = 0; i < size; i++)
-          file >> itsSpecialColorContouringValues[i];
+          file >> dummyLegacyFloatVectorValues[i];
 
         file >> size;
-        if (!file)
-          return file;
-        itsSpecialColorContouringColorIndexies.resize(size);
+        if (!file) return file;
+        dummyLegacyIntVectorValues.resize(size);
         for (i = 0; i < size; i++)
-          file >> itsSpecialColorContouringColorIndexies[i];
+          file >> dummyLegacyIntVectorValues[i];
 
         file >> itsColorContouringColorShadeLowValue;
         file >> itsColorContouringColorShadeMidValue;
@@ -1356,8 +1307,7 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         file >> itsIsoLineHatchColor2;
         file >> itsColorContouringColorShadeHigh2ValueColor;
         file >> itsIsoLineLabelDigitCount;
-        if (!file)
-          return file;
+        if (!file) return file;
         //***********************************************
         //********** 'versio 2' parametreja *************
         //***********************************************
@@ -1385,10 +1335,9 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         NFmiDataStoringHelpers::ReadContainer(itsSpecialContourStyle, file);
         NFmiDataStoringHelpers::ReadContainer(itsSpecialContourColorIndexies, file);
 
-        file >> fUseCustomIsoLineing >> itsContourLabelDigitCount;
+        file >> dummyLegacyValue >> itsContourLabelDigitCount;
 
-        if (file.fail())
-          throw std::runtime_error("NFmiDrawParam::Write failed");
+        if (file.fail()) throw std::runtime_error("NFmiDrawParam::Read failed");
 
         file >> temp;  // luetaan 'possible_extra_data' pois
         NFmiDataStoringHelpers::NFmiExtraDataStorage
@@ -1396,45 +1345,65 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         file >> extraData;
         // Tässä sitten otetaaan extradatasta talteen uudet muuttujat, mitä on mahdollisesti tullut
         // eli jos uusia muutujia tai arvoja, käsittele tässä.
-        itsAlpha = 100.f;  // tämä on siis default arvo alphalle (täysin läpinäkyvä)
+
+        // tämä on siis default arvo alphalle (täysin läpinäkyvä)
+        itsAlpha = 100.f;
         if (extraData.itsDoubleValues.size() >= 1)
-          Alpha(static_cast<float>(
-              extraData
-                  .itsDoubleValues[0]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
-        itsModelRunIndex = 0;             // 0 on default, eli ei ole käytössä
+        {
+          // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+          Alpha(static_cast<float>(extraData.itsDoubleValues[0]));
+        }
+        // 0 on default, eli ei ole käytössä
+        itsModelRunIndex = 0;
         if (extraData.itsDoubleValues.size() >= 2)
-          ModelRunIndex(static_cast<int>(
-              extraData
-                  .itsDoubleValues[1]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+        {
+          // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+          ModelRunIndex(static_cast<int>(extraData.itsDoubleValues[1]));
+        }
         itsTimeSerialModelRunCount = 0;
         if (extraData.itsDoubleValues.size() >= 3)
-          TimeSerialModelRunCount(static_cast<int>(
-              extraData
-                  .itsDoubleValues[2]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
-        itsModelRunDifferenceIndex = 0;   // 0 on default, eli ei ole käytössä
+        {
+          // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+          TimeSerialModelRunCount(static_cast<int>(extraData.itsDoubleValues[2]));
+        }
+
+        // HUOM! Nyt jo poistettu ominaisuus (itsModelRunDifferenceIndex), josta piti jättää dummy
+        // talletus ja sen luvun skippaus
         if (extraData.itsDoubleValues.size() >= 4)
-          ModelRunDifferenceIndex(static_cast<int>(
-              extraData
-                  .itsDoubleValues[3]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
-        itsDataComparisonProdId = 0;
+        {
+        }
+
+        // HUOM! Nyt jo poistettu ominaisuus (itsDataComparisonProdId), josta piti jättää dummy
+        // talletus ja sen luvun skippaus
         if (extraData.itsDoubleValues.size() >= 5)
-          DataComparisonProdId(static_cast<unsigned long>(
-              extraData
-                  .itsDoubleValues[4]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
-        itsDataComparisonType = NFmiInfoData::kNoDataType;
+        {
+        }
+
+        // HUOM! Nyt jo poistettu ominaisuus (itsDataComparisonType), josta piti jättää dummy
+        // talletus ja sen luvun skippaus
         if (extraData.itsDoubleValues.size() >= 6)
-          DataComparisonType(static_cast<NFmiInfoData::Type>(
-              static_cast<int>(extraData.itsDoubleValues[5])));  // laitetaan asetus-funktion läpi,
-                                                                 // jossa raja tarkistukset
+        {
+        }
+
+        fUseTransparentFillColor = true;
+        if (extraData.itsDoubleValues.size() >= 7)
+        {
+          fUseTransparentFillColor = extraData.itsDoubleValues[6] != 0;
+        }
+        fDoSparseSymbolVisualization = false;
+        if (extraData.itsDoubleValues.size() >= 8)
+        {
+          fDoSparseSymbolVisualization = extraData.itsDoubleValues[7] != 0;
+        }
 
         itsModelOriginTime = NFmiMetTime::gMissingTime;  // tämä on oletus arvo eli ei ole käytössä
         if (extraData.itsStringValues.size() >= 1)
-          ModelOriginTime(::String2MetTime(
-              extraData
-                  .itsStringValues[0]));  // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+        {
+          // laitetaan asetus-funktion läpi, jossa raja tarkistukset
+          ModelOriginTime(::String2MetTime(extraData.itsStringValues[0]));
+        }
 
-        if (file.fail())
-          throw std::runtime_error("NFmiDrawParam::Write failed");
+        if (file.fail()) throw std::runtime_error("NFmiDrawParam::Read failed");
         //***********************************************
         //********** 'versio 3' parametreja *************
         //***********************************************
@@ -1465,7 +1434,6 @@ std::istream& NFmiDrawParam::Read(std::istream& file)
         itsSpecialContourStyle = itsSpecialIsoLineStyle;
         itsSpecialContourColorIndexies = itsSpecialIsoLineColorIndexies;
 
-        fUseCustomIsoLineing = fUseCustomColorContouring;
         itsContourLabelDigitCount = itsIsoLineLabelDigitCount;
         itsAlpha = 100.f;  // tämä on siis default arvo alphalle (täysin läpinäkyvä)
       }
@@ -1493,10 +1461,8 @@ bool NFmiDrawParam::UseArchiveModelData(void) const
 {
   if (IsModelRunDataType())
   {
-    if (itsModelOriginTime != NFmiMetTime::gMissingTime)
-      return true;
-    if (itsModelRunIndex < 0)
-      return true;
+    if (itsModelOriginTime != NFmiMetTime::gMissingTime) return true;
+    if (itsModelRunIndex < 0) return true;
   }
   return false;
 }
@@ -1512,18 +1478,7 @@ bool NFmiDrawParam::IsModelRunDataType(NFmiInfoData::Type theDataType)
       theDataType == NFmiInfoData::kModelHelpData || theDataType == NFmiInfoData::kKepaData ||
       theDataType == NFmiInfoData::kTrajectoryHistoryData)
     return true;
-  if (theDataType == NFmiInfoData::kClimatologyData)
-    return true;
-  return false;
-}
-
-bool NFmiDrawParam::DoDataComparison(void)
-{
-  if (itsDataComparisonProdId != 0)
-  {
-    if (itsDataComparisonType != NFmiInfoData::kNoDataType)
-      return true;
-  }
+  if (theDataType == NFmiInfoData::kClimatologyData) return true;
   return false;
 }
 
@@ -1541,14 +1496,38 @@ bool NFmiDrawParam::IsMacroParamCase(bool justCheckDataType)
 {
   if (justCheckDataType)
   {
-    if (IsMacroParamCase(itsDataType))
-      return true;
+    if (IsMacroParamCase(itsDataType)) return true;
   }
   else
   {
-    if (ViewMacroDrawParam() == false && (IsMacroParamCase(itsDataType)) &&
-        ParameterAbbreviation() != std::string("macroParam"))
-      return true;
+    if (!fUseViewMacrosSettingsForMacroParam)
+    {
+      if (ViewMacroDrawParam() == false && (IsMacroParamCase(itsDataType))) return true;
+    }
   }
   return false;
+}
+
+NFmiMetEditorTypes::View NFmiDrawParam::GetViewType(bool isStationData) const
+{
+  return isStationData ? StationDataViewType() : GridDataPresentationStyle();
+}
+
+bool NFmiDrawParam::IsColorContourType(NFmiMetEditorTypes::View viewType)
+{
+  if (viewType == NFmiMetEditorTypes::View::kFmiColorContourView ||
+      viewType == NFmiMetEditorTypes::View::kFmiColorContourIsoLineView ||
+      viewType == NFmiMetEditorTypes::View::kFmiQuickColorContourView)
+    return true;
+  else
+    return false;
+}
+
+bool NFmiDrawParam::IsIsolineType(NFmiMetEditorTypes::View viewType)
+{
+  if (viewType == NFmiMetEditorTypes::View::kFmiIsoLineView ||
+      viewType == NFmiMetEditorTypes::View::kFmiColorContourIsoLineView)
+    return true;
+  else
+    return false;
 }

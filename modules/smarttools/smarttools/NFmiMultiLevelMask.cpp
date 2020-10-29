@@ -67,17 +67,12 @@ NFmiMultiLevelMask& NFmiMultiLevelMask::operator=(const NFmiMultiLevelMask& theM
   return *this;
 }
 
-NFmiMultiLevelMask::~NFmiMultiLevelMask(void)
-{
-}
+NFmiMultiLevelMask::~NFmiMultiLevelMask(void) {}
 
 //--------------------------------------------------------
 // MaskSize
 //--------------------------------------------------------
-const unsigned long& NFmiMultiLevelMask::MaskSize(void) const
-{
-  return itsMaskSize;
-}
+const unsigned long& NFmiMultiLevelMask::MaskSize(void) const { return itsMaskSize; }
 
 //--------------------------------------------------------
 // Mask
@@ -88,8 +83,7 @@ const unsigned long& NFmiMultiLevelMask::MaskSize(void) const
 //   itsMaskType:n arvosta.
 void NFmiMultiLevelMask::Mask(unsigned long theIndex, bool theNewState)
 {
-  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return;
+  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return;
   if ((itsMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
     itsSelectionMask.Mask(theIndex, theNewState);
@@ -111,16 +105,13 @@ void NFmiMultiLevelMask::Mask(unsigned long theIndex, bool theNewState)
 //
 bool NFmiMultiLevelMask::IsMasked(unsigned long theIndex) const
 {
-  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return true;
+  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return true;
   if ((itsMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
-    if (!itsSelectionMask.IsMasked(theIndex))
-      return false;
+    if (!itsSelectionMask.IsMasked(theIndex)) return false;
   if ((itsMaskType & NFmiMetEditorTypes::kFmiDisplayedMask) ==
       NFmiMetEditorTypes::kFmiDisplayedMask)
-    if (!itsDisplayedMask.IsMasked(theIndex))
-      return false;
+    if (!itsDisplayedMask.IsMasked(theIndex)) return false;
   if ((itsMaskType & 0xffffffff) == 0)  // Jos mitään maaskityyppiä ei ole valittu.
     return false;                       // Tämä on käyttäjän aiheuttama virhetila.
   return true;
@@ -132,8 +123,7 @@ bool NFmiMultiLevelMask::IsMasked(unsigned long theIndex) const
 //   .
 void NFmiMultiLevelMask::Mask(unsigned long theIndex, bool theNewState, unsigned long theMaskType)
 {
-  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return;
+  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return;
   if ((theMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
     itsSelectionMask.Mask(theIndex, theNewState);
@@ -147,18 +137,14 @@ void NFmiMultiLevelMask::Mask(unsigned long theIndex, bool theNewState, unsigned
 //--------------------------------------------------------
 bool NFmiMultiLevelMask::IsMasked(unsigned long theIndex, unsigned long theMaskType) const
 {
-  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return true;
+  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return true;
   if ((theMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
-    if (!itsSelectionMask.IsMasked(theIndex))
-      return false;
+    if (!itsSelectionMask.IsMasked(theIndex)) return false;
   if ((theMaskType & NFmiMetEditorTypes::kFmiDisplayedMask) ==
       NFmiMetEditorTypes::kFmiDisplayedMask)
-    if (!itsDisplayedMask.IsMasked(theIndex))
-      return false;
-  if ((theMaskType & 0xffffffff) == 0)
-    return false;  // Tämä on käyttäjän aiheuttama virhetila.
+    if (!itsDisplayedMask.IsMasked(theIndex)) return false;
+  if ((theMaskType & 0xffffffff) == 0) return false;  // Tämä on käyttäjän aiheuttama virhetila.
   return true;
 }
 //--------------------------------------------------------
@@ -172,8 +158,7 @@ bool NFmiMultiLevelMask::IsMasked(unsigned long theIndex, unsigned long theMaskT
 //   kaikki arvot newStaten mukaisiksi.
 void NFmiMultiLevelMask::MaskAll(bool theNewState)
 {
-  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return;
+  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return;
   if ((itsMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
     itsSelectionMask.Mask(theNewState);
@@ -187,8 +172,7 @@ void NFmiMultiLevelMask::MaskAll(bool theNewState)
 //--------------------------------------------------------
 void NFmiMultiLevelMask::MaskAll(bool theNewState, unsigned long theMaskType)
 {
-  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return;
+  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return;
   if ((theMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
     itsSelectionMask.Mask(theNewState);
@@ -200,8 +184,7 @@ void NFmiMultiLevelMask::MaskAll(bool theNewState, unsigned long theMaskType)
 
 void NFmiMultiLevelMask::InverseMask(unsigned long theMaskType)
 {
-  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return;
+  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return;
   if ((theMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
       NFmiMetEditorTypes::kFmiSelectionMask)
     itsSelectionMask.InverseMask();
@@ -221,8 +204,7 @@ void NFmiMultiLevelMask::InverseMask(unsigned long theMaskType)
 //   koko operaatio.
 bool NFmiMultiLevelMask::Mask(const NFmiBitMask& theMask)
 {
-  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return true;
+  if ((itsMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return true;
   if (itsMaskSize == static_cast<unsigned long>(theMask.Size()))
   {
     if ((itsMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
@@ -244,8 +226,7 @@ bool NFmiMultiLevelMask::Mask(const NFmiBitMask& theMask)
 //   maskeihin.
 bool NFmiMultiLevelMask::Mask(const NFmiBitMask& theMask, unsigned long theMaskType)
 {
-  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask)
-    return true;
+  if ((theMaskType & NFmiMetEditorTypes::kFmiNoMask) == NFmiMetEditorTypes::kFmiNoMask) return true;
   if (itsMaskSize == static_cast<unsigned long>(theMask.Size()))
   {
     if ((theMaskType & NFmiMetEditorTypes::kFmiSelectionMask) ==
@@ -275,12 +256,9 @@ const NFmiBitMask& NFmiMultiLevelMask::Mask(unsigned long theMaskType) const
 
 unsigned long NFmiMultiLevelMask::MaskedCount(unsigned long theMaskType)
 {
-  if (theMaskType == NFmiMetEditorTypes::kFmiNoMask)
-    return itsMaskSize;
-  if (theMaskType == NFmiMetEditorTypes::kFmiSelectionMask)
-    return itsSelectionMask.MaskedCount();
-  if (theMaskType == NFmiMetEditorTypes::kFmiDisplayedMask)
-    return itsDisplayedMask.MaskedCount();
+  if (theMaskType == NFmiMetEditorTypes::kFmiNoMask) return itsMaskSize;
+  if (theMaskType == NFmiMetEditorTypes::kFmiSelectionMask) return itsSelectionMask.MaskedCount();
+  if (theMaskType == NFmiMetEditorTypes::kFmiDisplayedMask) return itsDisplayedMask.MaskedCount();
 
   return 0;
 }
@@ -313,8 +291,7 @@ int NFmiMultiLevelMask::MaskedCount(unsigned long theMaskType,
       else
       {
         unsigned long index = i * theXGridSize + j;
-        if (IsMasked(index, theMaskType))
-          count++;
+        if (IsMasked(index, theMaskType)) count++;
       }
     }
   }

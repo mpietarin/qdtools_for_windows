@@ -21,7 +21,7 @@ class NFmiGrid;
 class NFmiLocation;
 
 //! Undocumented
-class _FMI_DLL NFmiHPlaceDescriptor : public NFmiDataDescriptor
+class NFmiHPlaceDescriptor : public NFmiDataDescriptor
 {
  public:
   virtual ~NFmiHPlaceDescriptor(void);
@@ -75,7 +75,7 @@ class _FMI_DLL NFmiHPlaceDescriptor : public NFmiDataDescriptor
 
   //! Hakee listan paikkaindeksi/etäisyys metreinä pareja. Listaan haetaan annettua paikkaa lähimmat
   //! datapisteet.
-  const checkedVector<std::pair<int, double> > NearestLocations(
+  const std::vector<std::pair<int, double> > NearestLocations(
       const NFmiLocation &theLocation,
       int theMaxWantedLocations,
       double theMaxDistance = kFloatMissing) const;

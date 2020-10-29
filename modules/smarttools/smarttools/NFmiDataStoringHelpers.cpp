@@ -15,7 +15,7 @@ NFmiMetTime itsViewMacroTime =
 // itsViewMacroTime sai arvokseen 0 v 0 kk 0 pv 0 h 0 min 0 sec
 // Ilmeisesti anonymous namespace alustetaan ensin ja sitten vasta NFmiMetTime-luokan staattinen
 // const dataosa.
-}
+}  // namespace
 
 void NFmiDataStoringHelpers::WriteTimeWithOffsets(const NFmiMetTime &theUsedCurrentTime,
                                                   const NFmiMetTime &theTime,
@@ -29,8 +29,7 @@ void NFmiDataStoringHelpers::WriteTimeWithOffsets(const NFmiMetTime &theUsedCurr
   aTime.SetSec(0);
   long hourShift = aTime.DifferenceInHours(theTime);
   long usedDayShift = hourShift / 24;
-  if (hourShift > 0)
-    usedDayShift++;
+  if (hourShift > 0) usedDayShift++;
   os << utcHour << " " << utcMinute << " " << usedDayShift << std::endl;
 }
 
@@ -56,8 +55,7 @@ void NFmiDataStoringHelpers::ReadTimeWithOffsets(const NFmiMetTime &theUsedCurre
   // Siksi jos utc-tunti oli 0 ja dayShift oli positiivinen, pitää lopullista aikaa siirtää päivällä
   // eteenpäin
   bool uglyAfterFix = ((utcHour == 0) && (dayShift > 0));
-  if (uglyAfterFix)
-    aTime.ChangeByDays(1);
+  if (uglyAfterFix) aTime.ChangeByDays(1);
   theTime = aTime;
 }
 
@@ -152,8 +150,7 @@ void NFmiDataStoringHelpers::NFmiExtraDataStorage::Write(std::ostream &os) const
       os << " ";
     os << itsDoubleValues[i];
   }
-  if (ssize > 0)
-    os << std::endl;
+  if (ssize > 0) os << std::endl;
 
   ssize = itsStringValues.size();
   os << ssize << std::endl;
@@ -164,8 +161,7 @@ void NFmiDataStoringHelpers::NFmiExtraDataStorage::Write(std::ostream &os) const
     NFmiString tmpStr(itsStringValues[i]);
     os << tmpStr;  // NFmiString heittää itse endl:in perään.
   }
-  if (ssize > 0)
-    os << std::endl;
+  if (ssize > 0) os << std::endl;
 }
 
 void NFmiDataStoringHelpers::NFmiExtraDataStorage::Read(std::istream &is)

@@ -72,7 +72,8 @@
 
 #include "NFmiEquidistArea.h"
 #include <algorithm>
-#include <iomanip>
+
+#include <fmt/format.h>
 
 using namespace std;
 
@@ -89,13 +90,13 @@ NFmiEquidistArea::NFmiEquidistArea(const NFmiEquidistArea &theEquidistArea)
     = default;
 
 /*!
-* Constructor
-*
-* \param theCenterLatLon Undocumented
-* \param theRadialRangeInMeters Undocumented
-* \param theTopLeftXY Undocumented
-* \param theBottomRightXY Undocumented
-*/
+ * Constructor
+ *
+ * \param theCenterLatLon Undocumented
+ * \param theRadialRangeInMeters Undocumented
+ * \param theTopLeftXY Undocumented
+ * \param theBottomRightXY Undocumented
+ */
 NFmiEquidistArea::NFmiEquidistArea(double theRadialRangeInMeters,
                                    const NFmiPoint &theCenterLatLon,
                                    const NFmiPoint &theTopLeftXY,
@@ -439,17 +440,29 @@ const std::string NFmiEquidistArea::AreaStr() const
 
 const std::string NFmiEquidistArea::WKT() const
 {
-  std::ostringstream ret;
-  ret << std::setprecision(16) << R"(PROJCS["FMI_Azimuthal_Equidistant",)"
-      << R"(GEOGCS["FMI_Sphere",)"
-      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
-      << R"(PRIMEM["Greenwich",0],)"
-      << R"(UNIT["Degree",0.0174532925199433]],)"
-      << R"(PROJECTION["Azimuthal_Equidistant"],)"
-      << R"(PARAMETER["latitude_of_center",)" << itsCentralLatitude.Value() << "],"
-      << R"(PARAMETER["longitude_of_center",)" << itsCentralLongitude << "],"
-      << R"(UNIT["Metre",1.0]])";
-  return ret.str();
+  const char *fmt = R"(PROJCS["FMI_Azimuthal_Equidistant",)"
+                    R"(GEOGCS["FMI_Sphere",)"
+                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
+                    R"(PRIMEM["Greenwich",0],)"
+                    R"(UNIT["Degree",0.0174532925199433]],)"
+                    R"(PROJECTION["Azimuthal_Equidistant"],)"
+                    R"(PARAMETER["latitude_of_center",{}],)"
+                    R"(PARAMETER["longitude_of_center",{}],)"
+                    R"(UNIT["Metre",1.0]])";
+  return fmt::format(fmt, kRearth, itsCentralLatitude.Value(), itsCentralLongitude);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Hash value
+ */
+// ----------------------------------------------------------------------
+
+std::size_t NFmiEquidistArea::HashValue() const
+{
+  std::size_t hash = NFmiAzimuthalArea::HashValue();
+  // no private members
+  return hash;
 }
 
 // ======================================================================

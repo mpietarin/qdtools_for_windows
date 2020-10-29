@@ -289,10 +289,10 @@ class NFmiLocationIndexRangeCalculator
 };
 
 //! Undocumented
-class _FMI_DLL NFmiQueryDataUtil
+class NFmiQueryDataUtil
 {
  public:
-  typedef checkedVector<GridRecordData *> GridDataVector;
+  typedef std::vector<GridRecordData *> GridDataVector;
   using SoundingLevelContainer = std::vector<unsigned long>;
   using SignificantSoundingLevels = std::unique_ptr<SoundingLevelContainer>;
   static SignificantSoundingLevels GetSignificantSoundingLevelIndices(NFmiFastQueryInfo &theInfo);
@@ -310,7 +310,7 @@ class _FMI_DLL NFmiQueryDataUtil
    *  370, osaa laittaa arvoksi 10 eikä leikkaa 360:een. Jos taas kyseessä vaikka
    *  kosteusprosentti, pitää yli sadan mene arvo leikata 100:n.
    */
-  class _FMI_DLL LimitChecker
+  class LimitChecker
   {
    public:
     LimitChecker(float theLowerLimit, float theUpperLimit, bool theCircularValue = false);
@@ -430,7 +430,7 @@ class _FMI_DLL NFmiQueryDataUtil
                                      int theOriginTimeFunction,
                                      bool fMakeChangingTimeResolution);
 
-  static NFmiQueryData *CombineTimes(checkedVector<std::string> &theFileNames,
+  static NFmiQueryData *CombineTimes(std::vector<std::string> &theFileNames,
                                      int theMaxTimesInNewData);
 
   static NFmiQueryData *MakeCombineParams(NFmiFastQueryInfo &theSourceInfo,
@@ -457,18 +457,18 @@ class _FMI_DLL NFmiQueryDataUtil
                                           bool fForceTimeBag = false);
 
   static NFmiQueryData *MakeCombineParams(NFmiFastQueryInfo &theSourceInfo,
-      double theWantedInfoVersion,
-      bool fKeepCloudSymbolParameter,
-      bool fDoTotalWind,
-      bool fDoWeatherAndCloudiness,
-      FmiParameterName theWindGustParId,
-      const std::vector<int> &thePrecipFormParIds,
-      const std::vector<int> &theFogParIds,
-      const std::vector<int> &thePotParIds,
-      bool fAllowLessParamsWhenCreatingWeather,
-      int theMaxUsedThreadCount,
-      bool fDoaccuratePrecip,
-      bool fForceTimeBag = false);
+                                          double theWantedInfoVersion,
+                                          bool fKeepCloudSymbolParameter,
+                                          bool fDoTotalWind,
+                                          bool fDoWeatherAndCloudiness,
+                                          FmiParameterName theWindGustParId,
+                                          const std::vector<int> &thePrecipFormParIds,
+                                          const std::vector<int> &theFogParIds,
+                                          const std::vector<int> &thePotParIds,
+                                          bool fAllowLessParamsWhenCreatingWeather,
+                                          int theMaxUsedThreadCount,
+                                          bool fDoaccuratePrecip,
+                                          bool fForceTimeBag = false);
 
   static NFmiQueryData *CreateEmptyData(NFmiQueryInfo &srcInfo);
   static NFmiQueryData *CreateEmptyData(NFmiQueryInfo &srcInfo,
@@ -518,7 +518,7 @@ class _FMI_DLL NFmiQueryDataUtil
   static NFmiQueryData *CombineQueryDatas(
       bool fDoRebuild,
       boost::shared_ptr<NFmiQueryData> &theBaseQData,
-      std::vector<boost::shared_ptr<NFmiQueryData> > &theQDataVector,
+      std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
       bool fDoTimeStepCombine,
       int theMaxTimeStepsInData = 0,
       NFmiStopFunctor *theStopFunctor = 0);
@@ -529,7 +529,27 @@ class _FMI_DLL NFmiQueryDataUtil
                                           int theMaxTimeStepsInData = 0,
                                           NFmiStopFunctor *theStopFunctor = 0);
   static int CalcOptimalThreadCount(int maxAvailableThreads, int separateTaskCount);
-
+  static std::vector<std::string> GetFileNamesForCombinationWork(const std::string &theFileFilter);
+  static boost::shared_ptr<NFmiQueryData> GetNewestQueryData(const std::string &theFileFilter);
+  static std::vector<boost::shared_ptr<NFmiQueryData>> ReadQueryDataFilesForCombinationWork(
+      boost::shared_ptr<NFmiQueryData> theBaseQData,
+      const std::string &theDirName,
+      std::vector<std::string> &theFilesIn,
+      NFmiStopFunctor *theStopFunctor,
+      bool fDoRebuildCheck);
+  static NFmiQueryData *CombineAcceptedTimeStepQueryData(
+      bool fDoRebuild,
+      boost::shared_ptr<NFmiQueryData> &theBaseQData,
+      std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
+      const std::vector<NFmiMetTime> &theAcceptedTimes,
+      NFmiStopFunctor *theStopFunctor = 0);
+  static std::vector<NFmiMetTime> MakeValidTimesList(
+      std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFastInfoVector,
+      int theMaxTimeStepsInData);
+  static std::vector<boost::shared_ptr<NFmiFastQueryInfo>> MakeTotalFastInfoVector(
+      std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
+      boost::shared_ptr<NFmiQueryData> &theBaseQData,
+      bool fDoRebuild);
 };  // class NFmiQueryDataUtil
 
 // ======================================================================

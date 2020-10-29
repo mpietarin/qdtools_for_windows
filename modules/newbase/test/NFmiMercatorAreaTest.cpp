@@ -165,7 +165,7 @@ class tests : public tframe::tests
   }
 };
 
-}  // namespace NFmiMercatorAreaTest
+}  // namespace NFmiAreaFactoryTest
 
 //! The main program
 int main(void)

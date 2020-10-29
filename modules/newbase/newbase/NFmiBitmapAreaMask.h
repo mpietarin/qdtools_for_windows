@@ -15,7 +15,7 @@ class NFmiArea;
 class NFmiGrid;
 
 //! Undocumented
-class _FMI_DLL NFmiBitmapAreaMask : public NFmiAreaMaskImpl
+class NFmiBitmapAreaMask : public NFmiAreaMaskImpl
 {
  public:
   virtual ~NFmiBitmapAreaMask(void);
@@ -30,12 +30,12 @@ class _FMI_DLL NFmiBitmapAreaMask : public NFmiAreaMaskImpl
                      const NFmiArea* theArea,
                      const NFmiDataIdent* theDataIdent,
                      const NFmiLevel* theLevel,
-                     BinaryOperator thePostBinaryOperator = kNoValue);
+                     BinaryOperator thePostBinaryOperator);
 
   NFmiBitmapAreaMask(const NFmiGrid& theGrid,
                      const NFmiDataIdent* theDataIdent,
                      const NFmiLevel* theLevel,
-                     BinaryOperator thePostBinaryOperator = kNoValue);
+                     BinaryOperator thePostBinaryOperator);
 
   NFmiAreaMask* Clone(void) const;
 #ifdef UNIX
@@ -76,7 +76,7 @@ class _FMI_DLL NFmiBitmapAreaMask : public NFmiAreaMaskImpl
     return (theIndex > 0 && theIndex < (itsGridXSize * itsGridYSize));
   }
 
-  checkedVector<bool> itsBitmask;
+  std::vector<bool> itsBitmask;
   NFmiArea* itsArea;  // omistaa, tuhoaa
   int itsGridXSize;
   int itsGridYSize;

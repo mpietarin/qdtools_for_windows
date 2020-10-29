@@ -20,7 +20,7 @@ class NFmiSmartToolInfo
 
   bool LoadScript(const std::string& theScriptName);
   bool SpeedLoadScript(const std::string& theScriptName);
-  bool SaveScript(const std::string& theScriptName);
+  bool SaveScript(const std::string& theFullScriptPath);
   bool RemoveScript(const std::string& theScriptName);
   bool LoadDBChecker(void);
   bool SaveDBChecker(void);
@@ -54,7 +54,7 @@ class NFmiSmartToolInfo
   }
   void IsThereDBCheckScript(bool newValue) { fIsThereDBCheckScript = newValue; }
   bool ScriptExist(const std::string& theScriptName);  // löytyykö tämän nimistä skriptiä
-  checkedVector<std::string> GetScriptNames(
+  std::vector<std::string> GetScriptNames(
       void);  // hae lista olemassa olevista skripteistä (pelkkä nimi lista)
   const std::string& ScriptFileExtension(void) const { return itsScriptFileExtension; }
   void ScriptFileExtension(const std::string& newValue) { itsScriptFileExtension = newValue; }

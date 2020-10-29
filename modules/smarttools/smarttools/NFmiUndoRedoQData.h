@@ -1,7 +1,7 @@
 #pragma once
 
 #include <deque>
-#include "NFmiHarmonizerBookKeepingData.h"
+#include <string>
 
 class NFmiRawData;
 
@@ -11,17 +11,13 @@ class NFmiUndoRedoQData
   NFmiUndoRedoQData(void);
   ~NFmiUndoRedoQData(void);
 
-  bool SnapShotData(const std::string& theAction,
-                    const NFmiHarmonizerBookKeepingData& theHarmonizerBookKeepingData,
-                    const NFmiRawData& theRawData);
+  bool SnapShotData(const std::string& theAction, const NFmiRawData& theRawData);
   void RearrangeUndoTable(void);
   bool Undo(void);
   bool Redo(void);
-  bool UndoData(const NFmiHarmonizerBookKeepingData& theHarmonizerBookKeepingData,
-                NFmiRawData& theRawData);
-  bool RedoData(NFmiRawData& theRawData);
+  bool UndoData(NFmiRawData& theRawData, std::string& modificationDescription);
+  bool RedoData(NFmiRawData& theRawData, std::string& modificationDescription);
   void UndoLevel(long theDepth, const NFmiRawData& theRawData);
-  const NFmiHarmonizerBookKeepingData* CurrentHarmonizerBookKeepingData(void) const;
 
  private:
   long* itsMaxUndoLevelPtr;
@@ -31,8 +27,4 @@ class NFmiUndoRedoQData
 
   char** itsUndoTable;
   std::string* itsUndoTextTable;
-  std::deque<NFmiHarmonizerBookKeepingData>*
-      itsUndoRedoHarmonizerBookKeepingData;  // tämän elin kaari seuraa tiiviisti itsUndoTable:a
-  // tähän talletetaan harmonisaatiossa 'likaantuvat' parametrit ja ajat ja koska
-  // editorissa on undo/redo toiminto, pitää myös tämän olla synkassa datan kanssa
 };

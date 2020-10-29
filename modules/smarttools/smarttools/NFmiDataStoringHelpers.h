@@ -10,8 +10,8 @@
 #include <newbase/NFmiStringTools.h>
 #include <newbase/NFmiTimeBag.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace NFmiDataStoringHelpers
 {
@@ -30,8 +30,7 @@ inline void WriteContainer(const T &theContainer,
   // MSVC 2008 ei sitten osannut enää kääntää alempana olevaa koodia (KUN annetussa containerissa
   // oli luokan sisäisiä luokkia), joten tein for loopin, joka meni läpi.
   size_t storedCount = theReallyStoredSize;
-  if (storedCount > theContainer.size())
-    storedCount = theContainer.size();
+  if (storedCount > theContainer.size()) storedCount = theContainer.size();
 
   os << storedCount << std::endl;
   for (size_t i = 0; i < storedCount; i++)
@@ -121,7 +120,7 @@ struct NFmiExtraDataStorage
   std::vector<std::string> itsStringValues;
 };
 
-}  // end of namespace
+}  // namespace NFmiDataStoringHelpers
 
 inline std::ostream &operator<<(std::ostream &os,
                                 const NFmiDataStoringHelpers::NFmiExtraDataStorage &item)
@@ -135,4 +134,3 @@ inline std::istream &operator>>(std::istream &is,
   item.Read(is);
   return is;
 }
-
