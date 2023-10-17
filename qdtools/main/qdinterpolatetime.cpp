@@ -26,7 +26,7 @@
 #include <newbase/NFmiCmdLine.h>
 #include <newbase/NFmiQueryData.h>
 #include <newbase/NFmiQueryDataUtil.h>
-#include <newbase/NFmiWindFix.h>
+//#include <newbase/NFmiWindFix.h>
 //#include "NFmiMilliSecondTimer.h"
 
 using namespace std;  // tätä ei saa sitten laittaa headeriin, eikä ennen includeja!!!!
@@ -99,7 +99,7 @@ int run(int argc, const char* argv[])
                                                                generalInterpolationMethod);
 
   // Temporary fix until newbase interpolation has been corrected
-  NFmiWindFix::FixWinds(*newData); 
+  //NFmiWindFix::FixWinds(*newData); 
   
   if (outputfile == "-")
     newData->Write();

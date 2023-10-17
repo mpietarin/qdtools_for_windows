@@ -1,4 +1,3 @@
-#include "TimeTools.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -31,7 +30,7 @@ NFmiEnumConverter converter;
 
 const int column_width = 10;
 
-const std::set<std::string> ignored_params{"WindVectorMS"};
+const std::set<std::string> ignored_params{"WindVectorMS_MARKO"};
 
 bool ignore_param(const std::string& p) { return (ignored_params.find(p) != ignored_params.end()); }
 

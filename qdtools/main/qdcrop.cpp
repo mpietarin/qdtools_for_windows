@@ -121,6 +121,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/math/special_functions/round.hpp>
 
 #include <ctime>
 #include <deque>
@@ -1376,7 +1377,7 @@ int run(int argc, const char* argv[])
 
   // Establish the querydata version to be produced
 
-  double version = DefaultFmiInfoVersion;
+  double version = 7;
   if (opt_preserve_version) version = srcinfo->InfoVersion();
 
   // Special optimization for fast removal of missing timesteps only. This is

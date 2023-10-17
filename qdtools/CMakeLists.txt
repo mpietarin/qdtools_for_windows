@@ -47,3 +47,23 @@ add_subdirectory(
 add_subdirectory(
 	main-cmake-lists/qddiff
 )
+
+add_subdirectory(
+	main-cmake-lists/qdstat
+)
+
+add_subdirectory(
+	main-cmake-lists/qdscript
+)
+
+add_subdirectory(
+	main-cmake-lists/grd2qd
+)
+
+add_subdirectory(
+	main-cmake-lists/qdversionchange
+)
+
+add_subdirectory(
+	main-cmake-lists/gribtoqd
+)
