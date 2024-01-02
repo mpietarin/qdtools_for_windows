@@ -17,7 +17,6 @@ add_executable(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    MacGyver
     Newbase
     SmartTools
     ${FMT_TARGET_LINK_LIBRARIES}
@@ -25,7 +24,6 @@ target_link_libraries(
 
 target_include_directories( 
     ${PROJECT_NAME}
-    PUBLIC ${MacGyver_INCLUDE_DIRS}
     PUBLIC ${Newbase_INCLUDE_DIRS}
     PUBLIC ${SmartTools_INCLUDE_DIRS}
     PUBLIC ${BOOST_INCLUDE_DIR}
