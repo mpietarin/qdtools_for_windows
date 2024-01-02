@@ -1815,7 +1815,7 @@ void NFmiInfoAreaMaskVertFunc::SearchLevels(const NFmiLocationCache &theLocation
       float minStartDiff = 99999999.f;
       // float closestInsideEndLevelValue = kFloatMissing;
       float minEndDiff = 99999999.f;
-      for (itsInfo->FirstLevel(); itsInfo->NextLevel();)
+      for (itsInfo->ResetLevel(); itsInfo->NextLevel();)
       {
         const NFmiLevel *aLevel = itsInfo->Level();
 
@@ -1851,7 +1851,7 @@ void NFmiInfoAreaMaskVertFunc::SearchLevels(const NFmiLocationCache &theLocation
     }
     else
     {
-      for (itsInfo->FirstLevel(); itsInfo->NextLevel();)
+      for (itsInfo->ResetLevel(); itsInfo->NextLevel();)
       {
         float Pvalue =
             itsInfo->GetLevelHeightValue(itsUsedHeightParId, theLocationCache, itsTimeCache);
