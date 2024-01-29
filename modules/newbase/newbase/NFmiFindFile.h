@@ -9,6 +9,7 @@
 
 #include "NFmiFileString.h"
 #include "NFmiGlobals.h"
+
 #include <string>
 #ifdef UNIX
 #include <glob.h>
@@ -20,16 +21,16 @@
 class NFmiFindFile
 {
  public:
-  ~NFmiFindFile(void);
-  NFmiFindFile(void);
+  ~NFmiFindFile();
+  NFmiFindFile();
 
   void Path(const NFmiString& thePathName);
   bool Find(const NFmiString& theFileMask = "*.*");
   bool Next();
 
-  const NFmiString FileName(void);
-  const NFmiString PathName(void);
-  const NFmiString PathAndFileName(void);
+  const NFmiString FileName();
+  const NFmiString PathName();
+  const NFmiString PathAndFileName();
 
  private:
   NFmiFindFile(const NFmiFindFile& theFile);

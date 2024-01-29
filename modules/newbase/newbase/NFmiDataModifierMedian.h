@@ -14,25 +14,24 @@
 
 #pragma once
 
-#include "NFmiDataMatrix.h"
 #include "NFmiDataModifier.h"
 
 class NFmiDataModifierMedian : public NFmiDataModifier
 {
  public:
-  virtual ~NFmiDataModifierMedian(void);
+  virtual ~NFmiDataModifierMedian();
   NFmiDataModifierMedian(float theLimitProsent = 50.f);
   NFmiDataModifierMedian(const NFmiDataModifierMedian& theOther);
-  NFmiDataModifier* Clone(void) const;
+  NFmiDataModifier* Clone() const;
 
-  float Median(void);
+  float Median();
   virtual void Calculate(float theValue);
   virtual void Calculate(NFmiQueryInfo* theQI);
 
-  void Clear(void);
+  void Clear();
   using NFmiDataModifier::CalculationResult;
-  virtual float CalculationResult(void);
-  float LimitProsent(void) const { return itsLimitProsent; }
+  virtual float CalculationResult();
+  float LimitProsent() const { return itsLimitProsent; }
   void LimitProsent(float newValue);
 
  protected:

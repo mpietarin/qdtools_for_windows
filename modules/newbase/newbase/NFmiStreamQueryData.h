@@ -14,8 +14,8 @@
 class NFmiStreamQueryData
 {
  public:
-  ~NFmiStreamQueryData(void);
-  NFmiStreamQueryData(void);
+  ~NFmiStreamQueryData();
+  NFmiStreamQueryData();
   NFmiStreamQueryData(NFmiQueryData* theQueryData, bool isOwnerData = false);
 
   // Marko Muutin rajapinnan niin, että theQueryData pointterita tuli pointterin pointteri.
@@ -27,16 +27,16 @@ class NFmiStreamQueryData
   bool SafeReadLatestData(const NFmiString& theFileName, NFmiQueryData** theQueryData = 0);
   bool WriteData(const NFmiString& theFileName,
                  NFmiQueryData* theQueryData = 0,
-                 long theLibVersion = DefaultFmiInfoVersion) const;
+                 long theLibVersion = 6) const;
 
   bool ReadIn(NFmiQueryData* theQueryData = 0);
   bool ReadIn(NFmiQueryInfo* theQueryInfo);
   bool WriteCout(NFmiQueryData* theQueryData = 0) const;
 
-  bool IsData(void);
+  bool IsData();
 
   NFmiQueryData* QueryData(bool theOwnerData = false);
-  NFmiFastQueryInfo* QueryInfoIter(void);
+  NFmiFastQueryInfo* QueryInfoIter();
 
  private:
   NFmiStreamQueryData(const NFmiStreamQueryData& theData);

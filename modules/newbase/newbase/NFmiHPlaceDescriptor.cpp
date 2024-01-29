@@ -13,6 +13,7 @@
 // ======================================================================
 
 #include "NFmiHPlaceDescriptor.h"
+
 #include "NFmiGrid.h"
 #include "NFmiLocationBag.h"
 #include "NFmiSaveBaseFactory.h"
@@ -286,17 +287,18 @@ NFmiPoint NFmiHPlaceDescriptor::LatLon(unsigned long theIndex) const
 {
   if (itsLocationBag)
   {
-    const NFmiLocation *location = LocationWithIndex(theIndex);
-    return NFmiPoint(location->GetLongitude(), location->GetLatitude());
+    auto location = LocationWithIndex(theIndex);
+    if (location)
+    {
+      return location->GetLocation();
+    }
   }
   else if (itsGrid)
   {
     return itsGrid->LatLon(theIndex);
   }
-  else
-  {
-    return NFmiPoint(kFloatMissing, kFloatMissing);
-  }
+
+  return NFmiPoint::gMissingLatlon;
 }
 
 // ----------------------------------------------------------------------
@@ -937,7 +939,7 @@ bool NFmiHPlaceDescriptor::First()
  */
 // ----------------------------------------------------------------------
 
-const std::vector<std::pair<int, double> > NFmiHPlaceDescriptor::NearestLocations(
+const std::vector<std::pair<int, double>> NFmiHPlaceDescriptor::NearestLocations(
     const NFmiLocation &theLocation, int theMaxWantedLocations, double theMaxDistance) const
 {
   if (IsLocation())
@@ -1004,7 +1006,6 @@ bool NFmiHPlaceDescriptor::IsInside(const NFmiPoint &theLatLon, double theRadius
 std::size_t NFmiHPlaceDescriptor::HashValue() const
 {
   std::size_t hash = 0;
-  if (Area() != nullptr) hash = Area()->HashValueKludge();
 
   if (itsLocationBag != nullptr) boost::hash_combine(hash, itsLocationBag->HashValue());
 

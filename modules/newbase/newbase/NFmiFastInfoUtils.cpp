@@ -1,4 +1,5 @@
 #include "NFmiFastInfoUtils.h"
+
 #include "NFmiFastQueryInfo.h"
 #include "NFmiFileString.h"
 #include "NFmiProducerName.h"
@@ -153,9 +154,10 @@ float GetMetaWindVectorValue(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo
                              const NFmiPoint &theLatlon,
                              const NFmiFastInfoUtils::MetaWindParamUsage &metaWindParamUsage)
 {
-  return ::CalcMetaWindVectorValue(theInfo, metaWindParamUsage, [&]() {
-    return theInfo->InterpolatedValue(theLatlon, theTime);
-  });
+  return ::CalcMetaWindVectorValue(theInfo,
+                                   metaWindParamUsage,
+                                   [&]()
+                                   { return theInfo->InterpolatedValue(theLatlon, theTime); });
 }
 
 std::pair<float, float> GetMetaWsWdValues(
@@ -189,9 +191,9 @@ std::pair<float, float> GetMetaWsWdValues(
     const NFmiPoint &theLatlon,
     const NFmiFastInfoUtils::MetaWindParamUsage &metaWindParamUsage)
 {
-  return ::GetMetaWsWdValues(theInfo, metaWindParamUsage, [&]() {
-    return theInfo->InterpolatedValue(theLatlon, theTime);
-  });
+  return ::GetMetaWsWdValues(theInfo,
+                             metaWindParamUsage,
+                             [&]() { return theInfo->InterpolatedValue(theLatlon, theTime); });
 }
 
 std::pair<float, float> GetMetaWindComponentsValues(
@@ -226,9 +228,10 @@ std::pair<float, float> GetMetaWindComponentsValues(
     const NFmiPoint &theLatlon,
     const NFmiFastInfoUtils::MetaWindParamUsage &metaWindParamUsage)
 {
-  return ::CalcMetaWindComponentsValues(theInfo, metaWindParamUsage, [&]() {
-    return theInfo->InterpolatedValue(theLatlon, theTime);
-  });
+  return ::CalcMetaWindComponentsValues(theInfo,
+                                        metaWindParamUsage,
+                                        [&]()
+                                        { return theInfo->InterpolatedValue(theLatlon, theTime); });
 }
 }  // namespace
 
@@ -301,15 +304,24 @@ bool IsModelClimatologyData(const boost::shared_ptr<NFmiFastQueryInfo> &info)
 NFmiMetTime GetUsedTimeIfModelClimatologyData(boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                               const NFmiMetTime &theTime)
 {
-  if (NFmiFastInfoUtils::IsModelClimatologyData(theInfo))
+  if (theInfo)
   {
-    // For year long climatology data, used time must be fixed to data's own year
-    auto usedTime(theTime);
-    usedTime.SetYear(theInfo->TimeDescriptor().FirstTime().GetYear());
-    return usedTime;
+    if (NFmiFastInfoUtils::IsModelClimatologyData(theInfo))
+    {
+      // For year long climatology data, used time must be fixed to data's own year
+      auto usedTime(theTime);
+      usedTime.SetYear(theInfo->TimeDescriptor().FirstTime().GetYear());
+      return usedTime;
+    }
+    else if (theInfo->DataType() == NFmiInfoData::kStationary)
+    {
+      // Stationaarisissa datoissa (esim. topograafiset datat) on vain 1. aika, joka on fiksattu kun
+      // data on tehty
+      return theInfo->TimeDescriptor().FirstTime();
+    }
   }
-  else
-    return theTime;
+
+  return theTime;
 }
 
 bool IsMovingSoundingData(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo)
@@ -317,6 +329,21 @@ bool IsMovingSoundingData(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo)
   if (theInfo && !theInfo->IsGrid())
   {
     if (theInfo->SizeLevels() > 7) return theInfo->HasLatlonInfoInData();
+  }
+  return false;
+}
+
+// Lightning eli salama tyyppi datalla on yksi feikki asema ja paljon aikoja, jos useita salamoita
+// tai vastaavia havaintoja on havaittu. Datassa pit‰‰ olla latitude ja longitude parametrit,
+// jotta jokaisella satunnaiselle havainnolle saadaan kulloiseenkin aikaan oikea lokaatio.
+bool IsLightningTypeData(boost::shared_ptr<NFmiFastQueryInfo> &info)
+{
+  if (info && !info->IsGrid())
+  {
+    if (info->SizeLocations() == 1 && info->HasLatlonInfoInData())
+    {
+      return true;
+    }
   }
   return false;
 }
@@ -336,15 +363,37 @@ bool FindTimeIndicesForGivenTimeRange(const boost::shared_ptr<NFmiFastQueryInfo>
 
   if (timeIndex1 == gMissingIndex || timeIndex2 == gMissingIndex)
     return false;
-  else if (timeIndex1 == timeIndex2)  // pit‰‰ testata erikois tapaus, koska
-                                      // TimeToNearestStep-palauttaa aina jotain, jos on dataa
+  else if (timeIndex1 == timeIndex2)
   {
+    // pit‰‰ testata erikoistapaus, koska TimeToNearestStep-palauttaa aina jotain, jos on dataa
     theInfo->TimeIndex(timeIndex1);
-    NFmiMetTime foundTime(theInfo->Time());
-    if (foundTime > endTime || foundTime < theStartTime)  // jos lˆydetty aika on alku ja loppu ajan
-                                                          // ulkopuolella ei piirret‰ salamaa
+    const auto &foundTime = theInfo->Time();
+    if (foundTime > endTime || foundTime < theStartTime)
+    {
+      // jos lˆydetty aika on alku ja loppu ajan ulkopuolella ei piirret‰ salamaa
       return false;
+    }
   }
+
+  // Viel‰ 2. erikoistapaus: Kyse timeList datasta, jossa loppuajalle lˆytyy useita per‰kk‰isi‰
+  // aikoja, t‰llˆin FindNearestTime palauttaa 1. lˆyt‰m‰ns‰ halutun ajan. Huom! t‰ss‰ k‰ytet‰‰n
+  // FindNearestTime metodia, koska se k‰ytt‰‰ timelist tapauksissa binary search hakua, Jos t‰m‰n
+  // funktion tekisi k‰ym‰‰n l‰pi kaikki ajat j‰rjestyksess‰, tulisi siit‰ tietyille datoille
+  // tuskallisen hidas.
+  theInfo->TimeIndex(timeIndex2);
+  for (auto timeIndex = timeIndex2 + 1; timeIndex < theInfo->SizeTimes(); timeIndex++)
+  {
+    theInfo->TimeIndex(timeIndex);
+    if (theInfo->Time() == endTime)
+    {
+      timeIndex2 = timeIndex;
+    }
+    else
+    {
+      break;
+    }
+  }
+
   return true;
 }
 
@@ -411,16 +460,45 @@ bool FindMovingSoundingDataTime(const boost::shared_ptr<NFmiFastQueryInfo> &theI
 }
 
 QueryInfoParamStateRestorer::QueryInfoParamStateRestorer(NFmiQueryInfo &info)
-    : info_(info), paramIndex_(info.ParamIndex()), paramId_(info.Param().GetParamIdent())
+    : info_(info),
+      paramId_(info.ParamIndex() != gMissingIndex
+                   ? static_cast<FmiParameterName>(info.Param().GetParamIdent())
+                   : kFmiBadParameter)
 {
 }
 
 QueryInfoParamStateRestorer::~QueryInfoParamStateRestorer()
 {
-  if (paramIndex_ != gMissingIndex)
-    info_.Param(static_cast<FmiParameterName>(paramId_));
-  else
-    info_.ParamIndex(paramIndex_);
+  // Parametrin asetuksella nollataan/asetetaan mahd. combinedParam jutut
+  info_.Param(paramId_);
+}
+
+QueryInfoTotalStateRestorer::QueryInfoTotalStateRestorer(NFmiQueryInfo &info)
+    : QueryInfoParamStateRestorer(info),
+      locationIndex_(info.LocationIndex()),
+      timeIndex_(info.TimeIndex()),
+      levelIndex_(info.LevelIndex())
+{
+}
+
+QueryInfoTotalStateRestorer::~QueryInfoTotalStateRestorer()
+{
+  info_.LocationIndex(locationIndex_);
+  info_.TimeIndex(timeIndex_);
+  info_.LevelIndex(levelIndex_);
+}
+
+MetaWindParamUsage::MetaWindParamUsage() = default;
+
+MetaWindParamUsage::MetaWindParamUsage(bool hasTotalWind,
+                                       bool hasWindVectorParam,
+                                       bool hasWsAndWd,
+                                       bool hasWindComponents)
+    : fHasTotalWind(hasTotalWind),
+      fHasWindVectorParam(hasWindVectorParam),
+      fHasWsAndWd(hasWsAndWd),
+      fHasWindComponents(hasWindComponents)
+{
 }
 
 bool MetaWindParamUsage::ParamNeedsMetaCalculations(unsigned long paramId) const
@@ -542,47 +620,23 @@ std::vector<std::unique_ptr<NFmiDataIdent>> MakePossibleWindMetaParams(
   const auto &producer = *theInfo.Producer();
   if (metaWindParamUsage.MakeMetaWindComponents())
   {
-#ifdef UNIX
-    metaParams.push_back(
-        std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(windUBaseParam, producer)));
-    metaParams.push_back(
-        std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(windVBaseParam, producer)));
-#else
     metaParams.push_back(std::make_unique<NFmiDataIdent>(windUBaseParam, producer));
     metaParams.push_back(std::make_unique<NFmiDataIdent>(windVBaseParam, producer));
-#endif
   }
   if (metaWindParamUsage.MakeMetaWsAndWdParams())
   {
-#ifdef UNIX
-    metaParams.push_back(
-        std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(windDirectionBaseParam, producer)));
-    metaParams.push_back(
-        std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(windSpeedBaseParam, producer)));
-#else
     metaParams.push_back(std::make_unique<NFmiDataIdent>(windDirectionBaseParam, producer));
     metaParams.push_back(std::make_unique<NFmiDataIdent>(windSpeedBaseParam, producer));
-#endif
   }
   if (metaWindParamUsage.MakeMetaWindVectorParam())
   {
-#ifdef UNIX
-    metaParams.push_back(
-        std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(windVectorBaseParam, producer)));
-#else
     metaParams.push_back(std::make_unique<NFmiDataIdent>(windVectorBaseParam, producer));
-#endif
   }
   if (allowStreamlineParameter && metaWindParamUsage.IsStreamlinePossible())
   {
     if (theInfo.IsGrid())
     {
-#ifdef UNIX
-      metaParams.push_back(
-          std::unique_ptr<NFmiDataIdent>(new NFmiDataIdent(streamlineBaseParam, producer)));
-#else
       metaParams.push_back(std::make_unique<NFmiDataIdent>(streamlineBaseParam, producer));
-#endif
     }
   }
 

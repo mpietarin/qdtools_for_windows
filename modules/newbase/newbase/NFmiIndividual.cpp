@@ -16,8 +16,11 @@
 // ======================================================================
 
 #include "NFmiIndividual.h"
+
 #include "NFmiVersion.h"
+
 #include <boost/functional/hash.hpp>
+
 #include <fstream>
 
 // ----------------------------------------------------------------------
@@ -48,8 +51,7 @@ NFmiIndividual& NFmiIndividual::operator=(const NFmiIndividual& theIndividual)
 std::ostream& NFmiIndividual::Write(std::ostream& file) const
 {
   file << itsIdent << std::endl;
-  // We trust all data to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 2)
+  if (FmiBoxVersion >= 2)
   {
     file << itsName;
   }
@@ -74,8 +76,7 @@ std::istream& NFmiIndividual::Read(std::istream& file)
 {
   file >> itsIdent;
 
-  // We trust all data to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 6)
+  if (FmiBoxVersion >= 2)
   {
     file >> itsName;
   }

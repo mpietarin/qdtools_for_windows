@@ -13,6 +13,7 @@
 // ======================================================================
 
 #include "NFmiDataPool.h"
+
 #include "NFmiString.h"
 #include "NFmiTransformList.h"
 
@@ -735,8 +736,7 @@ std::ostream &NFmiDataPool::Write(std::ostream &file) const
   const int kFloat = 6;
   file << kFloat << std::endl;
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 6)
+  if (FmiInfoVersion >= 6)
   {
     file << fUseBinaryStorage << std::endl;
   }
@@ -779,8 +779,7 @@ std::istream &NFmiDataPool::Read(std::istream &file)
   unsigned long theType;
   file >> theType;
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 6)
+  if (FmiInfoVersion >= 6)
   {
     file >> fUseBinaryStorage;
   }

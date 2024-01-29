@@ -16,6 +16,7 @@
 #endif
 
 #include "NFmiRawData.h"
+
 #include "NFmiVersion.h"
 
 #include <boost/filesystem/operations.hpp>
@@ -23,6 +24,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread.hpp>
+
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -70,6 +72,7 @@ class NFmiRawData::Pimple
   float GetValue(size_t index) const;
 
   bool GetValues(size_t startIndex, size_t step, size_t count, std::vector<float> &values) const;
+  bool SetValues(size_t startIndex, size_t step, size_t count, const std::vector<float> &values);
   bool GetValuesPartial(size_t startIndex,
                         size_t rowCount,
                         size_t columnCount,
@@ -84,20 +87,21 @@ class NFmiRawData::Pimple
   void Backup(char *ptr) const;
   void Undo(char *ptr);
   bool Advise(FmiAdvice advice);
+  bool IsReadOnly() const;
 
  private:
-#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+#if NFMIRAWDATA_ENABLE_UNDO_REDO
   void Unmap() const;
 #endif
 
   mutable MutexType itsMutex;
-  mutable float *itsData{nullptr};                               // non-memory mapped data
-  mutable boost::scoped_ptr<MappedFile> itsMappedFile{nullptr};  // memory mapped data
-  size_t itsOffset{0};                                           // offset to raw data
+  mutable float *itsData{nullptr};                      // non-memory mapped data
+  mutable boost::scoped_ptr<MappedFile> itsMappedFile;  // memory mapped data
+  size_t itsOffset{0};                                  // offset to raw data
+
   size_t itsSize{0};
   mutable bool itsSaveAsBinaryFlag{true};
   bool itsEndianSwapFlag{false};
-  std::string itsFileName{};  // to ease examining core dumps
 };
 
 // ----------------------------------------------------------------------
@@ -107,14 +111,19 @@ class NFmiRawData::Pimple
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::~Pimple() { delete[] itsData; }
-
 // ----------------------------------------------------------------------
 /*!
  * \brief Default constructor
  */
 // ----------------------------------------------------------------------
 
-NFmiRawData::Pimple::Pimple() : itsMutex(), itsMappedFile(nullptr) {}
+NFmiRawData::Pimple::Pimple()
+    : itsMutex(),
+
+      itsMappedFile(nullptr)
+
+{
+}
 
 // ----------------------------------------------------------------------
 /*!
@@ -123,7 +132,12 @@ NFmiRawData::Pimple::Pimple() : itsMutex(), itsMappedFile(nullptr) {}
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::Pimple(const Pimple &other)
-    : itsMutex(), itsSize(other.itsSize), itsSaveAsBinaryFlag(other.itsSaveAsBinaryFlag)
+    : itsMutex(),
+      itsData(nullptr),
+      itsMappedFile(nullptr),
+      itsOffset(0),
+      itsSize(other.itsSize),
+      itsSaveAsBinaryFlag(other.itsSaveAsBinaryFlag)
 
 {
   // We assume copied data will be changed so that copying mmapping would
@@ -151,7 +165,7 @@ NFmiRawData::Pimple::Pimple(const Pimple &other)
 // ----------------------------------------------------------------------
 
 NFmiRawData::Pimple::Pimple(const string &filename, istream &file, size_t size)
-    : itsMutex(), itsSize(size), itsFileName(filename)
+    : itsMutex(), itsData(nullptr), itsMappedFile(nullptr), itsOffset(0), itsSize(size)
 
 {
   WriteLock lock(itsMutex);
@@ -234,8 +248,7 @@ NFmiRawData::Pimple::Pimple(istream &file, size_t size, bool endianswap)
   long datatype;
   file >> datatype;
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 6)
+  if (FmiInfoVersion >= 6)
     file >> itsSaveAsBinaryFlag;
   else
     itsSaveAsBinaryFlag = false;
@@ -398,7 +411,7 @@ bool NFmiRawData::Pimple::IsBinaryStorageUsed() const
  */
 // ----------------------------------------------------------------------
 
-#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+#if NFMIRAWDATA_ENABLE_UNDO_REDO
 void NFmiRawData::Pimple::Unmap() const
 {
   if (itsData) return;  // oli jo alustettu
@@ -428,14 +441,8 @@ float NFmiRawData::Pimple::GetValue(size_t index) const
 
   if (itsData) return itsData[index];
 
-  auto *addr = itsMappedFile->const_data() + itsOffset + index * sizeof(float);
-  float value;
-  memcpy(&value, addr, sizeof(float));
-  return value;
-
-  // ASAN does not like the reinterpret_cast here due to bad float alignment:
-  // const auto *ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
-  // return ptr[index];
+  const auto *ptr = reinterpret_cast<const float *>(itsMappedFile->const_data() + itsOffset);
+  return ptr[index];
 }
 
 bool NFmiRawData::Pimple::GetValues(size_t startIndex,
@@ -468,6 +475,30 @@ bool NFmiRawData::Pimple::GetValues(size_t startIndex,
     // {
     // 	return ptr[startIndex + i*step];
     // });
+  }
+
+  return true;
+}
+
+bool NFmiRawData::Pimple::SetValues(size_t startIndex,
+                                    size_t step,
+                                    size_t count,
+                                    const std::vector<float> &values)
+{
+  if (startIndex + step * (count - 1) >= itsSize) return false;
+
+  float *ptr = nullptr;
+
+  if (itsData)
+    ptr = itsData;
+  else
+    ptr = reinterpret_cast<float *>(itsMappedFile->data() + itsOffset);
+
+  {
+    WriteLock lock(itsMutex);
+
+    for (size_t i = 0; i < count; i++)
+      ptr[startIndex + i * step] = values[i];
   }
 
   return true;
@@ -530,8 +561,7 @@ bool NFmiRawData::Pimple::SetValue(size_t index, float value)
   }
   else if (itsOffset > 0)
   {
-    if (itsMappedFile->flags() == boost::iostreams::mapped_file::readonly)
-      throw std::runtime_error("Can't modify read-only memory-mapped data");
+    if (IsReadOnly()) throw std::runtime_error("Can't modify read-only memory-mapped data");
 
     // We have mmapped output data
     auto *ptr = reinterpret_cast<float *>(itsMappedFile->data() + itsOffset);
@@ -563,11 +593,11 @@ ostream &NFmiRawData::Pimple::Write(ostream &file) const
   const int kFloat = 6;
   file << kFloat << endl;
 
-  if (DefaultFmiInfoVersion >= 6) file << itsSaveAsBinaryFlag << endl;
+  if (FmiInfoVersion >= 6) file << itsSaveAsBinaryFlag << endl;
 
   file << itsSize * sizeof(float) << endl;
 
-  if (itsSaveAsBinaryFlag && DefaultFmiInfoVersion >= 6)
+  if (itsSaveAsBinaryFlag && FmiInfoVersion >= 6)
   {
     if (itsData != nullptr)
     {
@@ -603,8 +633,8 @@ void NFmiRawData::Pimple::Backup(char *ptr) const
   {
     ReadLock lock(itsMutex);
 
-// we assume data which is backed up is edited, so might as well unmap
-#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+    // we assume data which is backed up is edited, so might as well unmap
+#if NFMIRAWDATA_ENABLE_UNDO_REDO
     Unmap();
 #endif
 
@@ -628,7 +658,7 @@ void NFmiRawData::Pimple::Undo(char *ptr)
     // This may be slower than necessary when mmapped, but since Backup
     // unmaps this really should never actually unmap
 
-#ifdef NFMIRAWDATA_ENABLE_UNDO_REDO
+#if NFMIRAWDATA_ENABLE_UNDO_REDO
     Unmap();
 #endif
     auto *src = reinterpret_cast<char *>(itsData);
@@ -645,6 +675,15 @@ void NFmiRawData::Pimple::Undo(char *ptr)
 bool NFmiRawData::Pimple::Advise(FmiAdvice advice)
 {
   // was supported with boost::interprocess, not with boost::iostreams
+  return false;
+}
+
+bool NFmiRawData::Pimple::IsReadOnly() const
+{
+  if (itsMappedFile)
+  {
+    return itsMappedFile->flags() == boost::iostreams::mapped_file::readonly;
+  }
   return false;
 }
 
@@ -743,6 +782,14 @@ bool NFmiRawData::GetValues(size_t startIndex,
   return itsPimple->GetValues(startIndex, step, count, values);
 }
 
+bool NFmiRawData::SetValues(size_t startIndex,
+                            size_t step,
+                            size_t count,
+                            const std::vector<float> &values)
+{
+  return itsPimple->SetValues(startIndex, step, count, values);
+}
+
 // ----------------------------------------------------------------------
 /*!
  * \brief Resizes values (invalidates iterators!!) to count and populates it with values at
@@ -813,4 +860,6 @@ void NFmiRawData::Undo(char *ptr) { itsPimple->Undo(ptr); }
 // ----------------------------------------------------------------------
 
 bool NFmiRawData::Advise(FmiAdvice theAdvice) { return itsPimple->Advise(theAdvice); }
+
+bool NFmiRawData::IsReadOnly() const { return itsPimple->IsReadOnly(); }
 // ======================================================================

@@ -9,6 +9,7 @@
 
 #include "NFmiQueryData.h"
 #include "NFmiString.h"  // Added by ClassView
+
 #include <ctime>
 
 #ifdef UNIX
@@ -23,17 +24,17 @@ const NFmiString kFmiSourceDirectory("\\\\vespa\\editdata\\");
 class NFmiSnapShotInterface
 {
  public:
-  virtual ~NFmiSnapShotInterface(void);
+  virtual ~NFmiSnapShotInterface();
   NFmiSnapShotInterface(NFmiString theDataFileName = "KEPA",
                         NFmiString theWorkingDirectory = kFmiWorkingDirectory,
                         NFmiString theSourceDirectory = kFmiSourceDirectory,
                         time_t theUpdateInterval = /*24*60**/ 60);
 
-  bool IsValid(void);
+  bool IsValid();
   bool Update(NFmiQueryInfo** theInfo);
 
  protected:
-  bool ReadData(void);
+  bool ReadData();
 
  protected:
   bool fIsValid;

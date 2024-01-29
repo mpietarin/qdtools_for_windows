@@ -52,7 +52,7 @@
  * Respectively, resulting interpolated value is stored in an other private variable.
  *
  *_____________________________________________________________________________
- * 2.4	void First(void)
+ * 2.4	void First()
  *
  * Sets the current list item (=list sub range) index to zero
  *
@@ -130,6 +130,7 @@
 // ======================================================================
 
 #include "NFmiTransformList.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -374,9 +375,7 @@ bool NFmiTransformList::Allocate(int theMaxPairNumber)
     // Allocate space for more pair data
     **/
 
-    // Prevent crash in AddDataMapping since itsFirstPair is nullptr
-    throw std::runtime_error("Unable to allocate more memory for transform list");
-    
+    return false;  // Lisämuistin varausta ei ole toteutettu
   }
   else
   {

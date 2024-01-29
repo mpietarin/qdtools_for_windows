@@ -6,11 +6,11 @@
 // ======================================================================
 
 #include "NFmiSaveBaseFactory.h"
+
 #include "NFmiEquidistArea.h"
 #include "NFmiGdalArea.h"
 #include "NFmiGnomonicArea.h"
 #include "NFmiGrid.h"
-#include "NFmiLambertConformalConicArea.h"
 #include "NFmiLambertEqualArea.h"
 #include "NFmiLatLonArea.h"
 #include "NFmiMercatorArea.h"
@@ -19,10 +19,18 @@
 #include "NFmiStationBag.h"
 #include "NFmiStereographicArea.h"
 #include "NFmiVersion.h"
-#include "NFmiWebMercatorArea.h"
 #include "NFmiYKJArea.h"
-#include <boost/atomic.hpp>
+
 #include <boost/lexical_cast.hpp>
+
+// Having 'extern' and initializatin is no good (gcc gives a warning).
+//  -AKa 3-Jun-10
+//
+// Note that these are GLOBALLY WRITTEN TO in 'NFmiMetBox.cpp' (looks very suspicious...)
+//  -AKa 3-Jun-10
+//
+unsigned short FmiBoxVersion = 3;
+unsigned short FmiInfoVersion = 7;
 
 // ----------------------------------------------------------------------
 /*!
@@ -57,12 +65,8 @@ void *CreateSaveBase(unsigned int classId)
       return static_cast<void *>(new NFmiEquidistArea);
     case kNFmiMercatorArea:
       return static_cast<void *>(new NFmiMercatorArea);
-    case kNFmiWebMercatorArea:
-      return static_cast<void *>(new NFmiWebMercatorArea);
     case kNFmiGnomonicArea:
       return static_cast<void *>(new NFmiGnomonicArea);
-    case kNFmiLambertConformalConicArea:
-      return static_cast<void *>(new NFmiLambertConformalConicArea);
 
     case kNFmiQueryData:
       return static_cast<void *>(new NFmiQueryData);
@@ -74,10 +78,8 @@ void *CreateSaveBase(unsigned int classId)
     case kNFmiStationBag:
       return static_cast<void *>(new NFmiStationBag);
 #ifdef UNIX
-#ifndef DISABLED_GDAL
     case kNFmiGdalArea:
       return static_cast<void *>(new NFmiGdalArea);
-#endif
 #endif
 
     default:

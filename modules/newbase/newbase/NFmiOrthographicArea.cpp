@@ -65,10 +65,10 @@
 // ======================================================================
 
 #include "NFmiOrthographicArea.h"
-#include <boost/functional/hash.hpp>
-#include <fmt/format.h>
+
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -511,31 +511,17 @@ const std::string NFmiOrthographicArea::AreaStr() const
 
 const std::string NFmiOrthographicArea::WKT() const
 {
-  const char *fmt = R"(PROJCS["FMI_Orthographic",)"
-                    R"(GEOGCS["FMI_Sphere",)"
-                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
-                    R"(PRIMEM["Greenwich",0],)"
-                    R"(UNIT["Degree",0.0174532925199433]],)"
-                    R"(PROJECTION["Orthographic"],)"
-                    R"(PARAMETER["latitude_of_origin",{}],)"
-                    R"(PARAMETER["central_meridian",{}],)"
-                    R"(UNIT["Metre",1.0]])";
-  return fmt::format(fmt, kRearth, itsCentralLatitude.Value(), itsCentralLongitude);
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiOrthographicArea::HashValue() const
-{
-  std::size_t hash = NFmiAzimuthalArea::HashValue();
-  boost::hash_combine(hash, boost::hash_value(itsAzimuthAngle));
-  boost::hash_combine(hash, boost::hash_value(itsGlobeRadius));
-  boost::hash_combine(hash, itsCurrentLatlonPoint.HashValue());
-  return hash;
+  std::ostringstream ret;
+  ret << std::setprecision(16) << R"(PROJCS["FMI_Orthographic",)"
+      << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Orthographic"],)"
+      << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
+      << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+      << R"(UNIT["Metre",1.0]])";
+  return ret.str();
 }
 
 // ======================================================================

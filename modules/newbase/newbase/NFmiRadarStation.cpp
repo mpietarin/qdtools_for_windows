@@ -13,9 +13,10 @@
 // ======================================================================
 
 #include "NFmiRadarStation.h"
-#include <fstream>
 
 #include "NFmiVersion.h"
+
+#include <fstream>
 
 // ----------------------------------------------------------------------
 /*!
@@ -130,8 +131,7 @@ std::ostream &NFmiRadarStation::Write(std::ostream &file) const
 {
   NFmiStation::Write(file);
 
-  // We trust everything to be version 6 or 7 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file << itsResolution << " ";
     file << static_cast<unsigned int>(itsXNumber) << " " << static_cast<unsigned int>(itsYNumber)
@@ -159,8 +159,7 @@ std::istream &NFmiRadarStation::Read(std::istream &file)
   itsXNumber = static_cast<unsigned long>(kFloatMissing);
   itsYNumber = static_cast<unsigned long>(kFloatMissing);
 
-  // We trust everything to be version 6 or 7 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file >> itsResolution;
     file >> itsXNumber;

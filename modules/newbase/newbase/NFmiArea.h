@@ -10,11 +10,12 @@
 #include "NFmiAngle.h"
 #include "NFmiRect.h"
 #include "NFmiSaveBaseFactory.h"
+
 #include <string>
 
 struct PacificPointFixerData
 {
-  PacificPointFixerData(void) : itsBottomLeftLatlon(), itsTopRightLatlon(), fIsPacific(false) {}
+  PacificPointFixerData() : itsBottomLeftLatlon(), itsTopRightLatlon(), fIsPacific(false) {}
   PacificPointFixerData(const NFmiPoint &theBottomLeftLatlon,
                         const NFmiPoint &theTopRightLatlon,
                         bool isPacific)
@@ -116,21 +117,18 @@ class NFmiArea
 
   virtual bool operator==(const NFmiArea &theArea) const;
   virtual bool operator!=(const NFmiArea &theArea) const;
-  bool PacificView(void) const { return fPacificView; }
+  bool PacificView() const { return fPacificView; }
   void PacificView(bool newValue) { fPacificView = newValue; }
-  void CheckForPacificView(void);
+  void CheckForPacificView();
 
   static PacificPointFixerData PacificPointFixer(const NFmiPoint &theBottomLeftLatlon,
                                                  const NFmiPoint &theTopRightLatlon);
   static bool IsPacificView(const NFmiPoint &bottomleftLatlon, const NFmiPoint &toprightLatlon);
   static bool IsPacificLongitude(double theLongitude);
-  NFmiArea *DoPossiblePacificFix(void) const;
-  NFmiArea *DoForcePacificFix(void) const;
+  NFmiArea *DoPossiblePacificFix() const;
+  NFmiArea *DoForcePacificFix() const;
 
   std::size_t HashValue() const;
-
-  // Temporary fix until the above method is fixed to be virtual
-  std::size_t HashValueKludge() const;
 
  protected:
   int Sign(double theValue) const;

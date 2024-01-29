@@ -93,6 +93,7 @@ enum FmiParameterName
   kFmiHelicity = 67,
   kFmiLCL = 68,
   kFmiLNB = 69,
+  kFmiEDR = 70,
 
   kFmiTotalCloudCover = 79,
   kFmiKIndex = 80,
@@ -219,6 +220,8 @@ enum FmiParameterName
 
   kFmiSnowWarning = 220,  // arvot: 0 = ei varoitusta, 1 = lumivaroitus, 2 = lumihälytys
 
+  kFmiHardPackedSnowIndex = 221,  // used by the road model (polanne in Finnish, values 0,1,2,3)
+
   kFmiPressureAnomaly = 226,
   kFmiGeopotentialHeightAnomaly,
 
@@ -249,6 +252,7 @@ enum FmiParameterName
   kFmiWaterEquivalentOfSnow = 266,
   kFmiWaterAccumulation,  // kFmiWaterEquivalentOfGraupel = 267,
   kFmiSnowWaterRatio,
+  kFmiPrecipitationAccumulation,
 
   kFmiFreezingLevel = 270,
   kFmiMiddleAndLowCloudCover = 271,
@@ -300,7 +304,8 @@ enum FmiParameterName
   kFmiRadiationLW,
   kFmiRadiationSW,
   kFmiRadiationGlobal,
-  kFmiRadiationReflected = 318,
+  kFmiRadiationReflected,
+  kFmiRadiationDownLWClearSky = 319,
 
   kFmiLatentHeatFlux = 321,
   kFmiSensibleHeatFlux,
@@ -877,6 +882,11 @@ enum FmiParameterName
   kFmiTotalPrecipitationF10 = 896,
   kFmiTotalPrecipitationF0 = 897,
 
+  kFmiPowerOutput = 900,
+  kFmiPowerOutputSum = 901,
+  kFmiPowerOutagesByCounty = 902,
+  kFmiPowerOutagesByMunicipality = 903,
+
   // Added 10.11.2008 - Antti Westerberg
   kFmiExceptionalPrecipitation = 910,
   kFmi1CloudTop = 911,
@@ -950,6 +960,18 @@ enum FmiParameterName
   kFmiProbabilityOfPrecipitation3h150mm = 976,
   kFmiProbabilityOfPrecipitation3h200mm = 977,
   kFmiProbabilityOfPrecipitation3h500mm = 978,
+
+  kFmiProbabilityPartlyIcyRoad = 979,
+  kFmiProbabilityTRoadLimit1 = 980,
+  kFmiProbabilityTRoadLimit2 = 981,
+  kFmiProbabilityWetSnowyRoad = 982,
+  kFmiRoadTemperatureF0 = 983,
+  kFmiRoadTemperatureF10 = 984,
+  kFmiRoadTemperatureF25 = 985,
+  kFmiRoadTemperatureF50 = 986,
+  kFmiRoadTemperatureF75 = 987,
+  kFmiRoadTemperatureF90 = 988,
+  kFmiRoadTemperatureF100 = 989,
 
   kFmiFlagDate = 999,
 
@@ -1122,6 +1144,9 @@ enum FmiParameterName
 
   kFmiHakeMessageType = 1176,
 
+  kFmiSoaringFlightIndex = 1177,
+  kFmiThermalBirdMigrationIndex = 1178,
+
   // Dry and wet deposition 6h cumulative
   kFmiSurface6hAccumulatedNOxDryDeposition = 1180,
   kFmiSurface6hAccumulatedNOxWetDeposition,
@@ -1225,6 +1250,10 @@ enum FmiParameterName
   kFmiProbabilityOfConvectivePrecipitationLimit6,
   kFmiProbabilityOfPrecipitation3h03mm,  // > 0.3 mm
   kFmiProbabilityOfColdLimit5,           // T < -35
+
+  kFmiProbabilityOfForestFireIndexLevel1,
+  kFmiProbabilityOfForestFireIndexLevel2,
+  kFmiProbabilityOfForestFireIndexLevel3,
 
   kFmiDifferentialReflectivity = 1300,   // Opera ODIM ZDR = Logged Differential Reflectivity
   kFmiSpecificDifferentialPhase = 1301,  // Opera ODIM KDP = Specific Differential Phase
@@ -1389,6 +1418,18 @@ enum FmiParameterName
   kFmiProbabilityOfDIW2,
   kFmiProbabilityOfDIW3,
   kFmiProbabilityOfDIW4,
+
+  // NWCSAF
+  kFmiCloudMask = 1456,
+  kFmiCloudMaskQuality,
+  kFmiCloudType,
+  kFmiCloudTypeQuality,
+  kFmiCloudTopPressure,
+  kFmiCloudTopQuality,
+  kFmiEffectiveCloudiness,
+
+  // MEPS
+  kFmiAtmosphericIcGrowth,
 
   // Add a bunch of extreme fractile parameters (on the high and low end of the distribution)
 
@@ -1735,6 +1776,9 @@ enum FmiParameterName
   // Volumetric soil water layer for 0-28 cm (SOL-7344)
   kFmiVolumetricSoilWaterLayer28 = 4850,
   kFmiVolumetricSoilWaterLayerAnomaly28 = 4851,
+
+  kFmiLungDepositedSurfaceArea = 4898,  // Enfused model parameters
+  kFmiBlackCarbonConcentration = 4899,
   kFmiCOConcentration = 4900,
   kFmiNOConcentration,
   kFmiNO2Concentration,
@@ -1747,7 +1791,7 @@ enum FmiParameterName
   kFmiTotalPrecipitationF2_5,
 
   // Sea level parameters
-  
+
   kFmiProbabilityOfSeaLevelLimit1N2000,
   kFmiProbabilityOfSeaLevelLimit2N2000,
   kFmiProbabilityOfSeaLevelLimit3N2000,
@@ -1764,7 +1808,109 @@ enum FmiParameterName
   kFmiSeaLevelF90N2000,
   kFmiSeaLevelF95N2000,
 
-  
+  // Railroading parameters
+
+  kFmiProbabilityOfRailRule5,
+
+  // New Himan parameters (BRAINSTORM-2335)
+  kFmiMaxProbabilityThunderstorm24h,      // percent
+  kFmiWindGustDuration24h,                // h/24h
+  kFmiMaxWindGust24h,                     // m/s
+  kFmiMaxSevereThunderstormPotential24h,  // index 0-3
+
+  // Meta parameters calculated on the fly. This list is not exhaustive, some parameters
+  // already had numbers assigned to them.
+  // This list starts intentionally at 9000 before the start of NetCDF parameters.
+
+  // If you wish to add new parameters, please do them above this list unless your
+  // new parameter is also to be calculated on the fly, in which case you might
+  // want to modify spine/Parameters.cpp
+
+  // Note that new parameters must be appended to the end of this list, it just happens
+  // to be sorted in the first version.
+
+  kFmiApparentTemperature = 9000,
+  kFmiCloudiness8th,
+  kFmiCountry,
+  kFmiCoverType,
+  kFmiDEM,
+  kFmiDark,
+  kFmiDataSource,
+  kFmiDayLength,
+  kFmiDirection,
+  kFmiDistance,
+  kFmiElevation,
+  kFmiEpochTime,
+  kFmiFMISID,
+  kFmiFeature,
+  kFmiGEOID,
+  kFmiGridNorth,
+  kFmiISO2,
+  kFmiISOTime,
+  kFmiLPNN,
+  kFmiLatLon,
+  kFmiLevel,
+  kFmiLocalTZ,
+  kFmiLocalTime,
+  kFmiLonLat,
+  kFmiModTime,
+  kFmiModel,
+  kFmiMon,
+  kFmiMoonDown24h,
+  kFmiMoonPhase,
+  kFmiMoonUp24h,
+  kFmiMoonrise,
+  kFmiMoonrise2,
+  kFmiMoonrise2Today,
+  kFmiMoonriseToday,
+  kFmiMoonset,
+  kFmiMoonset2,
+  kFmiMoonset2Today,
+  kFmiMoonsetToday,
+  kFmiName,
+  kFmiNearLatLon,
+  kFmiNearLatitude,
+  kFmiNearLonLat,
+  kFmiNearLongitude,
+  kFmiNoon,
+  kFmiOriginTime,
+  kFmiPlace,
+  kFmiPopulation,
+  kFmiProducer,
+  kFmiRWSID,
+  kFmiRegion,
+  kFmiSensorNo,
+  kFmiSmartSymbolText,
+  kFmiSnow1hLower,
+  kFmiSnow1hUpper,
+  kFmiStationElevation,
+  kFmiStationLatitude,
+  kFmiStationLongitude,
+  kFmiStationName,
+  kFmiStationary,
+  kFmiSummerSimmerIndex,
+  kFmiSunAzimuth,
+  kFmiSunDeclination,
+  kFmiSunElevation,
+  kFmiSunrise,
+  kFmiSunriseToday,
+  kFmiSunset,
+  kFmiSunsetToday,
+  kFmiTZ,
+  kFmiTime,
+  kFmiTimeString,
+  kFmiUTCTime,
+  kFmiWDay,
+  kFmiWeather,
+  kFmiWeekday,
+  kFmiWindChill,
+  kFmiWindCompass16,
+  kFmiWindCompass32,
+  kFmiWindCompass8,
+  kFmiXMLTime,
+
+  // NetCDF parameters, last generated on 201X.MM.DD ????
+
   cf_acoustic_signal_roundtrip_travel_time_in_sea_water = 10000,
   cf_aerodynamic_particle_diameter = 10001,
   cf_aerodynamic_resistance = 10002,

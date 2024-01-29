@@ -12,9 +12,11 @@
 #include "NFmiRawData.h"
 #include "NFmiStation.h"
 #include "NFmiStringList.h"
+
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/once.hpp>
+
 #include <string>
 #include <vector>
 
@@ -134,8 +136,8 @@ class NFmiQueryData
   double InfoVersion() const;
   void InfoVersion(double newValue) const;
 
-  boost::shared_ptr<std::vector<NFmiPoint> > LatLonCache() const;
-  void SetLatLonCache(boost::shared_ptr<std::vector<NFmiPoint> > newCache);
+  boost::shared_ptr<std::vector<NFmiPoint>> LatLonCache() const;
+  void SetLatLonCache(boost::shared_ptr<std::vector<NFmiPoint>> newCache);
 
   // Unique value for unique grids
   std::size_t GridHashValue() const;
@@ -154,6 +156,11 @@ class NFmiQueryData
 
   // THIS IS NOT THREAD SAFE!!
   void SetHPlaceDescriptor(const NFmiHPlaceDescriptor &newDesc);
+
+  //#ifndef  NDEBUG
+  static int itsConstructorCalls;  // tämä on yritys tutkia mahdollisia vuotoja ohjelmissä
+  static int itsDestructorCalls;   // kuinka monta oliota on luotu ja tuhottu
+                                   //#endif // NDEBUG
 
   // Advise memory mapping
   bool Advise(FmiAdvice theAdvice);
@@ -175,7 +182,7 @@ class NFmiQueryData
   NFmiQueryInfo *itsQueryInfo;
 
   void MakeLatLonCache() const;
-  mutable boost::shared_ptr<std::vector<NFmiPoint> > itsLatLonCache;
+  mutable boost::shared_ptr<std::vector<NFmiPoint>> itsLatLonCache;
   mutable boost::once_flag itsLatLonCacheFlag;
 
   friend class NFmiQueryInfo;

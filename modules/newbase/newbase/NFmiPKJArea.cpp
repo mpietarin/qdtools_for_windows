@@ -96,6 +96,7 @@
 // ======================================================================
 
 #include "NFmiPKJArea.h"
+
 #include <cmath>
 #include <cstdlib>
 #include <stdexcept>
@@ -414,19 +415,6 @@ std::istream &NFmiPKJArea::Read(std::istream &file)
 const std::string NFmiPKJArea::WKT() const
 {
   throw std::runtime_error("WKT not available for generic PKJ projections");
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiPKJArea::HashValue() const
-{
-  std::size_t hash = NFmiKKJArea::HashValue();
-  // no private members
-  return hash;
 }
 
 // ======================================================================

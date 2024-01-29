@@ -12,20 +12,19 @@
  */
 // ======================================================================
 
-#include "NFmiVersion.h"
+#include "NFmiQueryData.h"
 
 #include "NFmiFileSystem.h"
 #include "NFmiGrid.h"
-#include "NFmiQueryData.h"
 #include "NFmiQueryInfo.h"
 #include "NFmiSaveBaseFactory.h"
 #include "NFmiStationBag.h"
+#include "NFmiVersion.h"
 
 #include <boost/make_shared.hpp>
 
 #include <fcntl.h>
 #include <fstream>
-#include <ios>
 
 #ifndef UNIX
 #include <io.h>
@@ -38,25 +37,12 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #endif
 
+//#ifndef  NDEBUG
+int NFmiQueryData::itsConstructorCalls = 0;
+int NFmiQueryData::itsDestructorCalls = 0;
+//#endif // NDEBUG
+
 using namespace std;
-
-// lisää 4MB bufferin streamiin, ja poistuessaan scopessa jättää streamin käytettäväksi, mutta
-// bufferoimattomaksi linuxkääntäjillä streamin bufferi pitää vaihtaa ennen tiedoston avaamista,
-// joten tämä vekotin ei toimi https://en.cppreference.com/w/cpp/io/basic_filebuf/setbuf
-struct BufferGuard
-{
-  static constexpr const size_t bufSize = 1 << 22;  // 4194304
-
-  std::vector<char> buf;
-  std::ios &strm;
-
-  BufferGuard(std::ios &stream) : strm(stream)
-  {
-    buf = std::vector<char>(bufSize);
-    strm.rdbuf()->pubsetbuf(buf.data(), bufSize);
-  }
-  ~BufferGuard() { strm.rdbuf()->pubsetbuf(nullptr, 0); }
-};
 
 // Staattiset versiot querydatan luku/kirjoituksesta, ottavat huomioon mm. VC++:n binääri
 // asetuksista.
@@ -114,11 +100,6 @@ void NFmiQueryData::Write(const std::string &filename, bool forceBinaryFormat) c
     if (forceBinaryFormat) ::ForceBinaryFormatWrite(*this);
 
     ofstream dataFile(filename.c_str(), ios::binary | ios::out);
-
-#ifdef WIN32
-    auto bg = BufferGuard(dataFile);
-#endif
-
     if (dataFile)
       dataFile << *this;
     else
@@ -138,7 +119,13 @@ void NFmiQueryData::Write(const std::string &filename, bool forceBinaryFormat) c
  */
 // ----------------------------------------------------------------------
 
-NFmiQueryData::~NFmiQueryData() { Destroy(); }
+NFmiQueryData::~NFmiQueryData()
+{
+  Destroy();
+  //#ifndef  NDEBUG
+  NFmiQueryData::itsDestructorCalls++;
+  //#endif // NDEBUG
+}
 
 // ----------------------------------------------------------------------
 /*!
@@ -153,6 +140,9 @@ NFmiQueryData::NFmiQueryData()
       itsLatLonCache(),
       itsLatLonCacheFlag(BOOST_ONCE_INIT)
 {
+  //#ifndef  NDEBUG
+  NFmiQueryData::itsConstructorCalls++;
+  //#endif // NDEBUG
 }
 
 // ----------------------------------------------------------------------
@@ -171,6 +161,9 @@ NFmiQueryData::NFmiQueryData(const NFmiQueryInfo &theInfo)
       itsLatLonCache(),
       itsLatLonCacheFlag(BOOST_ONCE_INIT)
 {
+  //#ifndef  NDEBUG
+  NFmiQueryData::itsConstructorCalls++;
+  //#endif // NDEBUG
 }
 
 // ----------------------------------------------------------------------
@@ -188,6 +181,9 @@ NFmiQueryData::NFmiQueryData(const NFmiQueryData &theData)
       itsLatLonCache(theData.itsLatLonCache),
       itsLatLonCacheFlag(theData.itsLatLonCacheFlag)
 {
+  //#ifndef  NDEBUG
+  NFmiQueryData::itsConstructorCalls++;
+  //#endif // NDEBUG
 }
 
 // ----------------------------------------------------------------------
@@ -202,11 +198,20 @@ NFmiQueryData::NFmiQueryData(const string &thePath, bool theMemoryMapFlag)
       itsQueryInfo(nullptr),
       itsLatLonCacheFlag(BOOST_ONCE_INIT)
 {
+  //#ifndef  NDEBUG
+  NFmiQueryData::itsConstructorCalls++;
+  //#endif // NDEBUG
+
   // Filename "-" implies standard input
 
   if (thePath == "-")
   {
+    // Laitetaan yleinen infoversio numero talteen, että se
+    // voidaan palauttaa luvun jälkeen voimaan taas
+    unsigned short oldInfoVersion = FmiInfoVersion;
     Read();
+    // palautetaan yleinen infoversion takaisen ennalleen
+    FmiInfoVersion = oldInfoVersion;
   }
   else
   {
@@ -214,14 +219,14 @@ NFmiQueryData::NFmiQueryData(const string &thePath, bool theMemoryMapFlag)
 
     const string filename = NFmiFileSystem::FindQueryData(thePath);
 
+    // Laitetaan yleinen infoversio numero talteen, että se
+    // voidaan palauttaa luvun jälkeen voimaan taas
+    unsigned short oldInfoVersion = FmiInfoVersion;
+
     try
     {
       ifstream file(filename.c_str(), ios::in | ios::binary);
       if (!file) throw runtime_error("Could not open '" + filename + "' for reading");
-
-#ifdef WIN32
-      auto bg = BufferGuard(file);
-#endif
 
       itsQueryInfo = new NFmiQueryInfo;
 
@@ -250,7 +255,7 @@ NFmiQueryData::NFmiQueryData(const string &thePath, bool theMemoryMapFlag)
 
         bool use_mmap = theMemoryMapFlag;
 
-        if (itsQueryInfo->InfoVersion() < 6) use_mmap = false;
+        if (FmiInfoVersion < 6) use_mmap = false;
 
         if (itsQueryInfo->DoEndianByteSwap()) use_mmap = false;
 
@@ -270,10 +275,15 @@ NFmiQueryData::NFmiQueryData(const string &thePath, bool theMemoryMapFlag)
     }
     catch (...)
     {
+      // palautetaan yleinen infoversion takaisen ennalleen
       delete itsQueryInfo;
       delete itsRawData;
+      FmiInfoVersion = oldInfoVersion;
       throw;
     }
+
+    // palautetaan yleinen infoversion takaisen ennalleen
+    FmiInfoVersion = oldInfoVersion;
   }
 }
 
@@ -568,11 +578,17 @@ bool NFmiQueryData::IsEqual(const NFmiQueryData &theQueryData) const
 
 std::ostream &NFmiQueryData::Write(std::ostream &file) const
 {
+  double oldInfoVersion = FmiInfoVersion;  // Laitetaan yleinen infoversio numero talteen, että se
+                                           // voidaan palauttaa luvun jälkeen voimaan taas
+  FmiInfoVersion = static_cast<unsigned short>(InfoVersion());
+
   if (InfoVersion() >= 6) UseBinaryStorage(true);
 
   file << *itsQueryInfo;
   itsRawData->Write(file);
 
+  FmiInfoVersion = static_cast<unsigned short>(
+      oldInfoVersion);  // palautetaan yleinen infoversion takaisen ennalleen
   return file;
 }
 
@@ -587,11 +603,18 @@ std::ostream &NFmiQueryData::Write(std::ostream &file) const
 
 std::istream &NFmiQueryData::Read(std::istream &file)
 {
+  // Laitetaan yleinen infoversio numero talteen, että se
+  // voidaan palauttaa luvun jälkeen voimaan taas
+  unsigned short oldInfoVersion = FmiInfoVersion;
+
   // Olion sisäinen infoversio numero jää itsQueryInfo:on talteen.
   itsQueryInfo = new NFmiQueryInfo();
   file >> *itsQueryInfo;
 
   itsRawData = new NFmiRawData(file, itsQueryInfo->Size(), itsQueryInfo->DoEndianByteSwap());
+
+  // palautetaan yleinen infoversion takaisen ennalleen
+  FmiInfoVersion = oldInfoVersion;
 
   return file;
 }
@@ -631,7 +654,7 @@ bool NFmiQueryData::Advise(FmiAdvice theAdvice)
  */
 // ----------------------------------------------------------------------
 
-boost::shared_ptr<std::vector<NFmiPoint> > NFmiQueryData::LatLonCache() const
+boost::shared_ptr<std::vector<NFmiPoint>> NFmiQueryData::LatLonCache() const
 {
   // If not already set by SetLatLonCache, initialize once
   if (!itsLatLonCache)
@@ -652,7 +675,7 @@ boost::shared_ptr<std::vector<NFmiPoint> > NFmiQueryData::LatLonCache() const
  */
 // ----------------------------------------------------------------------
 
-void NFmiQueryData::SetLatLonCache(boost::shared_ptr<std::vector<NFmiPoint> > newCache)
+void NFmiQueryData::SetLatLonCache(boost::shared_ptr<std::vector<NFmiPoint>> newCache)
 {
   itsLatLonCache = newCache;
 }
@@ -667,7 +690,7 @@ void NFmiQueryData::SetLatLonCache(boost::shared_ptr<std::vector<NFmiPoint> > ne
 
 void NFmiQueryData::MakeLatLonCache() const
 {
-  boost::shared_ptr<std::vector<NFmiPoint> > tmp = boost::make_shared<std::vector<NFmiPoint> >();
+  boost::shared_ptr<std::vector<NFmiPoint>> tmp = boost::make_shared<std::vector<NFmiPoint>>();
   HPlaceDesc()->CreateLatLonCache(*tmp);
   boost::atomic_store(&itsLatLonCache, tmp);
 }

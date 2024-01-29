@@ -15,7 +15,7 @@
 // ======================================================================
 
 #include "NFmiAngle.h"
-#include <boost/functional/hash.hpp>
+
 #include <iostream>
 
 using namespace std;
@@ -427,13 +427,5 @@ NFmiLongitude& NFmiLongitude::operator+=(const double& theAngle)
   itsValue = NFmiLongitude(itsValue + theAngle, fPacificView).itsValue;
   return *this;
 }
-
-// ======================================================================
-/*!
- * \brief Hash value
- */
-// ======================================================================
-
-std::size_t NFmiAngle::HashValue() const { return boost::hash_value(itsValue); }
 
 // ======================================================================

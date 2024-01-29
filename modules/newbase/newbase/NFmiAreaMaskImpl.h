@@ -8,6 +8,7 @@
 #pragma once
 
 #include "NFmiAreaMask.h"
+#include "NFmiAreaMaskHelperStructures.h"
 #include "NFmiCalculationCondition.h"
 #include "NFmiInfoData.h"
 
@@ -17,14 +18,14 @@ class NFmAreaMaskList;
 class NFmiAreaMaskImpl : public NFmiAreaMask
 {
  public:
-  virtual ~NFmiAreaMaskImpl(void);
-  NFmiAreaMaskImpl(void);
+  virtual ~NFmiAreaMaskImpl();
+  NFmiAreaMaskImpl();
   NFmiAreaMaskImpl(const NFmiCalculationCondition &theOperation,
                    Type theMaskType,
                    NFmiInfoData::Type theDataType,
                    BinaryOperator thePostBinaryOperator);
   NFmiAreaMaskImpl(const NFmiAreaMaskImpl &theOther);
-  void Initialize(void) override;
+  void Initialize() override;
 
   bool IsMasked(int theIndex) const override;
   bool IsMasked(const NFmiPoint &theLatLon) const override;
@@ -36,9 +37,9 @@ class NFmiAreaMaskImpl : public NFmiAreaMask
   double HeightValue(double /* theHeight */,
                      const NFmiCalculationParams &theCalculationParams) override
   {
-    // Poikkileikkauslaskuissa pitää aina käyttää 'aikainterpolaatiota', muuten ei (koska laskussa
-    // käytetyt ajat on jo asetettu muualla)
-    bool useTimeInterpolationAlways = theCalculationParams.fCrossSectionCase;
+    // Poikkileikkaus/aikasarja laskuissa pitää aina käyttää 'aikainterpolaatiota', muuten ei (koska
+    // laskussa käytetyt ajat on jo asetettu muualla)
+    bool useTimeInterpolationAlways = theCalculationParams.fSpecialCalculationCase;
     return Value(theCalculationParams, useTimeInterpolationAlways);
   }
   // oletuksenä PressureValue palauttaa saman kuin Value-metodi, homma overridataan vain
@@ -46,76 +47,73 @@ class NFmiAreaMaskImpl : public NFmiAreaMask
   double PressureValue(double /* thePressure */,
                        const NFmiCalculationParams &theCalculationParams) override
   {
-    // Poikkileikkauslaskuissa pitää aina käyttää 'aikainterpolaatiota', muuten ei (koska laskussa
-    // käytetyt ajat on jo asetettu muualla)
-    bool useTimeInterpolationAlways = theCalculationParams.fCrossSectionCase;
+    // Poikkileikkaus/aikasarja laskuissa pitää aina käyttää 'aikainterpolaatiota', muuten ei (koska
+    // laskussa käytetyt ajat on jo asetettu muualla)
+    bool useTimeInterpolationAlways = theCalculationParams.fSpecialCalculationCase;
     return Value(theCalculationParams, useTimeInterpolationAlways);
   }
 
-  bool IsEnabled(void) const override;
+  bool IsEnabled() const override;
   void Enable(bool theNewState) override;
 
   bool Time(const NFmiMetTime &theTime) override;
   void Condition(const NFmiCalculationCondition &theCondition) override;
-  const NFmiCalculationCondition &Condition(void) const override;
+  const NFmiCalculationCondition &Condition() const override;
 
-  bool IsRampMask(void) const override;
+  bool IsRampMask() const override;
   bool IsWantedParam(const NFmiDataIdent &theParam, const NFmiLevel *theLevel = 0) const override;
-  const NFmiString MaskString(void) const override;
-  boost::shared_ptr<NFmiFastQueryInfo> Info(void) override;
+  const NFmiString MaskString() const override;
+  boost::shared_ptr<NFmiFastQueryInfo> Info() override;
   void UpdateInfo(boost::shared_ptr<NFmiFastQueryInfo> &theInfo) override;
-  const NFmiDataIdent *DataIdent(void) const override;
-  const NFmiParam *Param(void) const override;
-  const NFmiLevel *Level(void) const override;
+  const NFmiDataIdent *DataIdent() const override;
+  const NFmiParam *Param() const override;
+  const NFmiLevel *Level() const override;
   void Level(const NFmiLevel &theLevel) override;
-  NFmiInfoData::Type GetDataType(void) const override;
+  NFmiInfoData::Type GetDataType() const override;
   void SetDataType(NFmiInfoData::Type theType) override;
-  bool UseLevelInfo(void) const override;
-  bool UsePressureLevelInterpolation(void) const override;
+  bool UseLevelInfo() const override;
+  bool UsePressureLevelInterpolation() const override;
   void UsePressureLevelInterpolation(bool newValue) override;
-  double UsedPressureLevelValue(void) const override;
+  double UsedPressureLevelValue() const override;
   void UsedPressureLevelValue(double newValue) override;
 
   void LowerLimit(double theLowerLimit) override;
   void UpperLimit(double theUpperLimit) override;
-  double LowerLimit(void) const override;
-  double UpperLimit(void) const override;
+  double LowerLimit() const override;
+  double UpperLimit() const override;
   void MaskOperation(FmiMaskOperation theMaskOperation) override;
-  FmiMaskOperation MaskOperation(void) const override;
+  FmiMaskOperation MaskOperation() const override;
 
   bool AddMask(NFmiAreaMask *theMask) override;
   NFmiAreaMask *AreaMask(int theIndex) const override;
   bool RemoveSubMask(int theIndex) override;
   void MaskType(Type theType) override;
-  Type MaskType(void) const override;
-  NFmiAreaMask *Clone(void) const override;
+  Type MaskType() const override;
+  NFmiAreaMask *Clone() const override;
   void PostBinaryOperator(BinaryOperator newOperator) override;
-  BinaryOperator PostBinaryOperator(void) const override;
-  CalculationOperationType GetCalculationOperationType(void) const override;
+  BinaryOperator PostBinaryOperator() const override;
+  CalculationOperationType GetCalculationOperationType() const override;
   void SetCalculationOperationType(CalculationOperationType newValue) override;
-  CalculationOperator GetCalculationOperator(void) const override;
+  CalculationOperator GetCalculationOperator() const override;
   void SetCalculationOperator(CalculationOperator newValue) override;
-  MathFunctionType GetMathFunctionType(void) const override;
+  MathFunctionType GetMathFunctionType() const override;
   void SetMathFunctionType(MathFunctionType newValue) override;
-  FunctionType GetFunctionType(void) const override { return itsFunctionType; }
+  FunctionType GetFunctionType() const override { return itsFunctionType; }
   void SetFunctionType(FunctionType newType) override { itsFunctionType = newType; }
-  FunctionType GetSecondaryFunctionType(void) const override { return itsSecondaryFunctionType; }
+  FunctionType GetSecondaryFunctionType() const override { return itsSecondaryFunctionType; }
   void SetSecondaryFunctionType(FunctionType newType) override
   {
     itsSecondaryFunctionType = newType;
   }
-  MetFunctionDirection GetMetFunctionDirection(void) const override
-  {
-    return itsMetFunctionDirection;
-  }
+  MetFunctionDirection GetMetFunctionDirection() const override { return itsMetFunctionDirection; }
   void GetMetFunctionDirection(MetFunctionDirection newValue) override
   {
     itsMetFunctionDirection = newValue;
   }
-  int IntegrationFunctionType(void) const override { return itsIntegrationFunctionType; }
+  int IntegrationFunctionType() const override { return itsIntegrationFunctionType; }
   void IntegrationFunctionType(int newValue) override { itsIntegrationFunctionType = newValue; }
   void SetArguments(std::vector<float> & /* theArgumentVector */) override{};
-  int FunctionArgumentCount(void) const override { return itsFunctionArgumentCount; }
+  int FunctionArgumentCount() const override { return itsFunctionArgumentCount; }
   void FunctionArgumentCount(int newValue) override { itsFunctionArgumentCount = newValue; }
   // HUOM! seuraavat toimivat oikeasti vain NFmiBinaryMask:in kanssa. Tässä vain tyhjät oletus
   // toteutukset.
@@ -129,10 +127,16 @@ class NFmiAreaMaskImpl : public NFmiAreaMask
   {
     itsSimpleCondition = theSimpleCondition;
   }
+  float FunctionDataTimeOffsetInHours() const override { return itsFunctionDataTimeOffsetInHours; }
+  void FunctionDataTimeOffsetInHours(float newValue) override
+  {
+    itsFunctionDataTimeOffsetInHours = newValue;
+  }
+  bool CheckPossibleObservationDistance(const NFmiCalculationParams &) override { return true; }
 
  protected:
   virtual double CalcValueFromLocation(const NFmiPoint &theLatLon) const;
-  virtual const NFmiString MakeSubMaskString(void) const;
+  virtual const NFmiString MakeSubMaskString() const;
   // Seuraavat virtuaali funktiot liittyvät integraatio funktioihin ja niiden mahdollisiin
   // Simplecondition tarkasteluihin
   virtual void DoIntegrationCalculations(float value);
@@ -166,6 +170,10 @@ class NFmiAreaMaskImpl : public NFmiAreaMask
   bool fHasSubMasks;
   bool fEnabled;
   boost::shared_ptr<NFmiSimpleCondition> itsSimpleCondition;
+  // Jossain tilanteissa smarttool funktion datalle voidaan haluta tehdä aikasiirto,
+  // jolloin käytetään tämän arvoa tekemään siirto, esim. peekxy3(T_ec[-3h] 10 0)
+  // kutsussa tehdään funktiole annettavalle parametrille T_ec 3 tunnin siirto taaksepäin.
+  float itsFunctionDataTimeOffsetInHours = 0;
 };  // class NFmiAreaMaskImpl
 
 // ----------------------------------------------------------------------
@@ -182,7 +190,7 @@ inline bool NFmiAreaMaskImpl::IsMasked(int /* theIndex */) const { return false;
  */
 // ----------------------------------------------------------------------
 
-inline bool NFmiAreaMaskImpl::IsEnabled(void) const { return fEnabled; }
+inline bool NFmiAreaMaskImpl::IsEnabled() const { return fEnabled; }
 // ----------------------------------------------------------------------
 /*!
  * \param theNewState Undocumented
@@ -196,7 +204,7 @@ inline void NFmiAreaMaskImpl::Enable(bool theNewState) { fEnabled = theNewState;
  */
 // ----------------------------------------------------------------------
 
-inline const NFmiCalculationCondition &NFmiAreaMaskImpl::Condition(void) const
+inline const NFmiCalculationCondition &NFmiAreaMaskImpl::Condition() const
 {
   return itsMaskCondition;
 }
@@ -207,7 +215,7 @@ inline const NFmiCalculationCondition &NFmiAreaMaskImpl::Condition(void) const
  */
 // ----------------------------------------------------------------------
 
-inline boost::shared_ptr<NFmiFastQueryInfo> NFmiAreaMaskImpl::Info(void)
+inline boost::shared_ptr<NFmiFastQueryInfo> NFmiAreaMaskImpl::Info()
 {
   return boost::shared_ptr<NFmiFastQueryInfo>();
 }
@@ -219,7 +227,7 @@ inline void NFmiAreaMaskImpl::UpdateInfo(boost::shared_ptr<NFmiFastQueryInfo> & 
  */
 // ----------------------------------------------------------------------
 
-inline NFmiInfoData::Type NFmiAreaMaskImpl::GetDataType(void) const { return itsDataType; }
+inline NFmiInfoData::Type NFmiAreaMaskImpl::GetDataType() const { return itsDataType; }
 // ----------------------------------------------------------------------
 /*!
  * \param theType Undocumented
@@ -240,14 +248,14 @@ inline void NFmiAreaMaskImpl::MaskType(Type theType) { itsMaskType = theType; }
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMaskImpl::Type NFmiAreaMaskImpl::MaskType(void) const { return itsMaskType; }
+inline NFmiAreaMaskImpl::Type NFmiAreaMaskImpl::MaskType() const { return itsMaskType; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMask *NFmiAreaMaskImpl::Clone(void) const { return new NFmiAreaMaskImpl(*this); }
+inline NFmiAreaMask *NFmiAreaMaskImpl::Clone() const { return new NFmiAreaMaskImpl(*this); }
 // ----------------------------------------------------------------------
 /*!
  * \param newOperator Undocumented
@@ -265,7 +273,7 @@ inline void NFmiAreaMaskImpl::PostBinaryOperator(BinaryOperator newOperator)
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMaskImpl::BinaryOperator NFmiAreaMaskImpl::PostBinaryOperator(void) const
+inline NFmiAreaMaskImpl::BinaryOperator NFmiAreaMaskImpl::PostBinaryOperator() const
 {
   return itsPostBinaryOperator;
 }
@@ -276,8 +284,8 @@ inline NFmiAreaMaskImpl::BinaryOperator NFmiAreaMaskImpl::PostBinaryOperator(voi
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMaskImpl::CalculationOperationType NFmiAreaMaskImpl::GetCalculationOperationType(
-    void) const
+inline NFmiAreaMaskImpl::CalculationOperationType NFmiAreaMaskImpl::GetCalculationOperationType()
+    const
 {
   return itsCalculationOperationType;
 }
@@ -299,7 +307,7 @@ inline void NFmiAreaMaskImpl::SetCalculationOperationType(CalculationOperationTy
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMaskImpl::CalculationOperator NFmiAreaMaskImpl::GetCalculationOperator(void) const
+inline NFmiAreaMaskImpl::CalculationOperator NFmiAreaMaskImpl::GetCalculationOperator() const
 {
   return itsCalculationOperator;
 }
@@ -321,7 +329,7 @@ inline void NFmiAreaMaskImpl::SetCalculationOperator(CalculationOperator newValu
  */
 // ----------------------------------------------------------------------
 
-inline NFmiAreaMaskImpl::MathFunctionType NFmiAreaMaskImpl::GetMathFunctionType(void) const
+inline NFmiAreaMaskImpl::MathFunctionType NFmiAreaMaskImpl::GetMathFunctionType() const
 {
   return itsMathFunctionType;
 }
@@ -365,14 +373,14 @@ inline void NFmiAreaMaskImpl::UpperLimit(double theUpperLimit)
  */
 // ----------------------------------------------------------------------
 
-inline double NFmiAreaMaskImpl::LowerLimit(void) const { return itsMaskCondition.LowerLimit(); }
+inline double NFmiAreaMaskImpl::LowerLimit() const { return itsMaskCondition.LowerLimit(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline double NFmiAreaMaskImpl::UpperLimit(void) const { return itsMaskCondition.UpperLimit(); }
+inline double NFmiAreaMaskImpl::UpperLimit() const { return itsMaskCondition.UpperLimit(); }
 // ----------------------------------------------------------------------
 /*!
  * \param theMaskOperation Undocumented
@@ -390,7 +398,7 @@ inline void NFmiAreaMaskImpl::MaskOperation(FmiMaskOperation theMaskOperation)
  */
 // ----------------------------------------------------------------------
 
-inline FmiMaskOperation NFmiAreaMaskImpl::MaskOperation(void) const
+inline FmiMaskOperation NFmiAreaMaskImpl::MaskOperation() const
 {
   return itsMaskCondition.Condition();
 }

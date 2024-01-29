@@ -19,6 +19,7 @@
 // querydata-otuksia.
 
 #include "NFmiQueryDataUtil.h"
+
 #include "NFmiAzimuthalArea.h"
 #include "NFmiCalculationCondition.h"
 #include "NFmiCalculator.h"
@@ -49,6 +50,9 @@
 #include <fstream>
 #include <numeric>
 #include <stdexcept>
+#include <thread>
+
+#include "boost/math/special_functions/round.hpp"
 
 using namespace std;
 
@@ -525,24 +529,13 @@ NFmiQueryData *NFmiQueryDataUtil::Area1QDOverArea2QD(NFmiQueryData *areaData1,
 
 NFmiQueryData *NFmiQueryDataUtil::CreateEmptyData(NFmiQueryInfo &srcInfo)
 {
-  if (srcInfo.Size() != 0)
-  {
-    auto *data = new NFmiQueryData(srcInfo);
-    data->Init();
-    return data;
-  }
-
-  if (srcInfo.SizeParams() == 0)
-    throw std::runtime_error("CreateEmptyData: number of parameters is zero");
-  if (srcInfo.SizeTimes() == 0)
-    throw std::runtime_error("CreateEmptyData: number of times is zero");
-  if (srcInfo.SizeLevels() == 0)
-    throw std::runtime_error("CreateEmptyData: number of levels is zero");
-  if (srcInfo.SizeLocations() == 0)
-    throw std::runtime_error("CreateEmptyData: number of locations is zero");
-
-  // Should never be reached
-  throw std::runtime_error("CreateEmptyData: total size of data descriptors is zero");
+  if (srcInfo.Size() == 0)
+    throw std::runtime_error(
+        "Error in NFmiQueryDataUtil::CreateEmptyData: given srcInfo size was 0, one or several "
+        "descriptor(s) was empty?");
+  auto *data = new NFmiQueryData(srcInfo);
+  data->Init();
+  return data;
 }
 
 // ----------------------------------------------------------------------
@@ -2980,8 +2973,8 @@ static bool WantedWeatherAndCloudinessParamsFound(NFmiFastQueryInfo &theInfo,
   if (fAllowLessParamsWhenCreatingWeather)
   {
     if (theInfo.Param(kFmiTotalCloudCover) &&
-        (theInfo.Param(kFmiPrecipitationRate) || theInfo.Param(kFmiPrecipitation1h) ||
-         theInfo.Param(kFmiPrecipitation3h) || theInfo.Param(kFmiPrecipitation6h)))
+        (theInfo.Param(kFmiPrecipitationRate) || theInfo.Param(kFmiPrecipitation3h) ||
+         theInfo.Param(kFmiPrecipitation6h)))
       return true;
   }
   else
@@ -3297,7 +3290,7 @@ NFmiQueryData *NFmiQueryDataUtil::MakeCombineParams(NFmiFastQueryInfo &theSource
   {
     NFmiFastQueryInfo destInfo(destData);
 
-    unsigned int usedThreadCount = boost::thread::hardware_concurrency();
+    unsigned int usedThreadCount = NFmiQueryDataUtil::GetReasonableWorkingThreadCount();
     if (theMaxUsedThreadCount > 0)
       usedThreadCount = std::min(static_cast<unsigned int>(theMaxUsedThreadCount), usedThreadCount);
     if (usedThreadCount > destInfo.SizeTimes()) usedThreadCount = destInfo.SizeTimes();
@@ -3840,10 +3833,10 @@ NFmiQueryData *DoTimeFilteringWithSmoother(NFmiQueryData *theSourceData,
     // HUOM! ei osaa hoitaa hommaa oikein jos datassa on aikalista jossa erilaiset aikavälit
     int sizeTimes = sourceInfo.SizeTimes();
     std::vector<float> relTimeLocation(
-        sizeTimes);  // x on aika eli eri aika-askelten suhteelliset sijainnit (0,
-                     // 1, 2, 3, ...)
-                     //		std::accumulate(relTimeLocation.begin(),
-                     // relTimeLocation.end(), 0); // 0
+        sizeTimes);  // x on aika eli eri aika-askelten suhteelliset sijainnit (0, 1, 2, 3, ...)
+                     //		std::accumulate(relTimeLocation.begin(), relTimeLocation.end(), 0);
+                     ////
+                     // 0
     // tarkoittaa
     // että
     // täytetään vektori luvuilla jotka alkavat 0:sta ja kasvavat aina yhdellä
@@ -4259,13 +4252,12 @@ void NFmiQueryDataUtil::AddRange(NFmiThreadCallBacks *theThreadCallBacks, int va
 // Oletuksia: theFilesIn on tiedostojen uutuus järjestyksessä.
 // Jos theBaseQData:ssa on data, haetaan vain sen viimeistä dataa uudemmat queryDatat,
 // eli loopin voi lopettaa 1. missä ajat vanhempia (tiedostojen aika järjestys)
-std::vector<boost::shared_ptr<NFmiQueryData>>
-NFmiQueryDataUtil::ReadQueryDataFilesForCombinationWork(
-    boost::shared_ptr<NFmiQueryData> theBaseQData,
-    const std::string &theDirName,
-    std::vector<std::string> &theFilesIn,
-    NFmiStopFunctor *theStopFunctor,
-    bool fDoRebuildCheck)
+static void ReadQueryDataFiles(boost::shared_ptr<NFmiQueryData> theBaseQData,
+                               const std::string &theDirName,
+                               std::vector<std::string> &theFilesIn,
+                               std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVectorOut,
+                               NFmiStopFunctor *theStopFunctor,
+                               bool fDoRebuildCheck)
 {
   bool doTimeCheck = false;
   NFmiMetTime lastBaseTime;
@@ -4274,8 +4266,6 @@ NFmiQueryDataUtil::ReadQueryDataFilesForCombinationWork(
     doTimeCheck = true;
     lastBaseTime = theBaseQData->Info()->TimeDescriptor().LastTime();
   }
-
-  std::vector<boost::shared_ptr<NFmiQueryData>> qDataVector;
 
   for (const auto &i : theFilesIn)
   {
@@ -4299,50 +4289,33 @@ NFmiQueryDataUtil::ReadQueryDataFilesForCombinationWork(
         {
           if (qDataPtr->Info()->TimeDescriptor().FirstTime() <= lastBaseTime) break;
         }
-        qDataVector.push_back(qDataPtr);
+        theQDataVectorOut.push_back(qDataPtr);
       }
     }
   }
-  return qDataVector;
 }
 
-static std::vector<boost::shared_ptr<NFmiFastQueryInfo>> MakeFastInfos(
-    std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector)
+static void MakeFastInfos(std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVectorIn,
+                          std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFInfoVectorOut)
 {
-  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> fastInfos;
-  for (auto &i : theQDataVector)
+  for (auto &i : theQDataVectorIn)
   {
     auto *fInfo = new NFmiFastQueryInfo(i.get());
-    if (fInfo) fastInfos.emplace_back(fInfo);
+    if (fInfo) theFInfoVectorOut.emplace_back(fInfo);
   }
-  return fastInfos;
-}
-
-std::vector<boost::shared_ptr<NFmiFastQueryInfo>> NFmiQueryDataUtil::MakeTotalFastInfoVector(
-    std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
-    boost::shared_ptr<NFmiQueryData> &theBaseQData,
-    bool fDoRebuild)
-{
-  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> fastInfos = ::MakeFastInfos(theQDataVector);
-  if (fDoRebuild == false && theBaseQData)
-  {
-    fastInfos.push_back(
-        boost::shared_ptr<NFmiFastQueryInfo>(new NFmiFastQueryInfo(theBaseQData.get())));
-  }
-  return fastInfos;
 }
 
 // Tekee uniikki listan validTimeista, jotka on annetussa fastInfo vektorissa. sorttaa ne
 // laskevaan
 // järjestykseen (uusimmat ensin) ja leikkaa tarvittaessa listan koon haluttuun määrään
 // theMaxTimeStepsInData-parametrin mukaan. Jos se on <= 0, tällöin otetaan kaiiki ajat mukaan.
-std::vector<NFmiMetTime> NFmiQueryDataUtil::MakeValidTimesList(
-    std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFastInfoVector, int theMaxTimeStepsInData)
+static std::vector<NFmiMetTime> MakeValidTimesList(
+    std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFInfoVectorIn, int theMaxTimeStepsInData)
 {
   std::set<NFmiMetTime> uniqueValidTimes;
-  for (auto &infoPtr : theFastInfoVector)
+  for (auto &i : theFInfoVectorIn)
   {
-    NFmiFastQueryInfo *fInfo = infoPtr.get();
+    NFmiFastQueryInfo *fInfo = i.get();
     if (fInfo)
     {
       for (fInfo->ResetTime(); fInfo->NextTime();)
@@ -4363,7 +4336,7 @@ std::vector<NFmiMetTime> NFmiQueryDataUtil::MakeValidTimesList(
   return std::vector<NFmiMetTime>(selectedTimes.begin(), selectedTimes.end());
 }
 
-static NFmiTimeList MakeTimeList(const std::vector<NFmiMetTime> &theValidTimesIn)
+static NFmiTimeList MakeTimeList(std::vector<NFmiMetTime> &theValidTimesIn)
 {
   NFmiTimeList timeList;
   for (const auto &i : theValidTimesIn)
@@ -4401,15 +4374,6 @@ static NFmiParamDescriptor MakeParamDesc(
   NFmiParamBag parBag(&paramVec[0], static_cast<unsigned long>(paramVec.size()));
   NFmiParamDescriptor parDesc(parBag);
   return parDesc;
-}
-
-static NFmiParamDescriptor MakeParamDescriptor(
-    std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFastInfoVector,
-    boost::shared_ptr<NFmiFastQueryInfo> &theFirstFastInfo,
-    bool fFirstInfoDefines)
-{
-  return fFirstInfoDefines ? theFirstFastInfo->ParamDescriptor()
-                           : ::MakeParamDesc(theFastInfoVector);
 }
 
 namespace std
@@ -4452,21 +4416,27 @@ static NFmiVPlaceDescriptor MakeVPlaceDesc(
 // HUOM! Tämä toimii nyt vain hiladatoille. Muuttuu tulevaisuudessa...
 static NFmiQueryInfo MakeCombinedDatasMetaInfo(
     std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFInfoVectorIn,
-    const std::vector<NFmiMetTime> &theValidTimesIn,
+    std::vector<NFmiMetTime> &theValidTimesIn,
     bool fFirstInfoDefines)
 {
   if (theFInfoVectorIn.size() == 0)
     throw std::runtime_error(
         "Error in MakeCombinedDatasMetaInfo, given fastInfo-vector was empty.");
-  auto &firstInfo = theFInfoVectorIn[0];
+  NFmiFastQueryInfo *firstInfo = theFInfoVectorIn[0].get();
   if (firstInfo == nullptr)
     throw std::runtime_error("Error in MakeCombinedDatasMetaInfo, 1. fastInfo was 0-pointer.");
+  NFmiParamDescriptor parDesc;
+  if (fFirstInfoDefines)
+    parDesc = firstInfo->ParamDescriptor();
+  else
+    parDesc = ::MakeParamDesc(theFInfoVectorIn);
 
-  auto paramDescriptor = ::MakeParamDescriptor(theFInfoVectorIn, firstInfo, fFirstInfoDefines);
   NFmiMetTime origTime = firstInfo->OriginTime();
   NFmiTimeDescriptor timeDesc(origTime, ::MakeTimeList(theValidTimesIn));
-  if (firstInfo->Grid() == nullptr)
-    throw std::runtime_error("Error in MakeCombinedDatasMetaInfo, 1. fastInfo's has no grid.");
+  // HPlaceDescin tapauksessa otetaan se vain 1. datasta, jos hila, ei erilaisia hiloja
+  // voi comboilla. Jos asemalista, sen jumppaaminen pomminvarmasti on liian iso urakka
+  // (locationit voivat mm. olla eri luokkia ja samalla station-id:llä voi olla eri
+  // datoissa eri koordinaatteja, nimi, jne.)
   NFmiHPlaceDescriptor hPlaceDesc = firstInfo->HPlaceDescriptor();
   NFmiVPlaceDescriptor vPlaceDesc;
   if (fFirstInfoDefines)
@@ -4474,7 +4444,7 @@ static NFmiQueryInfo MakeCombinedDatasMetaInfo(
   else
     vPlaceDesc = ::MakeVPlaceDesc(theFInfoVectorIn);
 
-  NFmiQueryInfo qInfo(paramDescriptor, timeDesc, hPlaceDesc, vPlaceDesc);
+  NFmiQueryInfo qInfo(parDesc, timeDesc, hPlaceDesc, vPlaceDesc);
   return qInfo;
 }
 
@@ -4488,6 +4458,57 @@ static NFmiFastQueryInfo *FindWantedInfo(
   return nullptr;  // tänne ei pitäisi mennä, pitäisikö heittää poikkeus?
 }
 
+static bool StationDataHasSameStructure(NFmiFastQueryInfo &info1, NFmiFastQueryInfo &info2)
+{
+  if (info1.HPlaceDescriptor().IsLocation() && info2.HPlaceDescriptor().IsLocation())
+  {
+    if (info1.SizeLocations() == info2.SizeLocations())
+    {
+      // Tarkastellaan vain että asema-id:t ovat samoja ja samassa järjestyksessä.
+      // Ei täydellistä, mutta saa nyt kelvata...
+      for (info1.ResetLocation(), info2.ResetLocation();
+           info1.NextLocation() && info2.NextLocation();)
+      {
+        if (info1.Location()->GetIdent() != info2.Location()->GetIdent()) return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool HasStationData(NFmiFastQueryInfo &info1, NFmiFastQueryInfo &info2)
+{
+  if (info1.HPlaceDescriptor().IsLocation() && info2.HPlaceDescriptor().IsLocation())
+    return true;
+  else
+    return false;
+}
+
+static void FillStationDataToCurrentTimeWithDifferentStationStructure(NFmiFastQueryInfo &destInfo,
+                                                                      NFmiFastQueryInfo &sourceInfo)
+{
+  for (destInfo.ResetLevel(); destInfo.NextLevel();)
+  {
+    if (sourceInfo.Level(*destInfo.Level()))
+    {
+      for (destInfo.ResetParam(); destInfo.NextParam();)
+      {
+        if (sourceInfo.Param(destInfo.Param()))
+        {
+          for (destInfo.ResetLocation(); destInfo.NextLocation();)
+          {
+            if (sourceInfo.Location(*destInfo.Location()))
+            {
+              destInfo.FloatValue(sourceInfo.FloatValue());
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 static void FillDataToCurrentTime(
     NFmiFastQueryInfo &theFilledInfo,
     std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &theFInfoVectorIn,
@@ -4497,8 +4518,10 @@ static void FillDataToCurrentTime(
   if (sourceInfo)  // aina pitäisi löytyä sourceInfo, mutta tarkistetaan kuitenkin
   {
     if (theFilledInfo.Grid() && sourceInfo->Grid() &&
-        *(theFilledInfo.Grid()) == *(sourceInfo->Grid()))
+            *(theFilledInfo.Grid()) == *(sourceInfo->Grid()) ||
+        ::StationDataHasSameStructure(theFilledInfo, *sourceInfo))
     {
+      std::vector<float> values;
       for (theFilledInfo.ResetLevel(); theFilledInfo.NextLevel();)
       {
         if (sourceInfo->Level(*theFilledInfo.Level()))
@@ -4511,13 +4534,16 @@ static void FillDataToCurrentTime(
                                                                   // aina yhden kentän täytön
                                                                   // välein...
               // oletus vielä nyt että hpalceDesc:it samanlaisia
-              NFmiDataMatrix<float> values;
-              sourceInfo->Values(values);
-              theFilledInfo.SetValues(values);
+              sourceInfo->GetLevelToVec(values);
+              theFilledInfo.SetLevelFromVec(values);
             }
           }
         }
       }
+    }
+    else if (::HasStationData(theFilledInfo, *sourceInfo))
+    {
+      ::FillStationDataToCurrentTimeWithDifferentStationStructure(theFilledInfo, *sourceInfo);
     }
   }
 }
@@ -4592,6 +4618,45 @@ static void CombineSliceDatas(NFmiQueryData &theData,
   }
 }
 
+static void DoMetaInfoLogging(NFmiQueryDataUtil::LoggingFunction *loggingFunction,
+                              NFmiQueryInfo &metaInfo,
+                              const std::string *theFileFilterPtr)
+{
+  if (loggingFunction)
+  {
+    std::string message = "Starting to combine data ";
+    if (theFileFilterPtr)
+    {
+      message += "for '";
+      message += *theFileFilterPtr;
+      message += "' ";
+    }
+
+    message += "total size: ";
+    auto sizeInGB = metaInfo.Size() * sizeof(float) / (1024l * 1024 * 1024.);
+    message += NFmiValueString::GetStringWithMaxDecimalsSmartWay(sizeInGB, 2);
+    message += " GB, params: " + std::to_string(metaInfo.SizeParams());
+    message += ", times: " + std::to_string(metaInfo.SizeTimes());
+    message += ", levels: " + std::to_string(metaInfo.SizeLevels());
+    message += ", points: " + std::to_string(metaInfo.SizeLocations());
+    if (metaInfo.IsGrid())
+    {
+      message += " (grid " + std::to_string(metaInfo.Grid()->XNumber()) + " x " +
+                 std::to_string(metaInfo.Grid()->YNumber()) + ")";
+    }
+
+    (*loggingFunction)(message);
+
+    std::string timeStepsStr;
+    for (metaInfo.ResetTime(); metaInfo.NextTime();)
+    {
+      if (!timeStepsStr.empty()) timeStepsStr += ", ";
+      timeStepsStr += metaInfo.Time().ToStr("YYYY.MM.DD HH:mm", kEnglish);
+    }
+    (*loggingFunction)(std::string("Combined data will have times: ") + timeStepsStr);
+  }
+}
+
 // fFirstInfoDefines määrää sekä rakennetaanko 'metaInfo' ensimmäisen infon avulla,
 // että miten lopullinen data täytetään.
 // Jos fDoTimeStepCombine on true, on tarkoitus liittää samanlaisista aika-askel-datoista
@@ -4604,67 +4669,53 @@ NFmiQueryData *NFmiQueryDataUtil::CombineQueryDatas(
     std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
     bool fDoTimeStepCombine,
     int theMaxTimeStepsInData,
-    NFmiStopFunctor *theStopFunctor)
+    NFmiStopFunctor *theStopFunctor,
+    LoggingFunction *loggingFunction,
+    const std::string *theFileFilterPtr)
 {
-  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> fastInfoVector =
-      MakeTotalFastInfoVector(theQDataVector, theBaseQData, fDoRebuild);
+  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> fInfoVector;
+  ::MakeFastInfos(theQDataVector, fInfoVector);
+  if (fDoRebuild == false && theBaseQData)
+    fInfoVector.push_back(
+        boost::shared_ptr<NFmiFastQueryInfo>(new NFmiFastQueryInfo(theBaseQData.get())));
 
   std::vector<NFmiMetTime> foundValidTimes =
-      MakeValidTimesList(fastInfoVector, theMaxTimeStepsInData);
+      ::MakeValidTimesList(fInfoVector, theMaxTimeStepsInData);
   if (foundValidTimes.size() > 0)
   {
     NFmiQueryDataUtil::CheckIfStopped(theStopFunctor);
     NFmiQueryInfo combinedDataMetaInfo =
-        ::MakeCombinedDatasMetaInfo(fastInfoVector, foundValidTimes, fDoTimeStepCombine);
+        ::MakeCombinedDatasMetaInfo(fInfoVector, foundValidTimes, fDoTimeStepCombine);
     NFmiQueryDataUtil::CheckIfStopped(theStopFunctor);
+    // SmartMet kaatuu jossain tilanteissa tähän (CreateEmptyData:ssa luodaan dynaamisesti float
+    // taulukko new:lla), laitetaan lokitusta luotavasta datasta, jos funktio on annettu
+    ::DoMetaInfoLogging(loggingFunction, combinedDataMetaInfo, theFileFilterPtr);
     std::unique_ptr<NFmiQueryData> data(CreateEmptyData(combinedDataMetaInfo));
     if (data)
     {
       if (fDoTimeStepCombine)
-        ::CombineTimeStepDatas(*data, fastInfoVector, theStopFunctor);
+        ::CombineTimeStepDatas(*data, fInfoVector, theStopFunctor);
       else
-        ::CombineSliceDatas(*data, fastInfoVector, theStopFunctor);
+        ::CombineSliceDatas(*data, fInfoVector, theStopFunctor);
       return data.release();
     }
   }
   return nullptr;
 }
 
-boost::shared_ptr<NFmiQueryData> NFmiQueryDataUtil::GetNewestQueryData(
-    const std::string &theFileFilter)
+static boost::shared_ptr<NFmiQueryData> GetNewestQueryData(const std::string &theBaseDataFileFilter)
 {
-  try
+  boost::shared_ptr<NFmiQueryData> qDataPtr;
+  std::string fileName = NFmiFileSystem::NewestPatternFileName(theBaseDataFileFilter);
+  if (fileName.empty() == false)
   {
-    std::string fileName = NFmiFileSystem::NewestPatternFileName(theFileFilter);
-    if (fileName.empty() == false)
+    if (NFmiFileSystem::FileReadable(fileName))
     {
-      if (NFmiFileSystem::FileReadable(fileName))
-      {
-        return boost::make_shared<NFmiQueryData>(fileName, true);
-      }
+      auto *qData = new NFmiQueryData(fileName, true);
+      if (qData) qDataPtr = boost::shared_ptr<NFmiQueryData>(qData);
     }
   }
-  catch (...)
-  {
-    // Otetaan vain kiinni poikkeukset, on ok, jos vaikka luetaan korruptoitunut tiedosto ja
-    // palautetaan nullptr
-  }
-  return nullptr;
-}
-
-// Haetaan annetun theFileFilter:in mukaiset pelkät tiedostonimet (ei polkua) vector:iin.
-// Tiedostot laitetaan oikeaan aikajärjestykseen yhdistelytyötä varten.
-std::vector<std::string> NFmiQueryDataUtil::GetFileNamesForCombinationWork(
-    const std::string &theFileFilter)
-{
-  std::list<std::string> fileList = NFmiFileSystem::PatternFiles(theFileFilter);
-  fileList.sort();
-  // käännetään järjestys, jolloin jos käytetty YYYYMMDDHHmmss aikaleimaa tiedoston alussa, tulee
-  // uusimmat tiedostot alkuun
-  fileList.reverse();
-
-  // Tehdään tiedosto-lista vektoriksi.
-  return std::vector<std::string>(fileList.begin(), fileList.end());
+  return qDataPtr;
 }
 
 // Luo queryDatan annetun filefilterin avulla. Niistä tiedostoista mitä tulee annetulla
@@ -4691,47 +4742,43 @@ NFmiQueryData *NFmiQueryDataUtil::CombineQueryDatas(bool fDoRebuildCheck,
                                                     const std::string &theFileFilter,
                                                     bool fDoTimeStepCombine,
                                                     int theMaxTimeStepsInData,
-                                                    NFmiStopFunctor *theStopFunctor)
+                                                    NFmiStopFunctor *theStopFunctor,
+                                                    LoggingFunction *loggingFunction)
 {
-  auto baseQData = GetNewestQueryData(theBaseDataFileFilter);
-  auto filenames = GetFileNamesForCombinationWork(theFileFilter);
+  boost::shared_ptr<NFmiQueryData> baseQData;
+  try
+  {
+    baseQData = ::GetNewestQueryData(theBaseDataFileFilter);
+  }
+  catch (...)
+  {
+    // ei tehdä mitään ylimääräistä poikkeuksen tapahtuessa (esim. korruptoitunut pohja-data
+    // tiedosto)
+  }
 
-  // fileFilteristä pitää ottaa hakemisto irti, koska PatternFiles-funktio palautta vain tiedostojen
-  // nimet, ei polkua mukana
-  std::string dirName = GetFileFilterDirectory(theFileFilter);
-  auto qDataVector = ReadQueryDataFilesForCombinationWork(
-      baseQData, dirName, filenames, theStopFunctor, fDoRebuildCheck);
+  std::list<std::string> fileList = NFmiFileSystem::PatternFiles(theFileFilter);
+  fileList.sort();     // sortataan
+  fileList.reverse();  // käännetään järjestys, jolloin jos käytetty YYYYMMDDHHmmss aikaleimaa
+                       // tiedoston alussa, tulee uusimmat tiedostot alkuun
+
+  // Oletus, jokaisessa tiedostossa on yksi aika, ja tiedostot ovat oikeassa aikajärjestyksessä.
+  // Tehdään tiedosto-lista vektoriksi.
+  std::vector<std::string> files(fileList.begin(), fileList.end());
+
+  std::string dirName =
+      GetFileFilterDirectory(theFileFilter);  // fileFilteristä pitää ottaa hakemisto irti, koska
+                                              // PatternFiles-funktio palautta vain tiedostojen
+                                              // nimet, ei polkua mukana
+  std::vector<boost::shared_ptr<NFmiQueryData>> qDataVector;
+  ::ReadQueryDataFiles(baseQData, dirName, files, qDataVector, theStopFunctor, fDoRebuildCheck);
   return CombineQueryDatas(fDoRebuildCheck,
                            baseQData,
                            qDataVector,
                            fDoTimeStepCombine,
                            theMaxTimeStepsInData,
-                           theStopFunctor);
-}
-
-NFmiQueryData *NFmiQueryDataUtil::CombineAcceptedTimeStepQueryData(
-    bool fDoRebuild,
-    boost::shared_ptr<NFmiQueryData> &theBaseQData,
-    std::vector<boost::shared_ptr<NFmiQueryData>> &theQDataVector,
-    const std::vector<NFmiMetTime> &theAcceptedTimes,
-    NFmiStopFunctor *theStopFunctor)
-{
-  if (theAcceptedTimes.size() > 0)
-  {
-    std::vector<boost::shared_ptr<NFmiFastQueryInfo>> fastInfoVector =
-        MakeTotalFastInfoVector(theQDataVector, theBaseQData, fDoRebuild);
-    NFmiQueryDataUtil::CheckIfStopped(theStopFunctor);
-    NFmiQueryInfo combinedDataMetaInfo =
-        ::MakeCombinedDatasMetaInfo(fastInfoVector, theAcceptedTimes, true);
-    NFmiQueryDataUtil::CheckIfStopped(theStopFunctor);
-    std::unique_ptr<NFmiQueryData> data(CreateEmptyData(combinedDataMetaInfo));
-    if (data)
-    {
-      ::CombineTimeStepDatas(*data, fastInfoVector, theStopFunctor);
-      return data.release();
-    }
-  }
-  return nullptr;
+                           theStopFunctor,
+                           loggingFunction,
+                           &theFileFilter);
 }
 
 static void FillGridDataInThread(NFmiFastQueryInfo &theSourceInfo,
@@ -4743,112 +4790,93 @@ static void FillGridDataInThread(NFmiFastQueryInfo &theSourceInfo,
                                  int theThreadNumber,
                                  NFmiLogger *theLogger)
 {
+  if (theLogger)
+  {
+    std::string logStr("FillGridDataInThread - thread no: ");
+    logStr += NFmiStringTools::Convert(theThreadNumber);
+    logStr += " started with start-time-index: ";
+    logStr += NFmiStringTools::Convert(theStartTimeIndex);
+    logStr += " and end-time-index: ";
+    logStr += NFmiStringTools::Convert(theEndTimeIndex);
+    theLogger->LogMessage(logStr, NFmiLogger::kDebugInfo);
+  }
   if (theStartTimeIndex == gMissingIndex || theEndTimeIndex == gMissingIndex) return;
 
   NFmiDataMatrix<float> gridValues;
-  const bool doGroundData =
+  bool doGroundData =
       (theSourceInfo.SizeLevels() == 1) &&
       (theTargetInfo.SizeLevels() ==
        1);  // jos molemmissa datoissa vain yksi leveli, se voidaan jättää tarkastamatta
-  const bool doLocationInterpolation =
+  bool doLocationInterpolation =
       (NFmiQueryDataUtil::AreGridsEqual(theSourceInfo.Grid(), theTargetInfo.Grid()) == false);
 
   unsigned long targetXSize = theTargetInfo.GridXNumber();
-
-  // Establish output timeindexes up front for speed. -1 implies time is not available
-  std::vector<long> timeindexes(theEndTimeIndex + 1, -1);
-
-  bool doTimeInterpolations = false;
-  for (unsigned long i = theStartTimeIndex; i <= theEndTimeIndex; i++)
+  for (theTargetInfo.ResetParam(); theTargetInfo.NextParam();)
   {
-    if (theTargetInfo.TimeIndex(i))
+    if (theLogger)
     {
-      if (theSourceInfo.Time(theTargetInfo.Time()))
-        timeindexes[i] = theSourceInfo.TimeIndex();
-      else if (!doTimeInterpolations && theSourceInfo.IsInside(theTargetInfo.Time()))
-        doTimeInterpolations = true;
+      std::string logStr("FillGridDataInThread - thread no: ");
+      logStr += NFmiStringTools::Convert(theThreadNumber);
+      logStr += " starting param: ";
+      logStr += NFmiStringTools::Convert(theTargetInfo.ParamIndex() + 1);
+      logStr += "/";
+      logStr += NFmiStringTools::Convert(theTargetInfo.SizeParams());
+      if (theTargetInfo.ParamIndex() == 0) logStr += " (outer loop)";
+      theLogger->LogMessage(logStr, NFmiLogger::kDebugInfo);
     }
-  }
 
-  // Fast special case if there are no location or time interpolations
-
-  if (!doLocationInterpolation && !doTimeInterpolations)
-  {
-    for (theTargetInfo.ResetParam(); theTargetInfo.NextParam();)
+    if (theSourceInfo.Param(static_cast<FmiParameterName>(theTargetInfo.Param().GetParamIdent())))
     {
-      if (theSourceInfo.Param(static_cast<FmiParameterName>(theTargetInfo.Param().GetParamIdent())))
+      for (theTargetInfo.ResetLevel(); theTargetInfo.NextLevel();)
       {
-        for (theTargetInfo.ResetLevel(); theTargetInfo.NextLevel();)
+        if (doGroundData || theSourceInfo.Level(*theTargetInfo.Level()))
         {
-          // if (doGroundData || theSourceInfo.Level(*theTargetInfo.Level()))
-          if (theSourceInfo.Level(*theTargetInfo.Level()))
+          for (unsigned long i = theStartTimeIndex; i <= theEndTimeIndex; i++)
           {
-            for (theTargetInfo.ResetLocation(), theSourceInfo.ResetLocation();
-                 theTargetInfo.NextLocation() && theSourceInfo.NextLocation();)
+            if (theTargetInfo.TimeIndex(i) == false) continue;
+            NFmiMetTime targetTime = theTargetInfo.Time();
+            bool doTimeInterpolation =
+                false;  // jos aikaa ei löydy suoraan, tarvittaessa tehdään aikainterpolaatio
+            if (theSourceInfo.Time(theTargetInfo.Time()) ||
+                (doTimeInterpolation =
+                     theSourceInfo.TimeDescriptor().IsInside(theTargetInfo.Time())) == true)
             {
-              for (unsigned long i = theStartTimeIndex; i <= theEndTimeIndex; i++)
+              NFmiTimeCache &timeCache = theTimeCacheVector[theTargetInfo.TimeIndex()];
+              if (doLocationInterpolation == false)
               {
-                if (timeindexes[i] >= 0)
-                {
-                  theTargetInfo.TimeIndex(i);
-                  theSourceInfo.TimeIndex(timeindexes[i]);
-                  theTargetInfo.FloatValue(theSourceInfo.FloatValue());
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  else
-  {
-    // There are location or time interpolations
-
-    for (theTargetInfo.ResetParam(); theTargetInfo.NextParam();)
-    {
-      if (theSourceInfo.Param(static_cast<FmiParameterName>(theTargetInfo.Param().GetParamIdent())))
-      {
-        for (theTargetInfo.ResetLevel(); theTargetInfo.NextLevel();)
-        {
-          if (doGroundData || theSourceInfo.Level(*theTargetInfo.Level()))
-          {
-            for (unsigned long i = theStartTimeIndex; i <= theEndTimeIndex; i++)
-            {
-              if (theTargetInfo.TimeIndex(i) == false) continue;
-              NFmiMetTime targetTime = theTargetInfo.Time();
-              bool doTimeInterpolation =
-                  false;  // jos aikaa ei löydy suoraan, tarvittaessa tehdään aikainterpolaatio
-              if (theSourceInfo.Time(theTargetInfo.Time()) ||
-                  (doTimeInterpolation =
-                       theSourceInfo.TimeDescriptor().IsInside(theTargetInfo.Time())) == true)
-              {
-                NFmiTimeCache &timeCache = theTimeCacheVector[theTargetInfo.TimeIndex()];
-                if (doLocationInterpolation == false)
-                {
-                  if (doTimeInterpolation)
-                    theSourceInfo.Values(gridValues, targetTime);
-                  else
-                    theSourceInfo.Values(gridValues);
-
-                  theTargetInfo.SetValues(gridValues);
-                }
+                if (doTimeInterpolation)
+                  theSourceInfo.Values(gridValues, targetTime);
                 else
-                {  // interpoloidaan paikan suhteen
-                  for (theTargetInfo.ResetLocation(); theTargetInfo.NextLocation();)
+                  theSourceInfo.Values(gridValues);
+
+                theTargetInfo.SetValues(gridValues);
+              }
+              else
+              {  // interpoloidaan paikan suhteen
+                for (theTargetInfo.ResetLocation(); theTargetInfo.NextLocation();)
+                {
+                  float value = kFloatMissing;
+                  //									float value2
+                  //=
+                  // kFloatMissing;
+                  NFmiLocationCache &locCache =
+                      theLocationCacheMatrix[theTargetInfo.LocationIndex() % targetXSize]
+                                            [theTargetInfo.LocationIndex() / targetXSize];
+                  if (doLocationInterpolation && doTimeInterpolation)
+                    value = theSourceInfo.CachedInterpolation(locCache, timeCache);
+                  else if (doLocationInterpolation)
                   {
-                    float value = kFloatMissing;
-                    NFmiLocationCache &locCache =
-                        theLocationCacheMatrix[theTargetInfo.LocationIndex() % targetXSize]
-                                              [theTargetInfo.LocationIndex() / targetXSize];
-                    if (doLocationInterpolation && doTimeInterpolation)
-                      value = theSourceInfo.CachedInterpolation(locCache, timeCache);
-                    else if (doLocationInterpolation)
-                    {
-                      value = theSourceInfo.CachedInterpolation(locCache);
-                    }
-                    theTargetInfo.FloatValue(value);
+                    value = theSourceInfo.CachedInterpolation(locCache);
+                    /*
+                                                                                                    value2 = theSourceInfo.InterpolatedValue(theTargetInfo.LatLon());
+                                                                                                    if(::IsEqualEnough(value, value2, 0.00000001f) == false)
+                                                                                                    {
+                                                                                                            value = theSourceInfo.CachedInterpolation(locCache);
+                                                                                                            value2 = theSourceInfo.InterpolatedValue(theTargetInfo.LatLon());
+                                                                                                    }
+                    */
                   }
+                  theTargetInfo.FloatValue(value);
                 }
               }
             }
@@ -5172,13 +5200,13 @@ void NFmiQueryDataUtil::FillGridDataFullMT(NFmiQueryData *theSource,
     if (usedStartTimeIndex == gMissingIndex) usedStartTimeIndex = 0;
     if (usedEndTimeIndex == gMissingIndex) usedEndTimeIndex = target1.SizeTimes() - 1;
 
-    unsigned int usedThreadCount = boost::thread::hardware_concurrency();
-#ifdef UNIX
-    // Using all CPUs with the algorithm below leads to severe cache
-    // trashing and poor performance for all programs running simultaneously,
-    // since time is the innermost data element in the 4D data cube.
-    usedThreadCount /= 2;
+    double threadCountPercentage = 50.;  // Linux side wants to use 1/2 the cores here
+#ifdef _MSC_VER
+    // With SmartMet side more core power is needed for the parallel job
+    threadCountPercentage = 75.;
 #endif
+    unsigned int usedThreadCount =
+        NFmiQueryDataUtil::GetReasonableWorkingThreadCount(threadCountPercentage);
 
     if (usedThreadCount > target1.SizeTimes()) usedThreadCount = target1.SizeTimes();
 
@@ -5312,6 +5340,14 @@ NFmiQueryData *NFmiQueryDataUtil::ReadNewestData(const std::string &theFileFilte
   return data;
 }
 
+template <typename T>
+static void CheckThreadCountLimits(T &threadCountInOut, T maxThreadCount)
+{
+  T minThreadCount = 1;
+  threadCountInOut = std::max(threadCountInOut, minThreadCount);
+  threadCountInOut = std::min(threadCountInOut, maxThreadCount);
+}
+
 // Halutaan laskea eri tehtäviä varten optimaalinen threadien käyttö.
 // Esim. soundingIndex laskut tehdään haluttaessa niin että otetaan käyttöön n kpl
 // työthreadeja jotka laskevat kerrallaa yksittäisen aika-askeleen.
@@ -5326,25 +5362,19 @@ NFmiQueryData *NFmiQueryDataUtil::ReadNewestData(const std::string &theFileFilte
 // CPU:lla ei olisi yli kuormitettu turhaa kahden ensimmäisen työskentely syklin aikana.
 int NFmiQueryDataUtil::CalcOptimalThreadCount(int maxAvailableThreads, int separateTaskCount)
 {
-  if (maxAvailableThreads <= 1)
-    return 1;  // Esim. jos käyttäjä on pyytänyt maxthread-1::lla arvoa ja CPU:ssa on vain 1
-               // threadi
-               // käytössä
   if (maxAvailableThreads >= separateTaskCount) return separateTaskCount;
-  if (maxAvailableThreads == 2) return 2;  // turha tälle oikeastaan laskea mitään
+  if (maxAvailableThreads <= 2) return maxAvailableThreads;
 
   double ratio = static_cast<double>(separateTaskCount) / maxAvailableThreads;
   auto wantedIntegerPart = static_cast<int>(ratio);
-  if (ratio == wantedIntegerPart)
-    return maxAvailableThreads;  // jos jakosuhteeksi tuli kokonaisluku, käytetään kaikkia
-                                 // annettuja
-                                 // threadeja
+  // Jos jakosuhteeksi tuli kokonaisluku, käytetään kaikkia annettuja threadeja
+  if (ratio == wantedIntegerPart) return maxAvailableThreads;
 
   // Jos ei löytynyt tasalukuja, pitää iteroida semmoinen ratio, jolla saadaan mahdollisimman iso
   // kokonaisluku,
   // jossa on mahdollisimman iso murto-osa siis esim. 6.92 (6.92 on parempi kuin vaikka 6.34)
   // double maxRatio = ratio;
-  int maxRatioThreadcount = maxAvailableThreads;
+  int maxRatioThreadCount = maxAvailableThreads;
   for (int threadCount = maxAvailableThreads - 1; threadCount > 1; threadCount--)
   {
     double ratio2 = static_cast<double>(separateTaskCount) / threadCount;
@@ -5352,16 +5382,42 @@ int NFmiQueryDataUtil::CalcOptimalThreadCount(int maxAvailableThreads, int separ
     if (wantedIntegerPart2 == wantedIntegerPart && ratio2 > ratio)
     {
       // maxRatio = ratio2;
-      maxRatioThreadcount = threadCount;
+      maxRatioThreadCount = threadCount;
     }
     if (wantedIntegerPart2 == wantedIntegerPart + 1 && ratio2 == wantedIntegerPart2)
     {  // löydettiin jakosuhde, joka käyttää vajaata threadi määrää täysillä esim. maxThread = 4,
       // taskcount = 6, tällöin optimaali on 3 threadia
       // maxRatio = ratio2;
-      maxRatioThreadcount = threadCount;
+      maxRatioThreadCount = threadCount;
       break;
     }
     if (wantedIntegerPart2 > wantedIntegerPart) break;
   }
-  return maxRatioThreadcount;
+
+  ::CheckThreadCountLimits(maxRatioThreadCount, maxAvailableThreads);
+  return maxRatioThreadCount;
+}
+
+// By default this function returns count of half of the hardware threads in the system.
+// If you start a heavy parallel work, you shouldn't use all the threads in the machine
+// because it will freeze the system. also the modern CPU's use hyper-threading system
+// where actual CPU cores are duplicated and when one thread on one actual core is working,
+// the other thread on that core must just wait. Using full hyper-threading gives boost of
+// about 5-10 % depending of the work, but the system freezes. Using only half the threads
+// gives you almost full power, but much more responsive system otherwise.
+// Use wantedHardwareThreadPercent (0 - 100 %) to use more or less cores for the work threads.
+// Use separateTaskCount to calculate more balanced thread count, works only if separate
+// tasks takes to complete about the same amount of time. It's defaulted to 0 and then
+// it's ignored.
+unsigned int NFmiQueryDataUtil::GetReasonableWorkingThreadCount(double wantedHardwareThreadPercent,
+                                                                unsigned int separateTaskCount)
+{
+  auto maxThreadCount = std::thread::hardware_concurrency();
+  auto threadCount = static_cast<unsigned int>(
+      boost::math::iround(maxThreadCount * (wantedHardwareThreadPercent / 100.)));
+  ::CheckThreadCountLimits(threadCount, maxThreadCount);
+  if (separateTaskCount == 0)
+    return threadCount;
+  else
+    return CalcOptimalThreadCount(threadCount, separateTaskCount);
 }

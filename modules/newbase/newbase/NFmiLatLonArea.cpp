@@ -13,9 +13,8 @@
 // ======================================================================
 
 #include "NFmiLatLonArea.h"
+
 #include "NFmiAreaFactory.h"
-#include <boost/functional/hash.hpp>
-#include <fmt/format.h>
 
 // ----------------------------------------------------------------------
 /*!
@@ -265,11 +264,12 @@ const std::string NFmiLatLonArea::AreaStr() const
 
 const std::string NFmiLatLonArea::WKT() const
 {
-  const char *fmt = R"(GEOGCS["FMI_Sphere",)"
-                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
-                    R"(PRIMEM["Greenwich",0],)"
-                    R"(UNIT["Degree",0.0174532925199433]])";
-  return fmt::format(fmt, kRearth);
+  std::ostringstream ret;
+  ret << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]])";
+  return ret.str();
 }
 
 // ----------------------------------------------------------------------
@@ -308,20 +308,4 @@ bool NFmiLatLonArea::operator==(const NFmiLatLonArea &theArea) const
   return false;
 }
 
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiLatLonArea::HashValue() const
-{
-  std::size_t hash = NFmiArea::HashValue();
-  boost::hash_combine(hash, itsBottomLeftLatLon.HashValue());
-  boost::hash_combine(hash, itsTopRightLatLon.HashValue());
-  boost::hash_combine(hash, boost::hash_value(itsXScaleFactor));
-  boost::hash_combine(hash, boost::hash_value(itsYScaleFactor));
-  boost::hash_combine(hash, itsWorldRect.HashValue());
-  return hash;
-}
 // ======================================================================

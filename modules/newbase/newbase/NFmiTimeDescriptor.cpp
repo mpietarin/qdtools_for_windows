@@ -13,10 +13,10 @@
 // ======================================================================
 
 #include "NFmiTimeDescriptor.h"
+
 #include "NFmiMetTime.h"
 #include "NFmiTimeBag.h"
 #include "NFmiTimeList.h"
-
 #include "NFmiVersion.h"
 
 // ----------------------------------------------------------------------
@@ -240,12 +240,8 @@ NFmiTimeDescriptor::NFmiTimeDescriptor(const NFmiTimeDescriptor &theTimeDescript
       itsLocalTimeStep(theTimeDescriptor.itsLocalTimeStep),
       itsActivity(nullptr)
 {
-  unsigned long theSize = 0;
-  if (itsValidTimeBag != nullptr)
-    theSize = itsValidTimeBag->GetSize();
-  else if (itsTimeList != nullptr)
-    theSize = itsTimeList->NumberOfItems();
-
+  unsigned long theSize =
+      itsValidTimeBag ? itsValidTimeBag->GetSize() : itsTimeList->NumberOfItems();
   itsActivity = new bool[theSize];
   for (int i = 0; i < static_cast<int>(theSize); i++)
     itsActivity[i] = theTimeDescriptor.itsActivity[i];
@@ -611,11 +607,9 @@ unsigned long NFmiTimeDescriptor::Size() const
   if (itsTimeBagIdent)
   {
     if (IsValidTime())
-    {
-      if (itsTimeList != nullptr) return itsTimeList->NumberOfItems();
-      if (itsValidTimeBag != nullptr) return itsValidTimeBag->GetSize();
-    }
-    return static_cast<unsigned long>(0);
+      return (itsTimeList ? itsTimeList->NumberOfItems() : itsValidTimeBag->GetSize());
+    else
+      return static_cast<unsigned long>(0);
   }
   else
   {
@@ -1078,9 +1072,8 @@ std::istream &NFmiTimeDescriptor::Read(std::istream &file)
       auto theSize = static_cast<int>(itsValidTimeBag ? itsValidTimeBag->GetSize()
                                                       : itsTimeList->NumberOfItems());
       itsActivity = new bool[theSize];
-      // We trust everything to be at least version 6 by now
       for (int i = 0; i < theSize; i++)
-        if (DefaultFmiInfoVersion >= 3)
+        if (FmiInfoVersion >= 3)
           file >> itsActivity[i];
         else
           itsActivity[i] = true;
@@ -1091,9 +1084,8 @@ std::istream &NFmiTimeDescriptor::Read(std::istream &file)
     if (itsOriginTimeBag != nullptr)
     {
       itsActivity = new bool[static_cast<int>(itsOriginTimeBag->GetSize())];
-      // We trust everything to be at least version 6 by now
       for (int i = 0; i < static_cast<int>(itsOriginTimeBag->GetSize()); i++)
-        if (DefaultFmiInfoVersion >= 3)
+        if (FmiInfoVersion >= 3)
           file >> itsActivity[i];
         else
           itsActivity[i] = true;
@@ -1102,12 +1094,12 @@ std::istream &NFmiTimeDescriptor::Read(std::istream &file)
       itsActivity = nullptr;
   }
 
-  if (itsValidTimeBag != nullptr)
+  if (itsValidTimeBag)
     itsValidTimeBag->Reset();
-  else if (itsTimeList != nullptr)
+  else
     itsTimeList->Reset();
 
-  if (itsOriginTimeBag != nullptr) itsOriginTimeBag->Reset();
+  itsOriginTimeBag->Reset();
 
   return file;
 }
@@ -1183,7 +1175,7 @@ void NFmiTimeDescriptor::SetLocalTimes(const float theLongitude)
  */
 // ----------------------------------------------------------------------
 NFmiTimeDescriptor NFmiTimeDescriptor::GetIntersection(const NFmiMetTime &theStartLimit,
-                                                       const NFmiMetTime &theEndLimit)
+                                                       const NFmiMetTime &theEndLimit) const
 {
   NFmiTimeDescriptor timedesc(*this);
   if (itsTimeBagIdent)

@@ -6,10 +6,12 @@
 // ======================================================================
 
 #include "NFmiFileSystem.h"
+
 #include "NFmiFileString.h"
 #include "NFmiStringTools.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>  // uusi FileSize toteutus tarvitsee tätä
 
 #include <cctype>  // for isalpha
 #include <cstdio>
@@ -18,8 +20,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>  // for time()
-
-#include <boost/filesystem/operations.hpp>  // uusi FileSize toteutus tarvitsee tätä
 
 #ifndef _MSC_VER
 #include <dirent.h>
@@ -63,6 +63,7 @@ extern "C"
 #else
 #include <sys/dir.h>  // opendir() etc
 #include <sys/types.h>
+
 #include <cerrno>
 #include <unistd.h>
 #endif
@@ -179,7 +180,6 @@ string regex_of_msdos_pattern(const string &theMsPattern)
 #endif
 
 #ifndef UNIX
-
 // Tein winkkari puolelle FMI-versiot findfirst, findnext ja findclose -funktioista, koska
 // haluan napata kaikki mahdolliset poikkeukset kiinni ja jatkaa kuten virhetilanteessa normaalisti.
 // Nyt olen törmännyt monesti SmartMetin kanssa että ohjelma on vain kaatunut käydessään läpi jotain
@@ -219,7 +219,7 @@ int FmiFindClose(intptr_t handle)
     return -1;
   }
 }
-#endif  // #ifdef UNIX
+#endif
 
 namespace NFmiFileSystem
 {
@@ -905,10 +905,10 @@ std::string FileNameFromPath(const std::string &theTotalPathAndFileStr)
 
 #ifndef UNIX
 // Not implemented for Unix, yet
-const std::list<std::pair<std::string, std::time_t> > PatternFiles(const std::string &thePattern,
-                                                                   std::time_t timeLimit)
+const std::list<std::pair<std::string, std::time_t>> PatternFiles(const std::string &thePattern,
+                                                                  std::time_t timeLimit)
 {
-  std::list<std::pair<std::string, std::time_t> > out;
+  std::list<std::pair<std::string, std::time_t>> out;
 
   NFmiFileString fileString(thePattern);
   std::string pathStr;

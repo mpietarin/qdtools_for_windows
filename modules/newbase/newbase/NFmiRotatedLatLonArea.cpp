@@ -13,9 +13,9 @@
 // ======================================================================
 
 #include "NFmiRotatedLatLonArea.h"
-#include <boost/functional/hash.hpp>
-#include <fmt/format.h>
+
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -38,44 +38,10 @@ const NFmiPoint torotlatlon(const NFmiPoint &theLatLonPoint,
                             const NFmiPoint &thePole,
                             bool usePacificView = false)
 {
-  if (thePole.Y() == -90.) return theLatLonPoint;
-
-#ifdef UNIX
-  // Speed optimized version of the generic algorithm in the ELSE section
-
-  double sinypole = 0;
-  double cosypole = 0;
-  sincos((thePole.Y() + 90) * kDegToRad, &sinypole, &cosypole);
-
-  double sinxreg = 0;
-  double cosxreg = 0;
-  sincos((theLatLonPoint.X() - thePole.X()) * kDegToRad, &sinxreg, &cosxreg);
-
-  double sinyreg = 0;
-  double cosyreg = 0;
-  sincos(theLatLonPoint.Y() * kDegToRad, &sinyreg, &cosyreg);
-
-  double sinyrot = cosypole * sinyreg - sinypole * cosyreg * cosxreg;
-  sinyrot = std::min(std::max(sinyrot, -1.0), 1.0);
-  double yrot = asin(sinyrot);
-
-  double cosyrot = cos(yrot);
-  double cosxrot = (cosypole * cosyreg * cosxreg + sinypole * sinyreg) / cosyrot;
-  cosxrot = std::min(std::max(cosxrot, -1.0), 1.0);
-  double sinxrot = cosyreg * sinxreg / cosyrot;
-  double xrot = acos(cosxrot);
-  if (sinxrot < 0) xrot = -xrot;
-
-  double lon = xrot * kOneRad;
-  double lat = yrot * kOneRad;
-
-  NFmiLongitude tmp(lon, usePacificView);
-
-  return NFmiPoint(tmp.Value(), lat);
-
-#else
   // This methode is copied from the Hirlam-subroutine GEOROT
   // Also functions, if only longitude of the pole is rotated, but is prevented
+
+  if (thePole.Y() == -90.) return theLatLonPoint;
 
   NFmiLatitude YPole = NFmiLatitude(thePole.Y());
   NFmiLongitude XPole = NFmiLongitude(thePole.X(), usePacificView);
@@ -101,7 +67,6 @@ const NFmiPoint torotlatlon(const NFmiPoint &theLatLonPoint,
     XRot.SetValue(XRot.Value());
 
   return NFmiPoint(XRot.Value(), YRot.Value());
-#endif
 }
 
 // ----------------------------------------------------------------------
@@ -336,34 +301,26 @@ const std::string NFmiRotatedLatLonArea::AreaStr() const
 // ----------------------------------------------------------------------
 /*!
  * \brief Return Well Known Text representation of the GCS
- *  PROJCS["Plate_Carree",
- *    GEOGCS["FMI_Sphere",
- *           DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],
- *           PRIMEM["Greenwich",0],
- *           UNIT["Degree",0.017453292519943295]],
- *    PROJECTION["Plate_Carree"],
- *    EXTENSION["PROJ4","+proj=ob_tran +o_proj=longlat +o_lon_p=XXX +o_lat_p=YYY +a=R +k=1
- * +wktext"],
- *    UNIT["Meter",1]]
+ *  GEOGCS["FMI_Sphere",
+ *         DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],
+ *         PRIMEM["Greenwich",0],
+ *         UNIT["Degree",0.0174532925199433]],
+ *  PARAMETER["latitude_of_origin",lat_0],
+ *  PARAMETER["central_meridian",lon_0],
+ *  UNIT["Metre",1.0]
  */
 // ----------------------------------------------------------------------
 
 const std::string NFmiRotatedLatLonArea::WKT() const
 {
-  // Location of north pole is at the opposite longitude unless the poles have not been moved
-  auto plat = -itsSouthernPole.Y();
-  auto plon = (plat == 90 ? 90 : fmod(itsSouthernPole.X() - 180, 360.0));
-
-  const char *fmt = R"(PROJCS["Plate_Carree",)"
-                    R"(GEOGCS["FMI_Sphere",)"
-                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
-                    R"(PRIMEM["Greenwich",0],)"
-                    R"(UNIT["Degree",0.017453292519943295]],)"
-                    R"(PROJECTION["Plate_Carree"],)"
-                    R"(EXTENSION["PROJ4","+proj=ob_tran +o_proj=longlat +o_lon_p={})"
-                    R"( +o_lat_p={} +a={:.0f} +k=1 +wktext"],)"
-                    R"(UNIT["Meter",1]])";
-  return fmt::format(fmt, kRearth, plon, plat, kRearth);
+  std::ostringstream ret;
+  ret << std::setprecision(16) << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PARAMETER["latitude_of_origin",)" << itsSouthernPole.Y() << "],"
+      << R"(PARAMETER["central_meridian",)" << itsSouthernPole.X() << "]";
+  return ret.str();
 }
 
 // ----------------------------------------------------------------------
@@ -432,19 +389,6 @@ const NFmiAngle NFmiRotatedLatLonArea::TrueNorthAzimuth(const NFmiPoint &theLatL
                      270.);  // Azimuth is exactly east 90 degrees or west 270 degrees, respectively
 
   return NFmiAngle(FmiDeg(atan2(xyDistanceAlongMeridian.X(), xyDistanceAlongMeridian.Y())));
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiRotatedLatLonArea::HashValue() const
-{
-  std::size_t hash = NFmiLatLonArea::HashValue();
-  boost::hash_combine(hash, itsSouthernPole.HashValue());
-  return hash;
 }
 
 // ======================================================================

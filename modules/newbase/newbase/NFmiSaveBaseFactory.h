@@ -10,7 +10,9 @@
 const unsigned long kNFmiSaveBase = 0;
 const unsigned int kNFmiArea = 1;
 
+#ifdef UNIX
 const unsigned int kNFmiGdalArea = 8;
+#endif
 const unsigned int kNFmiLambertEqualArea = 9;  // Epsg:3035
 const unsigned int kNFmiLatLonArea = 10;
 const unsigned int kNFmiRotatedLatLonArea = 11;
@@ -69,9 +71,6 @@ const unsigned int kNFmiMaxInfo = 79;
 const unsigned int kNFmiVilInfo = 80;
 const unsigned int kNFmiGribInfo = 81;
 const unsigned int kNFmiGrib = 82;
-
-const unsigned int kNFmiWebMercatorArea = 83;
-const unsigned int kNFmiLambertConformalConicArea = 84;
 
 const unsigned int KNFmiMaxClass = 99;
 

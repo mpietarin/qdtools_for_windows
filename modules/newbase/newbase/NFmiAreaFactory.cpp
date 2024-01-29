@@ -27,13 +27,11 @@
  * ykj
  * pkj
  * mercator
- * webmercator
  * rotlatlon,polelatitude=-90,polelongitude=0
  * invrotlatlon,polelatitude=-90,polelongitude=0
  * orthographic,azimuth=0
  * stereographic,centrallongitude=0,centrallatitude=90,truelatitude=60
  * lambertequal,centrallongitude=10,centrallatitude=0,truelatitude=52
- * lcc,centrallongitude,centrallatitude,truelatitude1,truelatitude2=truelatitude1,radius=6371220
  * gnomonic,centrallongitude=0,centrallatitude=90,truelatitude=60
  * equidist,centrallongitude=0,centrallatitude=90
  * \endcode
@@ -108,10 +106,10 @@
 // ======================================================================
 
 #include "NFmiAreaFactory.h"
+
 #include "NFmiEquidistArea.h"
 #include "NFmiGdalArea.h"
 #include "NFmiGnomonicArea.h"
-#include "NFmiLambertConformalConicArea.h"
 #include "NFmiLambertEqualArea.h"
 #include "NFmiLatLonArea.h"
 #include "NFmiMercatorArea.h"
@@ -120,11 +118,11 @@
 #include "NFmiRotatedLatLonArea.h"
 #include "NFmiStereographicArea.h"
 #include "NFmiStringTools.h"
-#include "NFmiWebMercatorArea.h"
 #include "NFmiYKJArea.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <algorithm>
 #include <deque>
 #include <list>
@@ -206,6 +204,19 @@ double degrees_from_projparam(const string &inParam)
     throw runtime_error(errStr);
   }
 }
+
+void print_unused_parameters(const map<string, string> &inMap, const set<string> &usedParams)
+{
+  cerr << "Unused parameters :" << endl;
+  for (const auto &it : inMap)
+  {
+    if (usedParams.find(it.first) == usedParams.end())
+    {
+      cerr << it.first << "=" << it.second << endl;
+    }
+  }
+  cerr << endl;
+}
 }  // namespace
 
 namespace NFmiAreaFactory
@@ -256,33 +267,10 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
   NFmiStringTools::TrimAll(
       projection);  // siivotaan mahdolliset etu ja taka white spacet pois ettei sotke parserointia
 
-  // NFmiGdalArea's projection string starts with FMI{:|} or WGS84{:|}, and area definition at the
-  // end is delimited with pipe, thus resulting pipe to be used as the separator below. Replace
-  // possible pipe delimiter at the start with colon, because parsing must see the projection part
-  // upto the area as one comma separated string.
-  //
-  // FMI:PROJCS["unnamed",GEOGCS[...|0.237,51.849,49.662,71.161
-  // WGS84:PROJCS["unnamed",GEOGCS[...|0.237,51.849,49.662,71.161
-
-  bool gdalArea = false;
-
-#ifndef DISABLED_GDAL
-  if ((projection.substr(0, 4) == "FMI:") || (projection.substr(0, 6) == "WGS84:") ||
-      (projection.substr(0, 4) == "FMI|") || (projection.substr(0, 6) == "WGS84|"))
-  {
-    if (projection.substr(0, 3) == "FMI")
-      projection = "FMI:" + projection.substr(4);
-    else
-      projection = "WGS84:" + projection.substr(6);
-
-    gdalArea = true;
-  }
-#endif
-
   const char *separator = ":";
   if (projection.find('|') != std::string::npos) separator = "|";
 
-  vector<string> parts = NFmiStringTools::Split<vector<string> >(projection, separator);
+  vector<string> parts = NFmiStringTools::Split<vector<string>>(projection, separator);
 
   try
   {
@@ -292,7 +280,7 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
       throw runtime_error("must have 1-3 parts separated by ':' or '|'");
 
     // extracts the parts separated by ','
-    list<string> pparts = NFmiStringTools::Split<list<string> >(parts[0]);
+    list<string> pparts = NFmiStringTools::Split<list<string>>(parts[0]);
 
     // Extract possible units
     bool units = false;
@@ -315,12 +303,12 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
       }
     }
 
-    const vector<string> aparts = NFmiStringTools::Split<vector<string> >(parts[1], "/");
-    const vector<double> avec = NFmiStringTools::Split<vector<double> >(aparts[0]);
+    const vector<string> aparts = NFmiStringTools::Split<vector<string>>(parts[1], "/");
+    const vector<double> avec = NFmiStringTools::Split<vector<double>>(aparts[0]);
     double aspect = (aparts.size() == 1 ? 1 : NFmiStringTools::Convert<double>(aparts[1]));
 
     deque<double> gvec =
-        NFmiStringTools::Split<deque<double> >(parts.size() == 2 ? "0,0,1,1" : parts[2]);
+        NFmiStringTools::Split<deque<double>>(parts.size() == 2 ? "0,0,1,1" : parts[2]);
 
     // intermediate validity checks
     if (pparts.size() < 1) throw runtime_error("projection part missing");
@@ -331,14 +319,13 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
     if (gvec.size() != 2 && units)
       throw runtime_error("grid specification must have 2 numbers when length units are used");
 
-    string proj = gdalArea ? parts[0] : pparts.front();
+    string proj = pparts.front();
     pparts.pop_front();
 
     vector<double> pvec;
 
-    if (!gdalArea)
-      for (list<string>::const_iterator it = pparts.begin(); it != pparts.end(); ++it)
-        pvec.push_back(NFmiStringTools::Convert<double>(*it));
+    for (list<string>::const_iterator it = pparts.begin(); it != pparts.end(); ++it)
+      pvec.push_back(NFmiStringTools::Convert<double>(*it));
 
     // fixate gvec to size 4
 
@@ -393,12 +380,6 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
 
       area.reset(new NFmiMercatorArea(bottomleft, topright, corner1, corner2, usePacificView));
     }
-    else if (proj == "webmercator")
-    {
-      if (pvec.size() > 0) throw runtime_error("webmercator area requires no parameters");
-
-      area.reset(new NFmiWebMercatorArea(bottomleft, topright, corner1, corner2, usePacificView));
-    }
     else if (proj == "rotlatlon")
     {
       if (pvec.size() > 2) throw runtime_error("rotlatlon area requires max 2 parameters");
@@ -448,20 +429,6 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
       area.reset(new NFmiLambertEqualArea(
           bottomleft, topright, clon, corner1, corner2, clat, tlat, usePacificView));
     }
-    else if (proj == "lcc")
-    {
-      // *
-      // lcc,centrallongitude,centrallatitude,truelatitude1,truelatitude2=truelatitude1,radius=6371220
-      if (pvec.size() < 3 || pvec.size() > 5)
-        throw runtime_error("lcc area requires max 3-5 parameters");
-      const double clon = check_longitude(pvec[0], usePacificView);
-      const double clat = check_latitude(pvec[1]);
-      const double tlat1 = check_latitude(pvec[2]);
-      const double tlat2 = check_latitude(pvec.size() >= 4 ? pvec[3] : tlat1);
-      const double rad = (pvec.size() >= 5 ? pvec[4] : kRearth);
-      area.reset(new NFmiLambertConformalConicArea(
-          bottomleft, topright, clon, clat, tlat1, tlat2, rad, usePacificView));
-    }
     else if (proj == "gnomonic")
     {
       if (pvec.size() > 3) throw runtime_error("gnomonic area requires max 3 parameters");
@@ -480,7 +447,6 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
           new NFmiEquidistArea(bottomleft, topright, clon, corner1, corner2, clat, usePacificView));
     }
 #ifdef UNIX
-#ifndef DISABLED_GDAL
     else
     {
       // Allow FMI: or WGS84: prefix to identify datum, default is WGS84
@@ -494,20 +460,8 @@ boost::shared_ptr<NFmiArea> Create(const std::string &theProjection)
       {
         proj = proj.substr(6, std::string::npos);
       }
-
       area.reset(
           new NFmiGdalArea(datum, proj, bottomleft, topright, corner1, corner2, usePacificView));
-    }
-#else
-    else
-    {
-      throw std::runtime_error("Unknown projection (GDAL not linked in): " + theProjection);
-    }
-#endif  // DISABLED_GDAL
-#else
-    else
-    {
-      throw std::runtime_error("Unknown projection: " + theProjection);
     }
 #endif  // UNIX
 
@@ -628,8 +582,8 @@ return_type CreateProj(const std::string &projString,
       // Only key but no value, use empty string as value
       projParams.insert(make_pair(splitToken[0].erase(0, 1), string("")));
     }
-    else
-      projParams.insert(make_pair(splitToken[0].erase(0, 1), splitToken[1]));
+
+    projParams.insert(make_pair(splitToken[0].erase(0, 1), splitToken[1]));
   }
 
   //	print_parameter_map(projParams);
@@ -775,17 +729,6 @@ return_type CreateProj(const std::string &projString,
         new NFmiMercatorArea(bottomLeftLatLon, topRightLatLon, topLeftXY, bottomRightXY));
   }
 
-  else if (projId == "webmerc")
-  {
-    // WebMercator, newbase supports only +datum=WGS84
-    map_it = projParams.find("datum");
-    if (map_it == projParams.end() || map_it->second == "WGS84")
-      result = return_type(
-          new NFmiWebMercatorArea(bottomLeftLatLon, topRightLatLon, topLeftXY, bottomRightXY));
-    else
-      throw runtime_error("Datum " + map_it->second + " not supported for WebMercator");
-  }
-
   else if (projId == "tmerc")
   {
     // The only supported Transverse Mercator projection is YKJ-projection (EPSG:2393), must check
@@ -928,6 +871,7 @@ return_type CreateProj(const std::string &projString,
     throw runtime_error(errStr);
   }
 
+  //	print_unused_parameters(projParams,usedParams);
   return result;
 }
 

@@ -2,15 +2,19 @@
 /*!
  * \file
  * \brief Interface of namespace NFmiAreaFactory
+ *
+ * HUOM!!! NFmiAreaFactory ei ole käytössä MSVC60:lla koska
+ * NFmiStringTools-funktiot eivät ole käytössä.
  */
 // ======================================================================
 
 #pragma once
 
 #include "NFmiPoint.h"
-#include <string>
 
 #include <boost/shared_ptr.hpp>
+
+#include <string>
 
 class NFmiArea;
 

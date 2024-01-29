@@ -8,13 +8,14 @@
 #pragma once
 
 #include "NFmiGlobals.h"
+
 #include <iostream>
 
 //! Undocumented
 class NFmiDataDescriptor
 {
  public:
-  virtual ~NFmiDataDescriptor(void) {}
+  virtual ~NFmiDataDescriptor() {}
   NFmiDataDescriptor() {}
   virtual unsigned long Index() const = 0;
   virtual unsigned long Size() const = 0;

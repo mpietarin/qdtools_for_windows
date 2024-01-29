@@ -13,6 +13,7 @@
 // ======================================================================
 
 #include "NFmiSuperSmartInfo.h"
+
 #include "NFmiAreaMask.h"
 #include "NFmiBitmapAreaMask.h"
 #include "NFmiCalculator.h"
@@ -1325,7 +1326,6 @@ NFmiBitmapAreaMask* NFmiSuperSmartInfo::CreateZeroVariationHelperBinaryMask()
 
     return helperMask;
   }
-  delete helperMask;
   return nullptr;
 }
 

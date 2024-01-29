@@ -1,7 +1,8 @@
 #pragma once
 
-#include "NFmiAreaMask.h"
-#include <boost/shared_ptr.hpp>
+#include "boost/shared_ptr.hpp"
+
+#include <NFmiAreaMask.h>
 
 class NFmiAreaMask;
 class NFmiCalculationParams;
@@ -11,18 +12,23 @@ class NFmiCalculationParams;
 class NFmiSimpleConditionPart
 {
   boost::shared_ptr<NFmiAreaMask> itsMask1;
-  bool isMask1StationaryData = false;  // Jos stationaarista, ei saa tehdä aikainterpolaatiota
+  // Jos stationaarista, ei saa tehdä aikainterpolaatiota
+  bool isMask1StationaryData = false;
   NFmiAreaMask::CalculationOperator itsCalculationOperator = NFmiAreaMask::NotOperation;
   boost::shared_ptr<NFmiAreaMask> itsMask2;
-  bool isMask2StationaryData = false;  // Jos stationaarista, ei saa tehdä aikainterpolaatiota
+  // Jos stationaarista, ei saa tehdä aikainterpolaatiota
+  bool isMask2StationaryData = false;
+  // Tätä käytetään hyväksi -> vertailuoperaattorin kanssa eli ns. continuous-equal laskuissa
+  double itsPreviousValue = kFloatMissing;
+
  public:
-  ~NFmiSimpleConditionPart(void);
+  ~NFmiSimpleConditionPart();
   NFmiSimpleConditionPart(boost::shared_ptr<NFmiAreaMask> &mask1,
                           NFmiAreaMask::CalculationOperator calculationOperator,
                           boost::shared_ptr<NFmiAreaMask> &mask2);
   NFmiSimpleConditionPart(const NFmiSimpleConditionPart &theOther);
-  void Initialize(void);
-  NFmiSimpleConditionPart *Clone(void) const;
+  void Initialize();
+  NFmiSimpleConditionPart *Clone() const;
   NFmiSimpleConditionPart &operator=(const NFmiSimpleConditionPart &) = delete;
 
   boost::shared_ptr<NFmiAreaMask> Mask1() const { return itsMask1; }
@@ -33,6 +39,9 @@ class NFmiSimpleConditionPart
   double Value(const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways);
   double PressureValue(double thePressure, const NFmiCalculationParams &theCalculationParams);
   double HeightValue(double theHeight, const NFmiCalculationParams &theCalculationParams);
+
+  double PreviousValue(double newPreviousValue);
+  void ResetPreviousValue();
 };
 
 // Class is used by smarttool language. Some smarttool functions may have this
@@ -43,7 +52,7 @@ class NFmiSimpleConditionPart
 class NFmiSingleCondition
 {
  public:
-  ~NFmiSingleCondition(void);
+  ~NFmiSingleCondition();
   NFmiSingleCondition(const boost::shared_ptr<NFmiSimpleConditionPart> &thePart1,
                       FmiMaskOperation theConditionOperand1,
                       const boost::shared_ptr<NFmiSimpleConditionPart> &thePart2,
@@ -52,8 +61,8 @@ class NFmiSingleCondition
   NFmiSingleCondition(const NFmiSingleCondition &theOther);
   // Tätä kutsutaan konstruktorin jälkeen, tässä alustetaan ainakin tieto siitä onko maski ns.
   // stationaaristä dataa
-  void Initialize(void);
-  NFmiSingleCondition *Clone(void) const;
+  void Initialize();
+  NFmiSingleCondition *Clone() const;
   NFmiSingleCondition &operator=(const NFmiSingleCondition &) = delete;
 
   // Eri tapauksia varten omat tarkastelu funktiot
@@ -62,6 +71,8 @@ class NFmiSingleCondition
   bool CheckPressureCondition(double thePressure,
                               const NFmiCalculationParams &theCalculationParams);
   bool CheckHeightCondition(double theHeight, const NFmiCalculationParams &theCalculationParams);
+
+  void ResetPreviousValue();
 
  protected:
   // part1 and part2 are always present, because they form basic simple condition:
@@ -86,15 +97,15 @@ class NFmiSingleCondition
 class NFmiSimpleCondition
 {
  public:
-  ~NFmiSimpleCondition(void);
+  ~NFmiSimpleCondition();
   NFmiSimpleCondition(const boost::shared_ptr<NFmiSingleCondition> &theCondition1,
                       NFmiAreaMask::BinaryOperator theConditionOperator,
                       const boost::shared_ptr<NFmiSingleCondition> &theCondition2);
   NFmiSimpleCondition(const NFmiSimpleCondition &theOther);
   // Tätä kutsutaan konstruktorin jälkeen, tässä alustetaan ainakin tieto siitä onko maski ns.
   // stationaaristä dataa
-  void Initialize(void);
-  NFmiSimpleCondition *Clone(void) const;
+  void Initialize();
+  NFmiSimpleCondition *Clone() const;
   NFmiSimpleCondition &operator=(const NFmiSimpleCondition &) = delete;
 
   // Eri tapauksia varten omat tarkastelu funktiot
@@ -103,6 +114,8 @@ class NFmiSimpleCondition
   bool CheckPressureCondition(double thePressure,
                               const NFmiCalculationParams &theCalculationParams);
   bool CheckHeightCondition(double theHeight, const NFmiCalculationParams &theCalculationParams);
+
+  void ResetPreviousValue();
 
  protected:
   // condition1 on aina mukana (esim. T_ec > 0)

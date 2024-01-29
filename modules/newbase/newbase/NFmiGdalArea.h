@@ -5,11 +5,12 @@
  */
 // ======================================================================
 
-#ifndef DISABLED_GDAL
+#ifdef UNIX
 
 #pragma once
 
 #include "NFmiArea.h"
+
 #include <boost/shared_ptr.hpp>
 
 class OGRSpatialReference;
@@ -82,8 +83,6 @@ class NFmiGdalArea : public NFmiArea
   virtual double WorldXYHeight() const;
   virtual double WorldXYWidth() const;
 
-  std::size_t HashValue() const;
-
  private:
   void init();
 
@@ -101,6 +100,6 @@ class NFmiGdalArea : public NFmiArea
 
 };  // class NFmiGdalArea
 
-#endif  // DISABLED_GDAL
+#endif  // NFMIGDALAREA_H
 
 // ======================================================================

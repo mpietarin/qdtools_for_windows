@@ -130,7 +130,7 @@ class NFmiDataPool
  */
 // ----------------------------------------------------------------------
 
-inline NFmiDataPool::~NFmiDataPool() { NFmiDataPool::Destroy(); }
+inline NFmiDataPool::~NFmiDataPool() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented

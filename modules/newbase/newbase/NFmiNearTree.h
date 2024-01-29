@@ -101,6 +101,7 @@
 
 #include "NFmiDef.h"
 #include "NFmiNearTreeImpl.h"
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -122,7 +123,7 @@ class NFmiNearTreeDistance
 
 // The actual class
 
-template <typename T, typename F = NFmiNearTreeDistance<T> >
+template <typename T, typename F = NFmiNearTreeDistance<T>>
 class NFmiNearTree
 {
  public:
@@ -146,7 +147,7 @@ class NFmiNearTree
                               const value_type& thePoint,
                               double theRadius) const;
 
-  void Flush(void) const;
+  void Flush() const;
 
  private:
   NFmiNearTree(const NFmiNearTree& theTree);
@@ -165,7 +166,7 @@ class NFmiNearTree
 // ----------------------------------------------------------------------
 
 template <typename T, typename F>
-NFmiNearTree<T, F>::~NFmiNearTree(void)
+NFmiNearTree<T, F>::~NFmiNearTree()
 {
 }
 
@@ -181,7 +182,7 @@ NFmiNearTree<T, F>::~NFmiNearTree(void)
 // ----------------------------------------------------------------------
 
 template <typename T, typename F>
-NFmiNearTree<T, F>::NFmiNearTree(void) : itsImpl(), itsInputBuffer()
+NFmiNearTree<T, F>::NFmiNearTree() : itsImpl(), itsInputBuffer()
 {
 }
 
@@ -192,7 +193,7 @@ NFmiNearTree<T, F>::NFmiNearTree(void) : itsImpl(), itsInputBuffer()
 // ----------------------------------------------------------------------
 
 template <typename T, typename F>
-void NFmiNearTree<T, F>::Clear(void)
+void NFmiNearTree<T, F>::Clear()
 {
   itsImpl.Clear();
   itsInputBuffer.clear();
@@ -311,16 +312,16 @@ unsigned long NFmiNearTree<T, F>::NearestPoints(std::vector<value_type>& theClos
 // ----------------------------------------------------------------------
 
 template <typename T, typename F>
-void NFmiNearTree<T, F>::Flush(void) const
+void NFmiNearTree<T, F>::Flush() const
 {
   if (!itsInputBuffer.empty())
   {
     std::random_shuffle(itsInputBuffer.begin(), itsInputBuffer.end());
 
-    for (typename buffer_type::const_iterator it = itsInputBuffer.begin();
-         it != itsInputBuffer.end();
-         ++it)
-      itsImpl.Insert(*it);
+    for (const auto& location : itsInputBuffer)
+    {
+      itsImpl.Insert(location);
+    }
 
     itsInputBuffer.clear();
   }

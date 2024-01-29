@@ -19,7 +19,6 @@
 #endif
 
 #include "NFmiString.h"
-#include "NFmiStringTools.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -633,7 +632,7 @@ std::istream &NFmiString::Read(std::istream &file)
  */
 // ----------------------------------------------------------------------
 #ifndef UNIX
-void NFmiString::UpperCase(void)
+void NFmiString::UpperCase()
 {
   setlocale(LC_ALL, "Finnish");
   ::_strupr((char *)fChar);
@@ -643,12 +642,14 @@ void NFmiString::UpperCase(void)
 void NFmiString::UpperCase()
 {
   char *p;
+  setlocale(LC_ALL, "Finnish");
   p = reinterpret_cast<char *>(fChar);
   while (*p != '\0')
   {
-    *p = NFmiStringTools::toupperfi(*p);
+    *p = toupper(*p);
     p++;
   }
+  setlocale(LC_ALL, "C");
 }
 #endif
 
@@ -658,7 +659,7 @@ void NFmiString::UpperCase()
  */
 // ----------------------------------------------------------------------
 #ifndef UNIX
-void NFmiString::LowerCase(void)
+void NFmiString::LowerCase()
 {
   setlocale(LC_ALL, "Finnish");
   ::_strlwr((char *)fChar);
@@ -668,12 +669,14 @@ void NFmiString::LowerCase(void)
 void NFmiString::LowerCase()
 {
   char *p;
+  setlocale(LC_ALL, "Finnish");
   p = reinterpret_cast<char *>(fChar);
   while (*p != '\0')
   {
-    *p = NFmiStringTools::tolowerfi(*p);
+    *p = tolower(*p);
     p++;
   }
+  setlocale(LC_ALL, "C");
 }
 #endif
 

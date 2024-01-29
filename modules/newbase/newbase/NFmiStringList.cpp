@@ -20,6 +20,7 @@
 // ======================================================================
 
 #include "NFmiStringList.h"
+
 #include "NFmiStatusPositionString.h"
 
 // ----------------------------------------------------------------------
@@ -316,9 +317,10 @@ std::istream &NFmiStringList::Read(std::istream &file)
       item = new NFmiStatusString;
     else if (classId == kNFmiStatusPositionString)
       item = new NFmiStatusPositionString;
-    else
-      throw std::runtime_error("Unknown string type in input stream");
-
+    if (!item)
+      throw std::runtime_error(
+          std::string(__FUNCTION__) +
+          " failed to read stringlist from given stream due unknown string-type");
     file >> *item;
     Add(item);
   }

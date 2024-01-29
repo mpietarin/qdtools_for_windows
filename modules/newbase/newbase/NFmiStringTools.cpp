@@ -12,10 +12,10 @@
 #endif
 
 #include "NFmiStringTools.h"
-#include <iostream>
 
 #include <cctype>
 #include <cstdlib>
+#include <iostream>
 #include <locale>
 
 using namespace std;
@@ -552,6 +552,20 @@ const unsigned char iso_8859_1_upper[256] = {0,
 
 // ----------------------------------------------------------------------
 /*!
+ * \brief Platform independent toupper function in Finnish
+ */
+// ----------------------------------------------------------------------
+
+char toupperfi(char theChar) { return iso_8859_1_upper[static_cast<unsigned char>(theChar)]; }
+// ----------------------------------------------------------------------
+/*!
+ * \brief Platform independent tolower function in Finnish
+ */
+// ----------------------------------------------------------------------
+
+char tolowerfi(char theChar) { return iso_8859_1_lower[static_cast<unsigned char>(theChar)]; }
+// ----------------------------------------------------------------------
+/*!
  * \brief Convert a hexadecimal character to a decimal value
  *
  * The value is undefined if the character is not hexadecimal
@@ -573,21 +587,6 @@ int todec(unsigned char theHex)
 
 namespace NFmiStringTools
 {
-// ----------------------------------------------------------------------
-/*!
- * \brief Platform independent toupper function in Finnish
- */
-// ----------------------------------------------------------------------
-
-char toupperfi(char theChar) { return iso_8859_1_upper[static_cast<unsigned char>(theChar)]; }
-// ----------------------------------------------------------------------
-/*!
- * \brief Platform independent tolower function in Finnish
- */
-// ----------------------------------------------------------------------
-
-char tolowerfi(char theChar) { return iso_8859_1_lower[static_cast<unsigned char>(theChar)]; }
-
 // ----------------------------------------------------------------------
 /*!
  * Convert the first character to upper case. The code is stolen from
@@ -938,7 +937,7 @@ const std::map<std::string, std::string> ParseQueryString(const std::string &the
 
   // Split at "&"-characters
 
-  const vector<string> vars = Split<vector<string> >(str, "&");
+  const vector<string> vars = Split<vector<string>>(str, "&");
 
   // Process each assignment
 
@@ -946,7 +945,7 @@ const std::map<std::string, std::string> ParseQueryString(const std::string &the
 
   for (const auto &var : vars)
   {
-    const vector<string> parts = Split<vector<string> >(var, "=");
+    const vector<string> parts = Split<vector<string>>(var, "=");
     if (parts.size() == 1)
       ret.insert(make_pair(UrlDecode(parts.front()), string("")));
     else if (parts.size() == 2)
@@ -967,7 +966,7 @@ const std::map<std::string, std::string> ParseQueryString(const std::string &the
 
 const std::vector<std::string> Split(const std::string &theString, const std::string &theSeparator)
 {
-  return Split<std::vector<std::string> >(theString, theSeparator);
+  return Split<std::vector<std::string>>(theString, theSeparator);
 }
 
 // ----------------------------------------------------------------------

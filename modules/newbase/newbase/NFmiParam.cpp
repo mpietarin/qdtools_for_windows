@@ -13,9 +13,10 @@
 // ======================================================================
 
 #include "NFmiParam.h"
-#include <fstream>
 
 #include "NFmiVersion.h"
+
+#include <fstream>
 
 // ----------------------------------------------------------------------
 /*!
@@ -126,8 +127,7 @@ std::ostream &NFmiParam::Write(std::ostream &file) const
   file << itsMinValue << " " << itsMaxValue << " " << static_cast<int>(itsInterpolationMethod)
        << " ";
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file << itsScale << " " << itsBase << " " << itsPrecision;
   }
@@ -152,8 +152,7 @@ std::istream &NFmiParam::Read(std::istream &file)
   file >> itsMinValue >> itsMaxValue >> theInterpolationMethod;
   itsInterpolationMethod = FmiInterpolationMethod(theInterpolationMethod);
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file >> itsScale >> itsBase;
     file >> itsPrecision;

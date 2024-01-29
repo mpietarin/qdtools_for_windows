@@ -10,6 +10,7 @@
 #include "NFmiDef.h"
 #include "NFmiGlobals.h"
 #include "NFmiParameterName.h"
+
 #include <list>
 #include <map>
 #include <memory>
@@ -31,7 +32,7 @@ class NFmiEnumConverter
  private:
   struct Comparator
   {
-      bool operator()(const char *a, const char *b) const;
+    bool operator()(const char *a, const char *b) const;
   };
 
   class Impl

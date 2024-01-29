@@ -5,16 +5,18 @@
  */
 // ======================================================================
 
-#ifndef DISABLED_GDAL
+#ifdef UNIX
 
 #include "NFmiGdalArea.h"
+
 #include "NFmiString.h"
 #include "NFmiStringTools.h"
-#include <boost/functional/hash.hpp>
+
 #include <boost/math/constants/constants.hpp>
+#include <gdal/ogr_spatialref.h>
+
 #include <cmath>
 #include <iomanip>
-#include <ogr_spatialref.h>
 
 using namespace std;
 
@@ -253,13 +255,7 @@ NFmiArea *NFmiGdalArea::Clone() const { return new NFmiGdalArea(*this); }
  */
 // ----------------------------------------------------------------------
 
-const std::string NFmiGdalArea::AreaStr() const
-{
-  std::ostringstream out;
-  out << itsDatum << ':' << itsDescription << "|" << BottomLeftLatLon().X() << ","
-      << BottomLeftLatLon().Y() << "," << TopRightLatLon().X() << "," << TopRightLatLon().Y();
-  return out.str();
-}
+const std::string NFmiGdalArea::AreaStr() const { return itsDescription; }
 // ----------------------------------------------------------------------
 /*!
  * \brief Datum
@@ -570,28 +566,6 @@ double NFmiGdalArea::WorldXYHeight() const
   }
 }
 
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiGdalArea::HashValue() const
-{
-  std::size_t hash = NFmiArea::HashValue();
-
-  // some of these may be redundant:
-  boost::hash_combine(hash, boost::hash_value(itsDatum));
-  boost::hash_combine(hash, boost::hash_value(itsDescription));
-  boost::hash_combine(hash, boost::hash_value(itsWKT));
-
-  boost::hash_combine(hash, itsBottomLeftLatLon.HashValue());
-  boost::hash_combine(hash, itsTopRightLatLon.HashValue());
-  boost::hash_combine(hash, itsWorldRect.HashValue());
-
-  return hash;
-}
-
-#endif  // DISABLED_GDAL
+#endif  // UNIX
 
 // ======================================================================

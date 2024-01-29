@@ -8,6 +8,7 @@
 #pragma once
 
 #include "NFmiGlobals.h"
+
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -42,6 +43,7 @@ class NFmiRawData
   size_t Size() const;
   float GetValue(size_t index) const;
   bool GetValues(size_t startIndex, size_t step, size_t count, std::vector<float>& values) const;
+  bool SetValues(size_t startIndex, size_t step, size_t count, const std::vector<float>& values);
   bool GetValuesPartial(size_t startIndex,
                         size_t rowCount,
                         size_t rowStep,
@@ -60,6 +62,7 @@ class NFmiRawData
 
   // Advice memory mapping
   bool Advise(FmiAdvice theAdvice);
+  bool IsReadOnly() const;
 
 };  // class NFmiRawData
 

@@ -13,11 +13,12 @@
 // ======================================================================
 
 #include "NFmiParamDescriptor.h"
+
 #include "NFmiDataDescriptor.h"
 #include "NFmiParamBag.h"
-#include <cassert>
-
 #include "NFmiVersion.h"
+
+#include <cassert>
 
 // ----------------------------------------------------------------------
 /*!
@@ -63,12 +64,9 @@ NFmiParamDescriptor::NFmiParamDescriptor(const NFmiParamDescriptor &theParamDesc
       itsActivity(nullptr),
       fInterpolate(theParamDescriptor.fInterpolate)
 {
-  if (itsParamBag != nullptr)
-  {
-    itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];  // 5.3.1997/Marko
-    for (int i = 0; i < static_cast<int>(itsParamBag->GetSize()); i++)
-      itsActivity[i] = theParamDescriptor.itsActivity[i];
-  }
+  itsActivity = new bool[static_cast<int>(itsParamBag->GetSize())];  // 5.3.1997/Marko
+  for (int i = 0; i < static_cast<int>(itsParamBag->GetSize()); i++)
+    itsActivity[i] = theParamDescriptor.itsActivity[i];
 }
 
 // ----------------------------------------------------------------------
@@ -344,8 +342,7 @@ std::istream &NFmiParamDescriptor::Read(std::istream &file)
   itsParamBag->Reset();
   for (unsigned long i = 0; i < itsParamBag->GetSize(); i++)
   {
-    // We trust all data to be at least version 6 by now
-    if (DefaultFmiInfoVersion >= 3)
+    if (FmiInfoVersion >= 3)
       file >> itsActivity[i];
     else
     {

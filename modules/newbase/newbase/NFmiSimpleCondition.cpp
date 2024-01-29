@@ -1,4 +1,5 @@
-#include "NFmiSimpleCondition.h"
+#include <NFmiFastQueryInfo.h>
+#include <NFmiSimpleCondition.h>
 
 namespace
 {
@@ -11,7 +12,7 @@ bool CheckForStationaryData(const boost::shared_ptr<NFmiAreaMask> &mask)
   return false;
 }
 
-static bool UseTimeInterpolation(bool maskIsStationaryData, bool normalInterpolationCondition)
+bool UseTimeInterpolation(bool maskIsStationaryData, bool normalInterpolationCondition)
 {
   if (maskIsStationaryData)
     return false;
@@ -58,9 +59,42 @@ double CalculateValue(double value1,
     }
   }
 }
-}  // namespace
 
-NFmiSimpleConditionPart::~NFmiSimpleConditionPart(void) = default;
+double GetPressureValue(boost::shared_ptr<NFmiAreaMask> &mask,
+                        double pressure,
+                        const NFmiCalculationParams &calculationParams,
+                        bool useTimeInterpolation)
+{
+  if (mask && mask->Info() && mask->Info()->SizeLevels() <= 1)
+  {
+    // jos käytössä on 1 levelinen pintadata, pyydetään vain pinta-arvoa
+    return mask->Value(calculationParams, useTimeInterpolation);
+  }
+  else
+    return mask->PressureValue(pressure, calculationParams);
+}
+
+double GetHeightValue(boost::shared_ptr<NFmiAreaMask> &mask,
+                      double height,
+                      const NFmiCalculationParams &calculationParams,
+                      bool useTimeInterpolation)
+{
+  if (mask && mask->Info() && mask->Info()->SizeLevels() <= 1)
+  {
+    // jos käytössä on 1 levelinen pintadata, pyydetään vain pinta-arvoa
+    return mask->Value(calculationParams, useTimeInterpolation);
+  }
+  else
+    return mask->HeightValue(height, calculationParams);
+}
+
+}  // namespace
+   // namespace
+   // *****************************************************************
+   // **************   NFmiSimpleConditionPart   **********************
+   // *****************************************************************
+
+NFmiSimpleConditionPart::~NFmiSimpleConditionPart() = default;
 
 NFmiSimpleConditionPart::NFmiSimpleConditionPart(
     boost::shared_ptr<NFmiAreaMask> &mask1,
@@ -75,17 +109,18 @@ NFmiSimpleConditionPart::NFmiSimpleConditionPart(const NFmiSimpleConditionPart &
       isMask1StationaryData(theOther.isMask1StationaryData),
       itsCalculationOperator(theOther.itsCalculationOperator),
       itsMask2(theOther.itsMask2 ? theOther.itsMask2->Clone() : nullptr),
-      isMask2StationaryData(theOther.isMask2StationaryData)
+      isMask2StationaryData(theOther.isMask2StationaryData),
+      itsPreviousValue(theOther.itsPreviousValue)
 {
 }
 
-void NFmiSimpleConditionPart::Initialize(void)
+void NFmiSimpleConditionPart::Initialize()
 {
   isMask1StationaryData = ::CheckForStationaryData(itsMask1);
   isMask2StationaryData = ::CheckForStationaryData(itsMask2);
 }
 
-NFmiSimpleConditionPart *NFmiSimpleConditionPart::Clone(void) const
+NFmiSimpleConditionPart *NFmiSimpleConditionPart::Clone() const
 {
   return new NFmiSimpleConditionPart(*this);
 }
@@ -110,12 +145,13 @@ double NFmiSimpleConditionPart::Value(const NFmiCalculationParams &theCalculatio
 double NFmiSimpleConditionPart::PressureValue(double thePressure,
                                               const NFmiCalculationParams &theCalculationParams)
 {
-  double value1 = itsMask1->PressureValue(thePressure, theCalculationParams);
+  auto doTimeInterp = ::UseTimeInterpolation(isMask1StationaryData, true);
+  double value1 = ::GetPressureValue(itsMask1, thePressure, theCalculationParams, doTimeInterp);
   if (!itsMask2)
     return value1;
   else
   {
-    double value2 = itsMask2->PressureValue(thePressure, theCalculationParams);
+    double value2 = ::GetPressureValue(itsMask2, thePressure, theCalculationParams, doTimeInterp);
     return ::CalculateValue(value1, value2, itsCalculationOperator);
   }
 }
@@ -123,17 +159,31 @@ double NFmiSimpleConditionPart::PressureValue(double thePressure,
 double NFmiSimpleConditionPart::HeightValue(double theHeight,
                                             const NFmiCalculationParams &theCalculationParams)
 {
-  double value1 = itsMask1->HeightValue(theHeight, theCalculationParams);
+  auto doTimeInterp = ::UseTimeInterpolation(isMask1StationaryData, true);
+  double value1 = ::GetHeightValue(itsMask1, theHeight, theCalculationParams, doTimeInterp);
   if (!itsMask2)
     return value1;
   else
   {
-    double value2 = itsMask2->HeightValue(theHeight, theCalculationParams);
+    double value2 = ::GetHeightValue(itsMask2, theHeight, theCalculationParams, doTimeInterp);
     return ::CalculateValue(value1, value2, itsCalculationOperator);
   }
 }
 
-NFmiSingleCondition::~NFmiSingleCondition(void) = default;
+double NFmiSimpleConditionPart::PreviousValue(double newPreviousValue)
+{
+  auto returnValue = itsPreviousValue;
+  itsPreviousValue = newPreviousValue;
+  return returnValue;
+}
+
+void NFmiSimpleConditionPart::ResetPreviousValue() { itsPreviousValue = kFloatMissing; }
+
+// *****************************************************************
+// ****************   NFmiSingleCondition   ************************
+// *****************************************************************
+
+NFmiSingleCondition::~NFmiSingleCondition() = default;
 
 NFmiSingleCondition::NFmiSingleCondition(const boost::shared_ptr<NFmiSimpleConditionPart> &thePart1,
                                          FmiMaskOperation theConditionOperand1,
@@ -162,17 +212,14 @@ static void InitializePart(boost::shared_ptr<NFmiSimpleConditionPart> &part)
   if (part) part->Initialize();
 }
 
-void NFmiSingleCondition::Initialize(void)
+void NFmiSingleCondition::Initialize()
 {
   InitializePart(part1);
   InitializePart(part2);
   InitializePart(part3);
 }
 
-NFmiSingleCondition *NFmiSingleCondition::Clone(void) const
-{
-  return new NFmiSingleCondition(*this);
-}
+NFmiSingleCondition *NFmiSingleCondition::Clone() const { return new NFmiSingleCondition(*this); }
 
 static bool EvaluateCondition(double value1, FmiMaskOperation operand, double value2)
 {
@@ -231,12 +278,27 @@ static bool EvaluateRangeCondition(double value1,
   }
 }
 
+// value2:n pitää olla jotenkin value1:n ja previousValue1:n välissä
+static bool EvaluateContinuousEqualCase(double value1, double value2, double previousValue1)
+{
+  if (value1 != kFloatMissing && value2 != kFloatMissing && previousValue1 != kFloatMissing)
+  {
+    if (value1 >= value2 && previousValue1 <= value2) return true;
+    if (previousValue1 >= value2 && value1 <= value2) return true;
+  }
+  return false;
+}
+
 bool NFmiSingleCondition::CheckCondition(const NFmiCalculationParams &theCalculationParams,
                                          bool fUseTimeInterpolationAlways)
 {
   double value1 = part1->Value(theCalculationParams, fUseTimeInterpolationAlways);
   double value2 = part2->Value(theCalculationParams, fUseTimeInterpolationAlways);
-  if (!part3)
+  if (conditionOperand1 == kFmiMaskContinuousEqual)
+  {
+    return ::EvaluateContinuousEqualCase(value1, value2, part1->PreviousValue(value1));
+  }
+  else if (!part3)
   {
     return ::EvaluateCondition(value1, conditionOperand1, value2);
   }
@@ -252,7 +314,11 @@ bool NFmiSingleCondition::CheckPressureCondition(double thePressure,
 {
   double value1 = part1->PressureValue(thePressure, theCalculationParams);
   double value2 = part2->PressureValue(thePressure, theCalculationParams);
-  if (!part3)
+  if (conditionOperand1 == kFmiMaskContinuousEqual)
+  {
+    return ::EvaluateContinuousEqualCase(value1, value2, part1->PreviousValue(value1));
+  }
+  else if (!part3)
   {
     return ::EvaluateCondition(value1, conditionOperand1, value2);
   }
@@ -268,7 +334,11 @@ bool NFmiSingleCondition::CheckHeightCondition(double theHeight,
 {
   double value1 = part1->HeightValue(theHeight, theCalculationParams);
   double value2 = part2->HeightValue(theHeight, theCalculationParams);
-  if (!part3)
+  if (conditionOperand1 == kFmiMaskContinuousEqual)
+  {
+    return ::EvaluateContinuousEqualCase(value1, value2, part1->PreviousValue(value1));
+  }
+  else if (!part3)
   {
     return ::EvaluateCondition(value1, conditionOperand1, value2);
   }
@@ -279,7 +349,18 @@ bool NFmiSingleCondition::CheckHeightCondition(double theHeight,
   }
 }
 
-NFmiSimpleCondition::~NFmiSimpleCondition(void) = default;
+void NFmiSingleCondition::ResetPreviousValue()
+{
+  if (part1) part1->ResetPreviousValue();
+  if (part2) part2->ResetPreviousValue();
+  if (part3) part3->ResetPreviousValue();
+}
+
+// *****************************************************************
+// ****************   NFmiSimpleCondition   ************************
+// *****************************************************************
+
+NFmiSimpleCondition::~NFmiSimpleCondition() = default;
 
 NFmiSimpleCondition::NFmiSimpleCondition(
     const boost::shared_ptr<NFmiSingleCondition> &theCondition1,
@@ -303,16 +384,13 @@ static void InitializePart(boost::shared_ptr<NFmiSingleCondition> &condition)
 
 // Tätä kutsutaan konstruktorin jälkeen, tässä alustetaan ainakin tieto siitä onko maski ns.
 // stationaaristä dataa
-void NFmiSimpleCondition::Initialize(void)
+void NFmiSimpleCondition::Initialize()
 {
   ::InitializePart(condition1);
   ::InitializePart(condition2);
 }
 
-NFmiSimpleCondition *NFmiSimpleCondition::Clone(void) const
-{
-  return new NFmiSimpleCondition(*this);
-}
+NFmiSimpleCondition *NFmiSimpleCondition::Clone() const { return new NFmiSimpleCondition(*this); }
 
 static bool EvaluateBinaryCondition(bool condition1,
                                     NFmiAreaMask::BinaryOperator conditionOperator,
@@ -372,4 +450,10 @@ bool NFmiSimpleCondition::CheckHeightCondition(double theHeight,
     bool conditionValue2 = condition2->CheckHeightCondition(theHeight, theCalculationParams);
     return ::EvaluateBinaryCondition(conditionValue1, conditionOperator, conditionValue2);
   }
+}
+
+void NFmiSimpleCondition::ResetPreviousValue()
+{
+  if (condition1) condition1->ResetPreviousValue();
+  if (condition2) condition2->ResetPreviousValue();
 }

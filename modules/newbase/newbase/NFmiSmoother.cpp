@@ -6,6 +6,7 @@
 // ======================================================================
 
 #include "NFmiSmoother.h"
+
 #include <cassert>
 #include <cstdlib>
 // abs(int)

@@ -17,6 +17,7 @@
 // ======================================================================
 
 #include "NFmiAreaMaskImpl.h"
+
 #include "NFmiSimpleCondition.h"
 
 // ----------------------------------------------------------------------
@@ -94,7 +95,8 @@ NFmiAreaMaskImpl::NFmiAreaMaskImpl(const NFmiAreaMaskImpl &theOther)
       fHasSubMasks(theOther.fHasSubMasks),
       fEnabled(theOther.fEnabled),
       itsSimpleCondition(theOther.itsSimpleCondition ? theOther.itsSimpleCondition->Clone()
-                                                     : nullptr)
+                                                     : nullptr),
+      itsFunctionDataTimeOffsetInHours(theOther.itsFunctionDataTimeOffsetInHours)
 {
 }
 
@@ -106,7 +108,7 @@ NFmiAreaMaskImpl::NFmiAreaMaskImpl(const NFmiAreaMaskImpl &theOther)
 
 NFmiAreaMaskImpl::~NFmiAreaMaskImpl() = default;
 
-void NFmiAreaMaskImpl::Initialize(void)
+void NFmiAreaMaskImpl::Initialize()
 {
   if (itsSimpleCondition) itsSimpleCondition->Initialize();
 }
@@ -163,7 +165,7 @@ double NFmiAreaMaskImpl::Value(const NFmiCalculationParams &theCalculationParams
 {
   // useimmille maskiluokille tämä riittää, koska ne eivät
   // ole riippuvaisia ajasta.
-  return CalcValueFromLocation(theCalculationParams.itsLatlon);
+  return CalcValueFromLocation(theCalculationParams.UsedLatlon());
 }
 
 // ----------------------------------------------------------------------

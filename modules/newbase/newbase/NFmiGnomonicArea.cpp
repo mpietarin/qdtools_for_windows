@@ -64,8 +64,9 @@
 // ======================================================================
 
 #include "NFmiGnomonicArea.h"
-#include <fmt/format.h>
+
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -442,29 +443,17 @@ const std::string NFmiGnomonicArea::AreaStr() const
 
 const std::string NFmiGnomonicArea::WKT() const
 {
-  const char *fmt = R"(PROJCS["FMI_Gnomonic",)"
-                    R"(GEOGCS["FMI_Sphere",)"
-                    R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",{:.0f},0]],)"
-                    R"(PRIMEM["Greenwich",0],)"
-                    R"(UNIT["Degree",0.0174532925199433]],)"
-                    R"(PROJECTION["Gnomonic"],)"
-                    R"(PARAMETER["latitude_of_origin",{}],)"
-                    R"(PARAMETER["central_meridian",{}],)"
-                    R"(UNIT["Metre",1.0]])";
-  return fmt::format(fmt, kRearth, itsCentralLatitude.Value(), itsCentralLongitude);
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Hash value
- */
-// ----------------------------------------------------------------------
-
-std::size_t NFmiGnomonicArea::HashValue() const
-{
-  std::size_t hash = NFmiAzimuthalArea::HashValue();
-  // no private members
-  return hash;
+  std::ostringstream ret;
+  ret << std::setprecision(16) << R"(PROJCS["FMI_Gnomonic",)"
+      << R"(GEOGCS["FMI_Sphere",)"
+      << R"(DATUM["FMI_2007",SPHEROID["FMI_Sphere",6371220,0]],)"
+      << R"(PRIMEM["Greenwich",0],)"
+      << R"(UNIT["Degree",0.0174532925199433]],)"
+      << R"(PROJECTION["Gnomonic"],)"
+      << R"(PARAMETER["latitude_of_origin",)" << itsCentralLatitude.Value() << "],"
+      << R"(PARAMETER["central_meridian",)" << itsCentralLongitude << "],"
+      << R"(UNIT["Metre",1.0]])";
+  return ret.str();
 }
 
 // ======================================================================

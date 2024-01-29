@@ -17,8 +17,10 @@
 // ======================================================================
 
 #include "NFmiInterpolation.h"
+
 #include "NFmiModMeanCalculator.h"
 #include "NFmiPoint.h"
+
 #include <set>
 
 namespace NFmiInterpolation
@@ -373,41 +375,6 @@ double NearestNonMissing(double theX,
     if (pointData.value_ != kFloatMissing) return pointData.value_;
   }
   return kFloatMissing;
-}
-
-// ----------------------------------------------------------------------
-/*!
- * \brief Seeking the nearest value
- *
- * We assume all interpolation occurs in a rectilinear grid
- * and the given coordinates are relative within the grid cell.
- * The values must thus be in the range 0-1.
- *
- * \param theX The relative offset from the bottomleft X-coordinate
- * \param theY The relative offset from the bottomleft Y-coordinate
- * \param theTopLeft The top left value
- * \param theTopRight The top right value
- * \param theBottomLeft The bottom left value
- * \param theBottomRight The bottom right value
- * \return The nearest value
- */
-// ----------------------------------------------------------------------
-double NearestPoint(double theX,
-                    double theY,
-                    double theTopLeft,
-                    double theTopRight,
-                    double theBottomLeft,
-                    double theBottomRight)
-{
-  NFmiPoint referencePoint(theX, theY);
-  std::multiset<PointData> sortedPointValues;
-  sortedPointValues.insert(
-      CalcPointData(referencePoint, NFmiPoint(0, 0), kBottomLeft, theBottomLeft));
-  sortedPointValues.insert(CalcPointData(referencePoint, NFmiPoint(0, 1), kTopLeft, theTopLeft));
-  sortedPointValues.insert(CalcPointData(referencePoint, NFmiPoint(1, 1), kTopRight, theTopRight));
-  sortedPointValues.insert(
-      CalcPointData(referencePoint, NFmiPoint(1, 0), kBottomRight, theBottomRight));
-  return sortedPointValues.begin()->value_;
 }
 
 // ----------------------------------------------------------------------

@@ -18,7 +18,6 @@
 #include "NFmiTimeBag.h"
 #include "NFmiTimeDescriptor.h"
 #include "NFmiVPlaceDescriptor.h"
-#include "NFmiVersion.h"
 
 class NFmiQueryData;
 class NFmiCombinedParam;
@@ -38,7 +37,7 @@ class NFmiQueryInfo
  public:
   virtual ~NFmiQueryInfo();
 
-  NFmiQueryInfo(double theInfoVersion = DefaultFmiInfoVersion);
+  NFmiQueryInfo(double theInfoVersion = 7.);
 
   NFmiQueryInfo(const NFmiQueryInfo &theInfo);
 
@@ -46,7 +45,7 @@ class NFmiQueryInfo
                 const NFmiTimeDescriptor &theTimeDescriptor,
                 const NFmiHPlaceDescriptor &theHPlaceDescriptor = NFmiHPlaceDescriptor(),
                 const NFmiVPlaceDescriptor &theVPlaceDescriptor = NFmiVPlaceDescriptor(),
-                double theInfoVersion = DefaultFmiInfoVersion);
+                double theInfoVersion = 7.);
 
   NFmiQueryInfo(NFmiQueryData *data,
                 NFmiParamDescriptor *theParamDescriptor = 0,
@@ -122,15 +121,13 @@ class NFmiQueryInfo
 
   //! Hakee listan paikkaindeksi/etäisyys metreinä pareja. Listaan haetaan annettua paikkaa lähimmat
   //! datapisteet.
-  std::vector<std::pair<int, double> > NearestLocations(
-      const NFmiLocation &theLocation,
-      int theMaxWantedLocations,
-      double theMaxDistance = kFloatMissing) const;
+  std::vector<std::pair<int, double>> NearestLocations(const NFmiLocation &theLocation,
+                                                       int theMaxWantedLocations,
+                                                       double theMaxDistance = kFloatMissing) const;
 
-  std::vector<std::pair<int, double> > NearestLocations(
-      const NFmiPoint &theLatLonPoint,
-      int theMaxWantedLocations,
-      double theMaxDistance = kFloatMissing) const;
+  std::vector<std::pair<int, double>> NearestLocations(const NFmiPoint &theLatLonPoint,
+                                                       int theMaxWantedLocations,
+                                                       double theMaxDistance = kFloatMissing) const;
 
   virtual bool Level(const NFmiLevel &theLevelValue);
   virtual bool Time(const NFmiMetTime &theTime);
@@ -189,24 +186,25 @@ class NFmiQueryInfo
   // ****** HUOM!!!! *******************************************
 
   // ****** Cached interpolation methods ***********************
-
+  // 17.09.2013 Anssi.R changed method to virtual to be able to override in NFmiMultiQueryInfo
   virtual float CachedInterpolation(const NFmiLocationCache &theLocationCache,
                                     const NFmiTimeCache &theTimeCache);
   float CachedInterpolation(const NFmiLocationCache &theLocationCache);
   float CachedInterpolation(const NFmiTimeCache &theTimeCache);
   void GetCachedValues(const NFmiLocationCache &theLocationCache,
                        const NFmiTimeCache &theTimeCache,
-                       std::array<float,4> &theValues1,
-                       std::array<float,4> &theValues2);
+                       std::vector<float> &theValues);
   void GetCachedValues(const NFmiLocationCache &theLocationCache,
-                       std::array<float,4> &theValues);
-  void GetCachedValues(const NFmiTimeCache &theTimeCache, std::array<float,2> &theValues);
+                       std::vector<float> &theValues,
+                       size_t theStartIndex = 0);
+  void GetCachedValues(const NFmiTimeCache &theTimeCache, std::vector<float> &theValues);
   float CachedTimeInterpolatedValue(float theValue1,
                                     float theValue2,
                                     const NFmiTimeCache &theTimeCache,
                                     FmiInterpolationMethod theInterpolatioMethod,
                                     FmiParameterName theParId);
-  float CachedLocationInterpolatedValue(std::array<float,4> &theValues,
+  float CachedLocationInterpolatedValue(std::vector<float> &theValues,
+                                        size_t theStartIndex,
                                         const NFmiLocationCache &theLocationCache,
                                         FmiInterpolationMethod theInterpolatioMethod,
                                         FmiParameterName theParId);
@@ -217,15 +215,15 @@ class NFmiQueryInfo
   float CachedPressureLevelValue(float P, const NFmiTimeCache &theTimeCache);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiLocationCache &theLocationCache,
-                                    std::array<float,4> &theValues);
+                                    std::vector<float> &theValues,
+                                    size_t theStartIndex = 0);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiTimeCache &theTimeCache,
-                                    std::array<float,2> &theValues);
+                                    std::vector<float> &theValues);
   void GetCachedPressureLevelValues(float P,
                                     const NFmiLocationCache &theLocationCache,
                                     const NFmiTimeCache &theTimeCache,
-                                    std::array<float,4> &theValues1,
-                                    std::array<float,4> &theValues2);
+                                    std::vector<float> &theValues);
   // ****** Cached interpolation methods ***********************
 
   void SetLocalTimes(const float theLongitude);  // Muuttaa ajan iteroinnin paikalliseksi
@@ -500,6 +498,10 @@ class NFmiQueryInfo
   // Lapsi luokat tarvitsevat tälläiset maski-metodit, tässä toteutetaan vain dummyna.
   virtual void MaskType(unsigned long /* theMaskType */){};
   virtual unsigned long MaskType() { return 0; };
+#ifndef NDEBUG
+  static int itsConstructorCalls;  // tämä on yritys tutkia mahdollisia vuotoja ohjelmissä
+  static int itsDestructorCalls;   // kuinka monta oliota on luotu ja tuhottu
+#endif                             // NDEBUG
 
   float CalcTimeOffsetToLastTime(const NFmiMetTime &theTime,
                                  const NFmiMetTime &time1,
@@ -510,15 +512,15 @@ class NFmiQueryInfo
                                       unsigned long thePossibleSourceSizeX = gMissingIndex,
                                       unsigned long thePossibleSourceSizeY = gMissingIndex);
   bool CalcTimeCache(NFmiQueryInfo &theTargetInfo, std::vector<NFmiTimeCache> &theTimeCache);
-
+  // 17.09.2013 Anssi.R changed method to virtual to be able to override in NFmiMultiQueryInfo
   virtual NFmiTimeCache CalcTimeCache(const NFmiMetTime &theTime);
 
-  bool HasNonFiniteValueSet(void) const { return fHasNonFiniteValueSet; }
+  bool HasNonFiniteValueSet() const { return fHasNonFiniteValueSet; }
   void HasNonFiniteValueSet(bool newValue) { fHasNonFiniteValueSet = newValue; }
   bool IsInside(const NFmiPoint &theLatLon, double theRadius) const;
   virtual bool IsInside(const NFmiMetTime &theTime) const;
-  unsigned long GridXNumber(void) const { return itsGridXNumber; }
-  unsigned long GridYNumber(void) const { return itsGridYNumber; }
+  unsigned long GridXNumber() const { return itsGridXNumber; }
+  unsigned long GridYNumber() const { return itsGridYNumber; }
   std::size_t GridHashValue() const;
 
  private:
@@ -588,7 +590,7 @@ class NFmiQueryInfo
   virtual bool SubParamFloatValue(float theFloatData);
 
   // Muuntaa floatin subvalueksi
-  float SubValueFromFloat(float fValue) const;
+  float NFmiQueryInfo::SubValueFromFloat(float fValue) const;
 
   virtual float IndexFloatValue(
       size_t theIndex) const;  // palauttaa suoraan arvon ilman aliparametri tarkasteluja
@@ -651,6 +653,9 @@ class NFmiQueryInfo
   // talletettiin varmuuden vuoksi double:na, jos haluaa käyttää desimaaleja joskus
 
   mutable double itsInfoVersion;
+  // Tämä kertoo mikä versio on viimeisin tuettu queryData mitä ohjelma suostuu lukemaan.
+  // Jos luetussa datatiedostossa on isompi versio numero, Read-metodi heittää poikkeuksen.
+  static const double itsLatestKnownInfoVersion;
 
   unsigned long itsGridXNumber;  // mahdollisen gridi datan x-dimensio
   unsigned long itsGridYNumber;  // mahdollisen gridi datan y-dimensio
@@ -1230,8 +1235,8 @@ inline size_t NFmiQueryInfo::Size() const
   if (!itsParamDescriptor || !itsHPlaceDescriptor || !itsTimeDescriptor || !itsVPlaceDescriptor)
     return 0;
 
-  return (itsParamDescriptor->Size() * itsHPlaceDescriptor->Size() * itsTimeDescriptor->Size() *
-          itsVPlaceDescriptor->Size());
+  return (static_cast<size_t>(itsParamDescriptor->Size()) * itsHPlaceDescriptor->Size() *
+          itsTimeDescriptor->Size() * itsVPlaceDescriptor->Size());
 }
 
 // ----------------------------------------------------------------------

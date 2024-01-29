@@ -15,8 +15,8 @@
 class NFmiEquidistArea : public NFmiAzimuthalArea
 {
  public:
-  virtual ~NFmiEquidistArea(void);
-  NFmiEquidistArea(void);
+  virtual ~NFmiEquidistArea();
+  NFmiEquidistArea();
   NFmiEquidistArea(const NFmiEquidistArea& theEquidistArea);
 
   NFmiEquidistArea(double theRadialRangeInMeters,
@@ -61,18 +61,16 @@ class NFmiEquidistArea : public NFmiAzimuthalArea
   bool operator==(const NFmiArea& theArea) const;
   bool operator!=(const NFmiArea& theArea) const;
 
-  virtual NFmiArea* Clone(void) const;
-  virtual unsigned long ClassId(void) const;
-  virtual const char* ClassName(void) const;
-  const std::string AreaStr(void) const;
+  virtual NFmiArea* Clone() const;
+  virtual unsigned long ClassId() const;
+  virtual const char* ClassName() const;
+  const std::string AreaStr() const;
   virtual const std::string WKT() const;
-
-  std::size_t HashValue() const;
 
  protected:
   virtual double K(const double delta) const;
   virtual double CalcDelta(const double xyDistance) const;
-  virtual double DistanceFromPerspectivePointToCenterOfEarth(void) const;
+  virtual double DistanceFromPerspectivePointToCenterOfEarth() const;
 
  private:
 };  // class NFmiEquidistArea
@@ -86,27 +84,27 @@ typedef NFmiEquidistArea* PNFmiEquidistArea;
  */
 // ----------------------------------------------------------------------
 
-inline NFmiEquidistArea::~NFmiEquidistArea(void) {}
+inline NFmiEquidistArea::~NFmiEquidistArea() {}
 // ----------------------------------------------------------------------
 /*!
  * Void constructor
  */
 // ----------------------------------------------------------------------
 
-inline NFmiEquidistArea::NFmiEquidistArea(void) : NFmiAzimuthalArea() {}
+inline NFmiEquidistArea::NFmiEquidistArea() : NFmiAzimuthalArea() {}
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline unsigned long NFmiEquidistArea::ClassId(void) const { return kNFmiEquiDistArea; }
+inline unsigned long NFmiEquidistArea::ClassId() const { return kNFmiEquiDistArea; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline const char* NFmiEquidistArea::ClassName(void) const { return "NFmiEquiDistArea"; }
+inline const char* NFmiEquidistArea::ClassName() const { return "NFmiEquiDistArea"; }
 
 // ======================================================================

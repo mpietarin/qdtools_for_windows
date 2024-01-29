@@ -13,11 +13,18 @@
 // ======================================================================
 
 #include "NFmiTimeList.h"
+
 #include "NFmiMetTime.h"
 #include "NFmiTimeBag.h"
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
+
+#ifdef UNIX
+long int abs(long int theValue);
+long int abs(long int theValue) { return (theValue < 0 ? -theValue : theValue); }
+#endif
 
 // ----------------------------------------------------------------------
 /*!
@@ -97,8 +104,8 @@ bool NFmiTimeList::Next(NFmiMetTime **theItem) const
   toisaalta nyt }						// return false on harhaan johtava,
   sillä onhan saatu mielekäs theItem.
 
-        return false;			// Suosittelen metodien Next(void) & Current() käyttöä,
-  jolloin ei voi joutua ulos listalta
+        return false;			// Suosittelen metodien Next() & Current() käyttöä, jolloin
+  ei voi joutua ulos listalta
 */  // viljo 12.05.-97
 }
 
@@ -706,11 +713,9 @@ int NFmiTimeList::FindNearestTimes(const NFmiMetTime &theTime,
   {
     if (itsIndex >= 0 && itsIndex < static_cast<int>(itsVectorList.size()) - 1)
     {
+      returnIndex = itsIndex;
       theTime1 = *itsVectorList[itsIndex];
       theTime2 = *itsVectorList[itsIndex + 1];
-      // Do not accept too long gaps
-      if (theMaxMinuteRange < 0 || theTime2.DifferenceInMinutes(theTime1) <= theMaxMinuteRange)
-        returnIndex = itsIndex;
     }
   }
   itsIndex = oldIndex;  // palautetaan indeksi osoittamaan varmuuden vuoksi takaisin

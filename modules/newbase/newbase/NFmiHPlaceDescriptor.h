@@ -8,11 +8,11 @@
 #pragma once
 
 #include "NFmiDataDescriptor.h"
-#include "NFmiDataMatrix.h"
 #include "NFmiGlobals.h"
 #include "NFmiLocation.h"
 #include "NFmiPoint.h"
 #include "NFmiSaveBaseFactory.h"
+
 #include <algorithm>
 
 class NFmiLocationBag;
@@ -24,8 +24,8 @@ class NFmiLocation;
 class NFmiHPlaceDescriptor : public NFmiDataDescriptor
 {
  public:
-  virtual ~NFmiHPlaceDescriptor(void);
-  NFmiHPlaceDescriptor(void);
+  virtual ~NFmiHPlaceDescriptor();
+  NFmiHPlaceDescriptor();
   NFmiHPlaceDescriptor(const NFmiHPlaceDescriptor &theHPlaceDescriptor);
 
   NFmiHPlaceDescriptor(const NFmiLocationBag &theLocationBag,
@@ -50,21 +50,21 @@ class NFmiHPlaceDescriptor : public NFmiDataDescriptor
                        FmiStationType theSelectedType = kLatLon,
                        unsigned long theMaxNumberOfSources = 0);
 
-  bool IsLocation(void) const;
-  bool IsArea(void) const;
-  bool IsGrid(void) const;
+  bool IsLocation() const;
+  bool IsArea() const;
+  bool IsGrid() const;
 
-  const NFmiArea *Area(void) const;
-  const NFmiGrid *Grid(void) const;
-  NFmiGrid *NonConstGrid(void) const;
-  const NFmiLocation *Location(void) const;
+  const NFmiArea *Area() const;
+  const NFmiGrid *Grid() const;
+  NFmiGrid *NonConstGrid() const;
+  const NFmiLocation *Location() const;
   const NFmiLocation *LocationWithIndex(unsigned long theIndex) const;
 
-  NFmiPoint LatLon(void) const;
+  NFmiPoint LatLon() const;
   NFmiPoint LatLon(unsigned long theIndex) const;
-  NFmiPoint RelativePoint(void) const;
+  NFmiPoint RelativePoint() const;
   NFmiPoint RelativePoint(unsigned long theIndex) const;
-  NFmiPoint GridPoint(void) const;
+  NFmiPoint GridPoint() const;
 
   bool NearestLocation(const NFmiLocation &theLocation,
                        double theMaxDistance = kFloatMissing * 1000.);
@@ -75,14 +75,14 @@ class NFmiHPlaceDescriptor : public NFmiDataDescriptor
 
   //! Hakee listan paikkaindeksi/etäisyys metreinä pareja. Listaan haetaan annettua paikkaa lähimmat
   //! datapisteet.
-  const std::vector<std::pair<int, double> > NearestLocations(
+  const std::vector<std::pair<int, double>> NearestLocations(
       const NFmiLocation &theLocation,
       int theMaxWantedLocations,
       double theMaxDistance = kFloatMissing) const;
 
   bool MoveInGrid(long xSteps, long ySteps);
 
-  FmiInterpolationMethod InterpolationMethod(void) const;
+  FmiInterpolationMethod InterpolationMethod() const;
 
   void LocationList(const NFmiLocationBag &theLocationBag);
   bool Location(const NFmiLocation &theLocation);
@@ -90,35 +90,35 @@ class NFmiHPlaceDescriptor : public NFmiDataDescriptor
   bool Location(const NFmiString &theLocationName);
   bool Location(const NFmiPoint &theLonLatPoint, NFmiPoint *theGridPoint = 0);
 
-  void Reset(void);
-  bool First(void);
-  bool Next(void);
-  bool Previous(void);
+  void Reset();
+  bool First();
+  bool Next();
+  bool Previous();
 
   void CreateLatLonCache(std::vector<NFmiPoint> &v);
 
-  virtual unsigned long Index(void) const;
+  virtual unsigned long Index() const;
   bool Index(unsigned long theIndex);
-  virtual unsigned long Size(void) const;
+  virtual unsigned long Size() const;
 
-  virtual FmiStationType SelectedType(void) const;
+  virtual FmiStationType SelectedType() const;
   virtual void SelectedType(FmiStationType thelocationType);
 
-  virtual unsigned long MaxNumberOfSources(void) const;
+  virtual unsigned long MaxNumberOfSources() const;
   virtual void MaxNumberOfSources(unsigned long theMaxNumberOfSources);
-  virtual bool IsMaxNumberOfSources(void) const;
+  virtual bool IsMaxNumberOfSources() const;
 
-  virtual bool IsActive(void) const;
+  virtual bool IsActive() const;
   virtual bool SetActivity(bool);
-  virtual bool NextActive(void);
+  virtual bool NextActive();
 
   virtual const NFmiHPlaceDescriptor Combine(const NFmiHPlaceDescriptor &theCombine);
 
   virtual std::ostream &Write(std::ostream &file) const;
   virtual std::istream &Read(std::istream &file);
 
-  virtual unsigned long ClassId(void) const;
-  virtual const char *ClassName(void) const;
+  virtual unsigned long ClassId() const;
+  virtual const char *ClassName() const;
 
   NFmiHPlaceDescriptor &operator=(const NFmiHPlaceDescriptor &theHPlaceDescriptor);
   bool operator==(const NFmiHPlaceDescriptor &theHPlaceDescriptor) const;
@@ -126,9 +126,10 @@ class NFmiHPlaceDescriptor : public NFmiDataDescriptor
   bool IsInside(const NFmiPoint &theLatLon, double theRadius) const;
 
   std::size_t HashValue() const;
+  NFmiLocationBag *LocationBag() const { return itsLocationBag; }
 
  protected:
-  void Destroy(void);
+  void Destroy();
 
  private:
   NFmiLocationBag *itsLocationBag;
@@ -149,49 +150,49 @@ class NFmiHPlaceDescriptor : public NFmiDataDescriptor
  */
 // ----------------------------------------------------------------------
 
-inline NFmiHPlaceDescriptor::~NFmiHPlaceDescriptor(void) { Destroy(); }
+inline NFmiHPlaceDescriptor::~NFmiHPlaceDescriptor() { Destroy(); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline bool NFmiHPlaceDescriptor::IsLocation(void) const { return (itsLocationBag != 0); }
+inline bool NFmiHPlaceDescriptor::IsLocation() const { return (itsLocationBag != 0); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline bool NFmiHPlaceDescriptor::IsArea(void) const { return (itsArea != 0); }
+inline bool NFmiHPlaceDescriptor::IsArea() const { return (itsArea != 0); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline bool NFmiHPlaceDescriptor::IsGrid(void) const { return (itsGrid != 0); }
+inline bool NFmiHPlaceDescriptor::IsGrid() const { return (itsGrid != 0); }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline const NFmiGrid *NFmiHPlaceDescriptor::Grid(void) const { return itsGrid; }
+inline const NFmiGrid *NFmiHPlaceDescriptor::Grid() const { return itsGrid; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline NFmiGrid *NFmiHPlaceDescriptor::NonConstGrid(void) const { return itsGrid; }
+inline NFmiGrid *NFmiHPlaceDescriptor::NonConstGrid() const { return itsGrid; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline FmiStationType NFmiHPlaceDescriptor::SelectedType(void) const { return itsSelectedType; }
+inline FmiStationType NFmiHPlaceDescriptor::SelectedType() const { return itsSelectedType; }
 // ----------------------------------------------------------------------
 /*!
  * \param theStationType Undocumented
@@ -209,7 +210,7 @@ inline void NFmiHPlaceDescriptor::SelectedType(FmiStationType theStationType)
  */
 // ----------------------------------------------------------------------
 
-inline unsigned long NFmiHPlaceDescriptor::MaxNumberOfSources(void) const
+inline unsigned long NFmiHPlaceDescriptor::MaxNumberOfSources() const
 {
   return itsMaxNumberOfSources;
 }
@@ -231,7 +232,7 @@ inline void NFmiHPlaceDescriptor::MaxNumberOfSources(unsigned long theMaxNumberO
  */
 // ----------------------------------------------------------------------
 
-inline bool NFmiHPlaceDescriptor::IsMaxNumberOfSources(void) const
+inline bool NFmiHPlaceDescriptor::IsMaxNumberOfSources() const
 {
   return itsMaxNumberOfSources ? true : false;
 }
@@ -272,13 +273,13 @@ inline std::istream &operator>>(std::istream &file, NFmiHPlaceDescriptor &ob)
  */
 // ----------------------------------------------------------------------
 
-inline unsigned long NFmiHPlaceDescriptor::ClassId(void) const { return kNFmiHPlaceDescriptor; }
+inline unsigned long NFmiHPlaceDescriptor::ClassId() const { return kNFmiHPlaceDescriptor; }
 // ----------------------------------------------------------------------
 /*!
  * \return Undocumented
  */
 // ----------------------------------------------------------------------
 
-inline const char *NFmiHPlaceDescriptor::ClassName(void) const { return "NFmiHPlaceDescriptor"; }
+inline const char *NFmiHPlaceDescriptor::ClassName() const { return "NFmiHPlaceDescriptor"; }
 
 // ======================================================================

@@ -13,7 +13,9 @@
 // ======================================================================
 
 #include "NFmiAreaTools.h"
+
 #include "NFmiArea.h"
+
 #include <algorithm>
 
 // Local utility functions

@@ -13,11 +13,12 @@
 // ======================================================================
 
 #include "NFmiDataIdent.h"
-#include "NFmiParamBag.h"
-#include "NFmiVoidPtrList.h"
-#include <fstream>
 
+#include "NFmiParamBag.h"
 #include "NFmiVersion.h"
+#include "NFmiVoidPtrList.h"
+
+#include <fstream>
 
 // ----------------------------------------------------------------------
 /*!
@@ -254,8 +255,7 @@ std::ostream &NFmiDataIdent::Write(std::ostream &file) const
   file << fIsDataParam << " ";
   file << fHasDataParams << " ";
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file << "0 ";               // Varattu
     file << "0 " << std::endl;  // Varattu
@@ -311,8 +311,7 @@ std::istream &NFmiDataIdent::Read(std::istream &file)
   file >> fIsDataParam;
   file >> fHasDataParams;
 
-  // We trust everything to be at least version 6 by now
-  if (DefaultFmiInfoVersion >= 4)
+  if (FmiInfoVersion >= 4)
   {
     file >> fReserve;
     file >> fReserve;
