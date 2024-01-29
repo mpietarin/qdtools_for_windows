@@ -1,6 +1,6 @@
 #include "NFmiGriddingProperties.h"
+#include "NFmiArea.h"
 #include <boost/algorithm/string.hpp>
-#include <newbase/NFmiArea.h>
 
 NFmiGriddingProperties::NFmiGriddingProperties(bool toolMasterAvailable)
     : toolMasterAvailable_(toolMasterAvailable)
@@ -13,9 +13,8 @@ NFmiGriddingProperties::NFmiGriddingProperties(bool toolMasterAvailable)
 std::string NFmiGriddingProperties::toString() const
 {
   std::ostringstream out;
-  out << static_cast<int>(function_) << "," << rangeLimitInKm_ << "," << localFitMethod_ << ","
-      << localFitDelta_ << "," << smoothLevel_ << "," << localFitFilterRadius_ << ","
-      << localFitFilterFactor_;
+  out << function_ << "," << rangeLimitInKm_ << "," << localFitMethod_ << "," << localFitDelta_
+      << "," << smoothLevel_ << "," << localFitFilterRadius_ << "," << localFitFilterFactor_;
   return out.str();
 }
 
@@ -49,9 +48,10 @@ bool NFmiGriddingProperties::fromString(const std::string &str)
   return false;
 }
 
-FmiGriddingFunction NFmiGriddingProperties::function(void) const
+FmiGriddingFunction NFmiGriddingProperties::function() const
 {
-  if (toolMasterAvailable_) return function_;
+  if (toolMasterAvailable_)
+    return function_;
   return kFmiMarkoGriddingFunction;
 }
 

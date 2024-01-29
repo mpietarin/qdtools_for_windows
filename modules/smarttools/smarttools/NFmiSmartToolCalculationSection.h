@@ -13,7 +13,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <newbase/NFmiAreaMask.h>
-#include <newbase/NFmiDataMatrix.h>
 
 class NFmiPoint;
 class NFmiMetTime;
@@ -28,14 +27,14 @@ class NFmiSmartToolCalculationSection
                  NFmiMacroParamValue &theMacroParamValue);
   void Calculate_ver2(const NFmiCalculationParams &theCalculationParams);
   void SetTime(const NFmiMetTime &theTime);
-  boost::shared_ptr<NFmiFastQueryInfo> FirstVariableInfo(void);
+  boost::shared_ptr<NFmiFastQueryInfo> FirstVariableInfo();
 
-  NFmiSmartToolCalculationSection(void);
+  NFmiSmartToolCalculationSection();
   NFmiSmartToolCalculationSection(const NFmiSmartToolCalculationSection &theOther);
-  ~NFmiSmartToolCalculationSection(void);
+  ~NFmiSmartToolCalculationSection();
 
   void AddCalculations(const boost::shared_ptr<NFmiSmartToolCalculation> &value);
-  std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > &GetCalculations(void)
+  std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > &GetCalculations()
   {
     return itsCalculations;
   }

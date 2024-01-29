@@ -16,14 +16,14 @@ class NFmiColor
 {
  public:
   // Destructors
-  virtual ~NFmiColor(void) {}
+  virtual ~NFmiColor() {}
   // Constructors
 
-  // Default: 100% opacity is assumed
-  NFmiColor(float aRedValue = 0.0,
-            float aGreenValue = 0.0,
-            float aBlueValue = 0.0,
-            float aAlphaValue = 0.0);
+  // Default: 100% opacity when aAlphaValue = 0.f
+  NFmiColor(float aRedValue = 0.f,
+            float aGreenValue = 0.f,
+            float aBlueValue = 0.f,
+            float aAlphaValue = 0.f);
 
   NFmiColor(const NFmiColor &aColor);
 
@@ -36,7 +36,7 @@ class NFmiColor
   void SetRGB(const FmiRGBColor &aColor);
   void SetRGB(const NFmiColor &aColor);
 
-  void SetRGBA(float aRedValue, float aGreenValue, float aBlueValue, float aAlphaValue = 0.0);
+  void SetRGBA(float aRedValue, float aGreenValue, float aBlueValue, float aAlphaValue = 0.f);
 
   void SetRGBA(const FmiRGBColor &aColor);
   void SetRGBA(const NFmiColor &aColor);
@@ -45,24 +45,27 @@ class NFmiColor
   void Green(float theGreen) { itsColor.green = theGreen; }
   void Blue(float theBlue) { itsColor.blue = theBlue; }
   void Alpha(float theAlpha) { itsColor.alpha = theAlpha; }
-  float Red(void) const { return itsColor.red; }
-  float Green(void) const { return itsColor.green; }
-  float Blue(void) const { return itsColor.blue; }
-  float Alpha(void) const { return itsColor.alpha; }
+  float Red() const { return itsColor.red; }
+  float Green() const { return itsColor.green; }
+  float Blue() const { return itsColor.blue; }
+  float Alpha() const { return itsColor.alpha; }
   // Taaksepäin yhteensopivuuden takia TFmiColor:in GetVäri-metodeja
   // toteutetaan tässä samallalailla kuten poistetussa TFmiColor-luokassa.
 
-  float GetRed(void) const { return Red(); }
-  float GetGreen(void) const { return Green(); }
-  float GetBlue(void) const { return Blue(); }
-  const FmiRGBColor &GetRGB(void) const { return itsColor; }
-  const FmiRGBColor &GetRGBA(void) const { return itsColor; }
+  float GetRed() const { return Red(); }
+  float GetGreen() const { return Green(); }
+  float GetBlue() const { return Blue(); }
+  const FmiRGBColor &GetRGB() const { return itsColor; }
+  const FmiRGBColor &GetRGBA() const { return itsColor; }
   void BlendColor(const NFmiColor &foregroundcolor, float value, float minvalue, float maxvalue);
 
   void Overlay(const NFmiColor &theForegroundColor);
-  unsigned long GetPackedColor(void) const;
+  unsigned long GetPackedColor() const;
 
-  void Mix(const NFmiColor &anOtherColor, float mixingRatio);
+  void Mix(const NFmiColor &anOtherColor, float mixingRatio, bool mixAlpha = false);
+  bool IsFullyTransparent() const;
+  void InvertAlphaChannel();
+  static FmiColorValue ColorChannelLimitCheck(FmiColorValue colorChannelValue);
 
   // Operators
 
@@ -138,29 +141,38 @@ typedef NFmiColor TFmiColor;
 
 inline void NFmiColor::SetRGBA(const FmiRGBColor &aColor)
 {
-  itsColor.red = (aColor.red >= 0.0f) ? ((aColor.red <= 1.0f) ? aColor.red : 1.0f) : 0.0f;
-  itsColor.green = (aColor.green >= 0.0f) ? ((aColor.green <= 1.0f) ? aColor.green : 1.0f) : 0.0f;
-  itsColor.blue = (aColor.blue >= 0.0f) ? ((aColor.blue <= 1.0f) ? aColor.blue : 1.0f) : 0.0f;
-  itsColor.alpha = (aColor.alpha >= 0.0f) ? ((aColor.alpha <= 1.0f) ? aColor.alpha : 1.0f) : 0.0f;
+  itsColor.red = NFmiColor::ColorChannelLimitCheck(aColor.red);
+  itsColor.green = NFmiColor::ColorChannelLimitCheck(aColor.green);
+  itsColor.blue = NFmiColor::ColorChannelLimitCheck(aColor.blue);
+  itsColor.alpha = NFmiColor::ColorChannelLimitCheck(aColor.alpha);
 }
 
 inline NFmiColor::NFmiColor(const NFmiColor &aColor) : itsColor(aColor.itsColor) {}
 
-inline NFmiColor::NFmiColor(const FmiRGBColor &aColor) : itsColor() { SetRGBA(aColor); }
+inline NFmiColor::NFmiColor(const FmiRGBColor &aColor) : itsColor()
+{
+  SetRGBA(aColor);
+}
 
-inline std::ostream &operator<<(std::ostream &os, const NFmiColor &ob) { return ob.Write(os); }
+inline std::ostream &operator<<(std::ostream &os, const NFmiColor &ob)
+{
+  return ob.Write(os);
+}
 
-inline std::istream &operator>>(std::istream &os, NFmiColor &ob) { return ob.Read(os); }
+inline std::istream &operator>>(std::istream &os, NFmiColor &ob)
+{
+  return ob.Read(os);
+}
 
 inline void NFmiColor::SetRGBA(float aRedValue,
                                float aGreenValue,
                                float aBlueValue,
                                float aAlphaValue)
 {
-  itsColor.red = (aRedValue >= 0.0f) ? ((aRedValue <= 1.0f) ? aRedValue : 1.0f) : 0.0f;
-  itsColor.green = (aGreenValue >= 0.0f) ? ((aGreenValue <= 1.0f) ? aGreenValue : 1.0f) : 0.0f;
-  itsColor.blue = (aBlueValue >= 0.0f) ? ((aBlueValue <= 1.0f) ? aBlueValue : 1.0f) : 0.0f;
-  itsColor.alpha = (aAlphaValue >= 0.0f) ? ((aAlphaValue <= 1.0f) ? aAlphaValue : 1.0f) : 0.0f;
+  itsColor.red = NFmiColor::ColorChannelLimitCheck(aRedValue);
+  itsColor.green = NFmiColor::ColorChannelLimitCheck(aGreenValue);
+  itsColor.blue = NFmiColor::ColorChannelLimitCheck(aBlueValue);
+  itsColor.alpha = NFmiColor::ColorChannelLimitCheck(aAlphaValue);
 }
 
 inline void NFmiColor::SetRGBA(const NFmiColor &aColor)
@@ -175,23 +187,23 @@ inline NFmiColor::NFmiColor(float aRedValue, float aGreenValue, float aBlueValue
 }
 
 // The following RGB() methods simply call RGBA() methods with
-// alpha value 0.0 !
+// alpha value 0.f !
 
 inline void NFmiColor::SetRGB(float aRedValue, float aGreenValue, float aBlueValue)
 {
-  SetRGBA(aRedValue, aGreenValue, aBlueValue, 0.0);
+  SetRGBA(aRedValue, aGreenValue, aBlueValue, 0.f);
 }
 
 inline void NFmiColor::SetRGB(const FmiRGBColor &aColor)
 {
   SetRGBA(aColor);
-  Alpha(0.0);
+  Alpha(0.f);
 }
 
 inline void NFmiColor::SetRGB(const NFmiColor &aColor)
 {
   SetRGBA(aColor);
-  Alpha(0.0);
+  Alpha(0.f);
 }
 
 // This method is meant to be used for colors with no transparency
@@ -200,18 +212,18 @@ inline void NFmiColor::BlendColor(const NFmiColor &foregroundcolor,
                                   float minvalue,
                                   float maxvalue)
 {
-  float ratio = 0.0;
+  float ratio = 0.f;
 
   if (value <= minvalue)
-    ratio = 0.0;
+    ratio = 0.f;
   else if (value >= maxvalue)
-    ratio = 1.0;
+    ratio = 1.f;
   else if ((minvalue < value) && (value < maxvalue))
     ratio = (value - minvalue) / (maxvalue - minvalue);
 
   NFmiColor backgroundcolor(itsColor.red, itsColor.green, itsColor.blue);
 
-  NFmiColor tempColor(foregroundcolor * ratio + backgroundcolor * (1.0f - ratio));
+  NFmiColor tempColor(foregroundcolor * ratio + backgroundcolor * (1.f - ratio));
 
   backgroundcolor.SetRGBA(tempColor);
 
@@ -220,12 +232,33 @@ inline void NFmiColor::BlendColor(const NFmiColor &foregroundcolor,
   itsColor.blue = backgroundcolor.Blue();
 }
 
-inline void NFmiColor::Mix(const NFmiColor &anOtherColor, float mixingRatio)
+inline void NFmiColor::Mix(const NFmiColor &anOtherColor, float mixingRatio, bool mixAlpha)
 {
   SetRGB(
-      (1.F - mixingRatio) * static_cast<float>(itsColor.red) + mixingRatio * anOtherColor.Red(),
-      (1.F - mixingRatio) * static_cast<float>(itsColor.green) + mixingRatio * anOtherColor.Green(),
-      (1.F - mixingRatio) * static_cast<float>(itsColor.blue) + mixingRatio * anOtherColor.Blue());
+      (1.f - mixingRatio) * static_cast<float>(itsColor.red) + mixingRatio * anOtherColor.Red(),
+      (1.f - mixingRatio) * static_cast<float>(itsColor.green) + mixingRatio * anOtherColor.Green(),
+      (1.f - mixingRatio) * static_cast<float>(itsColor.blue) + mixingRatio * anOtherColor.Blue());
+  if (mixAlpha)
+    Alpha((1.f - mixingRatio) * static_cast<float>(itsColor.alpha) +
+          mixingRatio * anOtherColor.Alpha());
+}
+
+inline bool NFmiColor::IsFullyTransparent() const
+{
+  return itsColor.alpha >= 1.f;
+}
+
+// On tapauksia, missä on talletettu värin alpha väärin päin.
+// Tällä funktiolla korjataan tuollainen toistaiseksi.
+inline void NFmiColor::InvertAlphaChannel()
+{
+  auto invertedAlpha = 1.f - Alpha();
+  Alpha(NFmiColor::ColorChannelLimitCheck(invertedAlpha));
+}
+
+inline FmiColorValue NFmiColor::ColorChannelLimitCheck(FmiColorValue colorChannelValue)
+{
+  return (colorChannelValue >= 0.f) ? ((colorChannelValue <= 1.f) ? colorChannelValue : 1.f) : 0.f;
 }
 
 // ======================================================================

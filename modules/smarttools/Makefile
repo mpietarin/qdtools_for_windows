@@ -1,5 +1,3 @@
-DEFINES = -DUNIX -D_REENTRANT
-
 SUBNAME = smarttools
 LIB = smartmet-$(SUBNAME)
 SPEC = smartmet-library-$(SUBNAME)
@@ -7,29 +5,46 @@ INCDIR = smartmet/$(SUBNAME)
 
 # Installation directories
 
-include common.mk
+processor := $(shell uname -p)
 
-# clang++ and g++ do not accept the std::async code in NFmiLocalAreaMinMaxMask, hence the DEBUG_LOCAL_EXTREMES flag
-DEFINES = -DUNIX -D_REENTRANT -DBOOST -DDEBUG_LOCAL_EXTREMES
+ifeq ($(origin PREFIX), undefined)
+  PREFIX = /usr
+else
+  PREFIX = $(PREFIX)
+endif
 
-# Boost 1.69
+ifeq ($(processor), x86_64)
+  libdir = $(PREFIX)/lib64
+else
+  libdir = $(PREFIX)/lib
+endif
 
-ifeq ($(USE_CLANG), yes)
+bindir = $(PREFIX)/bin
+includedir = $(PREFIX)/include
+datadir = $(PREFIX)/share
+objdir = obj
+
+# Compiler options
+
+DEFINES = -DUNIX -D_REENTRANT
+
+ifeq ($(CXX), clang++)
 
  FLAGS = \
-	-std=$(CXX_STD) -fPIC -MD -fno-omit-frame-pointer \
-	-Wall \
-        -Wextra \
+	-std=c++11 -fPIC -MD \
+	-Weverything \
 	-Wno-c++98-compat \
 	-Wno-float-equal \
 	-Wno-padded \
 	-Wno-missing-prototypes
 
- INCLUDES += -isystem $(includedir)/smartmet $(SYSTEM_INCLUDES)
+ INCLUDES = \
+	-isystem $(includedir) \
+	-isystem $(includedir)/smartmet
 
 else
 
- FLAGS = -std=$(CXX_STD) -fPIC -MD -fno-omit-frame-pointer -Wall -W -Wno-unused-parameter -fdiagnostics-color=$(GCC_DIAG_COLOR)
+ FLAGS = -std=c++11 -fPIC -MD -Wall -W -Wno-unused-parameter
 
  FLAGS_DEBUG = \
 	-Wcast-align \
@@ -39,61 +54,46 @@ else
 	-Woverloaded-virtual  \
 	-Wpointer-arith \
 	-Wcast-qual \
+	-Wredundant-decls \
 	-Wwrite-strings \
-	-Wsign-promo \
-	-Wno-inline
+	-Wsign-promo
 
  FLAGS_RELEASE = -Wuninitialized
 
- INCLUDES += \
+ INCLUDES = \
+	-I$(includedir) \
 	-I$(includedir)/smartmet
 
 endif
 
-ifeq ($(TSAN), yes)
-  FLAGS += -fsanitize=thread
-endif
-ifeq ($(ASAN), yes)
-  FLAGS += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize-address-use-after-scope
-endif
-
 # Compile options in detault, debug and profile modes
 
-CFLAGS         = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O2 -g
-CFLAGS_DEBUG   = $(DEFINES) $(FLAGS) $(FLAGS_DEBUG)   -Werror  -Og -g
+CFLAGS         = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O2
+CFLAGS_DEBUG   = $(DEFINES) $(FLAGS) $(FLAGS_DEBUG)   -Werror  -O0 -g
 CFLAGS_PROFILE = $(DEFINES) $(FLAGS) $(FLAGS_PROFILE) -DNDEBUG -O2 -g -pg
 
-CFLAGS0        = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O0 -g
-
-LIBS += -L$(libdir) \
-	-lfmt \
-	-lboost_regex \
-	-lboost_date_time \
+LIBS = -L$(libdir) \
 	-lboost_filesystem \
-	-lboost_iostreams \
+	-lboost_regex \
 	-lboost_thread
 
 # What to install
 
-LIBFILE = libsmartmet-$(SUBNAME).so
+LIBFILE = lib$(LIB).so
 
 # How to install
 
-INSTALL_PROG = install -p -m 775
-INSTALL_DATA = install -p -m 664
-
-ARFLAGS = -r
+INSTALL_PROG = install -m 775
+INSTALL_DATA = install -m 664
 
 # Compile option overrides
 
 ifneq (,$(findstring debug,$(MAKECMDGOALS)))
   CFLAGS = $(CFLAGS_DEBUG)
-  CFLAGS0 = $(CFLAGS_DEBUG)
 endif
 
 ifneq (,$(findstring profile,$(MAKECMDGOALS)))
   CFLAGS = $(CFLAGS_PROFILE)
-  CFLAGS0 = $(CFLAGS_PROFILE)
 endif
 
 # Compilation directories
@@ -119,12 +119,11 @@ release: all
 profile: all
 
 $(LIBFILE): $(OBJS)
-	$(CC) $(LDFLAGS) -shared -rdynamic -o $(LIBFILE) $(OBJS) $(LIBS)
+	$(CXX) $(CFLAGS) -shared -rdynamic -o $(LIBFILE) $(OBJS) $(LIBS)
 
 clean:
 	rm -f $(LIBFILE) *~ $(SUBNAME)/*~
 	rm -rf $(objdir)
-	rm -f test/*Test
 
 format:
 	clang-format -i -style=file $(SUBNAME)/*.h $(SUBNAME)/*.cpp test/*.cpp
@@ -138,28 +137,28 @@ install:
 	  $(INSTALL_DATA) $$hdr $(includedir)/$(INCDIR)/$$HDR; \
 	done
 	@mkdir -p $(libdir)
-	echo $(INSTALL_PROG) $(LIBFILE) $(libdir)/$(LIBFILE)
 	$(INSTALL_PROG) $(LIBFILE) $(libdir)/$(LIBFILE)
+
+test:
+	cd test && make test
 
 objdir:
 	@mkdir -p $(objdir)
 
-rpm: clean $(SPEC).spec
-	rm -f $(SPEC).tar.gz # Clean a possible leftover from previous attempt
-	tar -czvf $(SPEC).tar.gz --exclude test --exclude-vcs --transform "s,^,$(SPEC)/," *
-	rpmbuild -ta $(SPEC).tar.gz
-	rm -f $(SPEC).tar.gz
+rpm: clean
+	if [ -e $(SPEC).spec ]; \
+	then \
+	  tar -czvf $(SPEC).tar.gz --transform "s,^,$(SPEC)/," * ; \
+	  rpmbuild -ta $(SPEC).tar.gz ; \
+	  rm -f $(SPEC).tar.gz ; \
+	else \
+	  echo $(SPEC).spec file missing; \
+	fi;
 
 .SUFFIXES: $(SUFFIXES) .cpp
 
-modernize:
-	for F in newbase/*.cpp; do echo $$F; clang-tidy $$F -fix -checks=-*,modernize-* -- $(CFLAGS) $(DEFINES) $(INCLUDES); done
-
 obj/%.o: %.cpp
 	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<
-
-obj/NFmiEnumConverter.o: NFmiEnumConverter.cpp
-	$(CXX) $(CFLAGS0) $(INCLUDES) -c -o $@ $<
 
 ifneq ($(wildcard obj/*.d),)
 -include $(wildcard obj/*.d)

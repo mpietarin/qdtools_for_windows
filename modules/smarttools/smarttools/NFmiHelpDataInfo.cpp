@@ -9,6 +9,7 @@
 
 #include "NFmiHelpDataInfo.h"
 #include "NFmiPathUtils.h"
+#include <boost/algorithm/string/replace.hpp>
 #include <newbase/NFmiArea.h>
 #include <newbase/NFmiAreaFactory.h>
 #include <newbase/NFmiFileString.h>
@@ -17,148 +18,6 @@
 #include <newbase/NFmiStereographicArea.h>
 
 using namespace std;
-
-const long kTimeInterpolationRangeDefaultValueInMinutes = 6 * 60;
-// ----------------------------------------------------------------------
-/*!
- *  syö spacet pois streamista ja palauttaa true:n jos ei olla lopussa
- *
- * \param theInput The input stream
- * \return Undocumented
- */
-// ----------------------------------------------------------------------
-
-NFmiHelpDataInfo::NFmiHelpDataInfo(void)
-    : itsName(),
-      itsFileNameFilter(),
-      itsPartialDataCacheFileNameFilter(),
-      fForceFileFilterName(false),
-      itsLatestFileName(),
-      itsLatestErroneousFileName(),
-      itsDataType(NFmiInfoData::kNoDataType),
-      itsLatestFileTimeStamp(0),
-      itsFakeProducerId(0),
-      itsImageProjectionString(),
-      itsImageDataIdent(),
-      itsImageArea(),
-      fNotifyOnLoad(false),
-      itsNotificationLabel(),
-      itsCustomMenuFolder(),
-      itsReportNewDataTimeStepInMinutes(0),
-      itsReportNewDataLabel(),
-      itsCombineDataPathAndFileName(),
-      itsCombineDataMaxTimeSteps(0),
-      fMakeSoundingIndexData(false),
-      itsRequiredGroundDataFileFilterForSoundingIndexCalculations(),
-      itsBaseNameSpace(),
-      itsAdditionalArchiveFileCount(0),
-      fEnable(true),
-      fNonFixedTimeGab(false),
-      itsModelRunTimeGapInHours(0),
-      itsTimeInterpolationRangeInMinutes(kTimeInterpolationRangeDefaultValueInMinutes)
-{
-}
-
-NFmiHelpDataInfo::NFmiHelpDataInfo(const NFmiHelpDataInfo &theOther)
-    : itsName(theOther.itsName),
-      itsFileNameFilter(theOther.itsFileNameFilter),
-      itsPartialDataCacheFileNameFilter(theOther.itsPartialDataCacheFileNameFilter),
-      fForceFileFilterName(theOther.fForceFileFilterName),
-      itsLatestFileName(theOther.itsLatestFileName),
-      itsLatestErroneousFileName(theOther.itsLatestErroneousFileName),
-      itsDataType(theOther.itsDataType),
-      itsLatestFileTimeStamp(theOther.itsLatestFileTimeStamp),
-      itsFakeProducerId(theOther.itsFakeProducerId),
-      itsImageProjectionString(theOther.itsImageProjectionString),
-      itsImageDataIdent(theOther.itsImageDataIdent),
-      itsImageArea(theOther.itsImageArea ? theOther.itsImageArea->Clone() : 0),
-      fNotifyOnLoad(theOther.fNotifyOnLoad),
-      itsNotificationLabel(theOther.itsNotificationLabel),
-      itsCustomMenuFolder(theOther.itsCustomMenuFolder),
-      itsReportNewDataTimeStepInMinutes(theOther.itsReportNewDataTimeStepInMinutes),
-      itsReportNewDataLabel(theOther.itsReportNewDataLabel),
-      itsCombineDataPathAndFileName(theOther.itsCombineDataPathAndFileName),
-      itsCombineDataMaxTimeSteps(theOther.itsCombineDataMaxTimeSteps),
-      fMakeSoundingIndexData(theOther.fMakeSoundingIndexData),
-      itsRequiredGroundDataFileFilterForSoundingIndexCalculations(
-          theOther.itsRequiredGroundDataFileFilterForSoundingIndexCalculations),
-      itsBaseNameSpace(theOther.itsBaseNameSpace),
-      itsAdditionalArchiveFileCount(theOther.itsAdditionalArchiveFileCount),
-      fEnable(theOther.fEnable),
-      fNonFixedTimeGab(theOther.fNonFixedTimeGab),
-      itsModelRunTimeGapInHours(theOther.itsModelRunTimeGapInHours),
-      itsTimeInterpolationRangeInMinutes(theOther.itsTimeInterpolationRangeInMinutes)
-{
-}
-
-NFmiHelpDataInfo &NFmiHelpDataInfo::operator=(const NFmiHelpDataInfo &theOther)
-{
-  if (this != &theOther)
-  {
-    Clear();  // lähinnä area-otuksen tuhoamista varten kutsutaan
-    itsName = theOther.itsName;
-    itsFileNameFilter = theOther.itsFileNameFilter;
-    itsPartialDataCacheFileNameFilter = theOther.itsPartialDataCacheFileNameFilter;
-    fForceFileFilterName = theOther.fForceFileFilterName;
-    itsLatestFileName = theOther.itsLatestFileName;
-    itsLatestErroneousFileName = theOther.itsLatestErroneousFileName;
-    itsDataType = theOther.itsDataType;
-    itsLatestFileTimeStamp = theOther.itsLatestFileTimeStamp;
-    itsFakeProducerId = theOther.itsFakeProducerId;
-    itsImageProjectionString = theOther.itsImageProjectionString;
-    itsImageDataIdent = theOther.itsImageDataIdent;
-    if (theOther.itsImageArea) itsImageArea.reset(theOther.itsImageArea->Clone());
-    fNotifyOnLoad = theOther.fNotifyOnLoad;
-    itsNotificationLabel = theOther.itsNotificationLabel;
-    itsCustomMenuFolder = theOther.itsCustomMenuFolder;
-    itsReportNewDataTimeStepInMinutes = theOther.itsReportNewDataTimeStepInMinutes;
-    itsReportNewDataLabel = theOther.itsReportNewDataLabel;
-    itsCombineDataPathAndFileName = theOther.itsCombineDataPathAndFileName;
-    itsCombineDataMaxTimeSteps = theOther.itsCombineDataMaxTimeSteps;
-    fMakeSoundingIndexData = theOther.fMakeSoundingIndexData;
-    itsRequiredGroundDataFileFilterForSoundingIndexCalculations =
-        theOther.itsRequiredGroundDataFileFilterForSoundingIndexCalculations;
-    itsAdditionalArchiveFileCount = theOther.itsAdditionalArchiveFileCount;
-    fEnable = theOther.fEnable;
-    fNonFixedTimeGab = theOther.fNonFixedTimeGab;
-    itsModelRunTimeGapInHours = theOther.itsModelRunTimeGapInHours;
-    itsTimeInterpolationRangeInMinutes = theOther.itsTimeInterpolationRangeInMinutes;
-
-    itsBaseNameSpace = theOther.itsBaseNameSpace;
-  }
-  return *this;
-}
-
-void NFmiHelpDataInfo::Clear(void)
-{
-  itsName = "";
-  itsFileNameFilter = "";
-  itsPartialDataCacheFileNameFilter = "";
-  fForceFileFilterName = false;
-  itsLatestFileName = "";
-  itsLatestErroneousFileName = "";
-  itsDataType = NFmiInfoData::kNoDataType;
-  itsLatestFileTimeStamp = 0;
-  itsFakeProducerId = 0;
-  itsImageProjectionString = "";
-  itsImageDataIdent = NFmiDataIdent();
-  itsImageArea.reset();
-  fNotifyOnLoad = false;
-  itsNotificationLabel = "";
-  itsCustomMenuFolder = "";
-  itsBaseNameSpace = "";
-  itsReportNewDataTimeStepInMinutes = 0;
-  itsReportNewDataLabel = "";
-  itsCombineDataPathAndFileName = "";
-  itsCombineDataMaxTimeSteps = 0;
-  fMakeSoundingIndexData = false;
-  itsRequiredGroundDataFileFilterForSoundingIndexCalculations = "";
-  itsAdditionalArchiveFileCount = 0;
-  fEnable = true;
-  fNonFixedTimeGab = false;
-  itsModelRunTimeGapInHours = 0;
-  itsTimeInterpolationRangeInMinutes = kTimeInterpolationRangeDefaultValueInMinutes;
-}
 
 static void FixPathEndWithSeparator(std::string &theFixedPathStr)
 {
@@ -169,7 +28,8 @@ static void FixPathEndWithSeparator(std::string &theFixedPathStr)
     theFixedPathStr = static_cast<char *>(tmpFileStr);
 
     std::string::value_type lastLetter = theFixedPathStr[theFixedPathStr.size() - 1];
-    if (lastLetter != kFmiDirectorySeparator) theFixedPathStr.push_back(kFmiDirectorySeparator);
+    if (lastLetter != kFmiDirectorySeparator)
+      theFixedPathStr.push_back(kFmiDirectorySeparator);
   }
 }
 
@@ -183,30 +43,73 @@ static void FixPatternSeparators(std::string &theFixedPatternStr)
   }
 }
 
-static void MakeCombinedDataFilePattern(NFmiHelpDataInfo &theDataInfo,
-                                        const NFmiHelpDataInfoSystem &theHelpDataSystem)
+// Must fix incomplete absolute path with possible drive letter and ':' character.
+// So if cachePath = "/path/xxx" and  absoluteControlBasePath = "C:/yyy/zzz"  => cachePath =
+// "c:/path/xxx" Must also possibly add directory slash at the end of cachePath string. If cachePath
+// = "c:/path/xxx" => "c:/path/xxx/"
+static void FixCachePath(std::string &cachePath,
+                         const std::string &absoluteControlBasePath,
+                         bool directoryCase)
 {
-  // combineDataPattern += "FileNameFilter:istä osa jossa on mukana ylin hakemistotaso"
-  // esim. "P:\data\partial_data\laps\*_LAPS_finland.sqd" -> "laps\*_LAPS_finland.sqd"
-  std::string lastDirFilePattern = theDataInfo.FileNameFilter();
-  if (lastDirFilePattern.empty() == false)
+  cachePath = PathUtils::fixMissingDriveLetterToAbsolutePath(cachePath, absoluteControlBasePath);
+  cachePath = PathUtils::simplifyWindowsPath(cachePath);
+  if (directoryCase)
+    ::FixPathEndWithSeparator(cachePath);
+}
+
+// ***********************************************************
+// ******** NFmiHelpDataInfo alkaa ***************************
+// ***********************************************************
+
+NFmiHelpDataInfo::NFmiHelpDataInfo(const NFmiHelpDataInfo &theOther) = default;
+
+NFmiHelpDataInfo &NFmiHelpDataInfo::operator=(const NFmiHelpDataInfo &theOther) = default;
+
+// Esim.
+// fileFilter = P:\data\partial_data\iasi\*_iasi.sqd
+// newBaseDirectory = D:\smartmet\wrk\data\cache\
+// Palautettava arvo on D:\smartmet\wrk\data\cache\iasi\*_iasi.sqd
+static std::string CopyLatestDirectoryLevelFromFileFilterToNewBaseDirectory(
+    const std::string &fileFilter, const std::string &newBaseDirectory)
+{
+  if (!fileFilter.empty())
   {
     int slashesFound = 0;
-    size_t i = lastDirFilePattern.size() - 1;
+    size_t i = fileFilter.size() - 1;
     for (; i > 0; i--)
     {
-      if (lastDirFilePattern[i] == '\\') slashesFound++;
-      if (slashesFound > 1) break;
+      if (fileFilter[i] == '\\')
+        slashesFound++;
+      if (slashesFound > 1)
+        break;
     }
 
     if (slashesFound > 1)
     {
-      std::string combineDataPattern(theHelpDataSystem.CachePartialDataDirectory());
-      combineDataPattern +=
-          std::string(lastDirFilePattern.begin() + i + 1, lastDirFilePattern.end());
-      theDataInfo.PartialDataCacheFileNameFilter(combineDataPattern);
+      std::string newFileFilter = newBaseDirectory;
+      newFileFilter += std::string(fileFilter.begin() + i + 1, fileFilter.end());
+      return newFileFilter;
     }
   }
+  return "";
+}
+
+static bool MakeCombinedDataFilePattern(NFmiHelpDataInfo &theDataInfo,
+                                        const NFmiHelpDataInfoSystem &theHelpDataSystem)
+{
+  auto partialDataCacheFileFilter = ::CopyLatestDirectoryLevelFromFileFilterToNewBaseDirectory(
+      theDataInfo.FileNameFilter(), theHelpDataSystem.LocalDataPartialDirectory());
+  theDataInfo.PartialDataCacheFileNameFilter(partialDataCacheFileFilter);
+  return !partialDataCacheFileFilter.empty();
+}
+
+static bool MakeCombinedDataResultFileFilter(NFmiHelpDataInfo &theDataInfo,
+                                             const NFmiHelpDataInfoSystem &theHelpDataSystem)
+{
+  auto resultDataCacheFileFilter = ::CopyLatestDirectoryLevelFromFileFilterToNewBaseDirectory(
+      theDataInfo.FileNameFilter(), theHelpDataSystem.LocalDataCacheDirectory());
+  theDataInfo.CombinedResultDataFileFilter(resultDataCacheFileFilter);
+  return !resultDataCacheFileFilter.empty();
 }
 
 static long GetDefaultTimeInterpolationRangeInMinutes(NFmiInfoData::Type dataType)
@@ -245,10 +148,9 @@ void NFmiHelpDataInfo::InitFromSettings(const std::string &theBaseKey,
         NFmiSettings::Optional<int>(itsBaseNameSpace + "::ReportNewDataTimeStepInMinutes", 0);
     itsReportNewDataLabel =
         NFmiSettings::Optional<string>(itsBaseNameSpace + "::ReportNewDataLabel", "");
-    itsCombineDataPathAndFileName =
-        NFmiSettings::Optional<string>(itsBaseNameSpace + "::CombineDataPathAndFileName", "");
-    itsCombineDataMaxTimeSteps =
-        NFmiSettings::Optional<int>(itsBaseNameSpace + "::CombineDataMaxTimeSteps", 0);
+    SetCombineDataMaxTimeSteps(
+        NFmiSettings::Optional<int>(itsBaseNameSpace + "::CombineDataMaxTimeSteps", 0),
+        theHelpDataSystem);
     fMakeSoundingIndexData =
         NFmiSettings::Optional<bool>(itsBaseNameSpace + "::MakeSoundingIndexData", false);
     itsRequiredGroundDataFileFilterForSoundingIndexCalculations = NFmiSettings::Optional<string>(
@@ -262,8 +164,14 @@ void NFmiHelpDataInfo::InitFromSettings(const std::string &theBaseKey,
     itsTimeInterpolationRangeInMinutes =
         NFmiSettings::Optional<long>(itsBaseNameSpace + "::TimeInterpolationRangeInMinutes",
                                      ::GetDefaultTimeInterpolationRangeInMinutes(itsDataType));
-
-    if (IsCombineData()) ::MakeCombinedDataFilePattern(*this, theHelpDataSystem);
+    fReloadCaseStudyData =
+        NFmiSettings::Optional<bool>(itsBaseNameSpace + "::ReloadCaseStudyData", true);
+    fAllowCombiningToSurfaceDataInSoundingView = NFmiSettings::Optional<bool>(
+        itsBaseNameSpace + "::AllowCombiningToSurfaceDataInSoundingView", false);
+    fCaseStudyLegacyOnly =
+        NFmiSettings::Optional<bool>(itsBaseNameSpace + "::CaseStudyLegacyOnly", false);
+    itsAgingTimeLimitInMinutes =
+        NFmiSettings::Optional<int>(itsBaseNameSpace + "::AgingTimeLimitInMinutes", -1);
 
     std::string imageProjectionKey(itsBaseNameSpace + "::ImageProjection");
     if (NFmiSettings::IsSet(imageProjectionKey))
@@ -285,13 +193,38 @@ void NFmiHelpDataInfo::InitFromSettings(const std::string &theBaseKey,
   }
 }
 
-void NFmiHelpDataInfo::ImageArea(boost::shared_ptr<NFmiArea> &newValue) { itsImageArea = newValue; }
+void NFmiHelpDataInfo::SetCombineDataMaxTimeSteps(int newValue,
+                                                  const NFmiHelpDataInfoSystem &theHelpDataSystem)
+{
+  itsCombineDataMaxTimeSteps = newValue;
+  if (itsCombineDataMaxTimeSteps > 0)
+  {
+    auto status1 = ::MakeCombinedDataFilePattern(*this, theHelpDataSystem);
+    auto status2 = ::MakeCombinedDataResultFileFilter(*this, theHelpDataSystem);
+    if (!status1 || !status2)
+    {
+      // Ei voi tehda combineddata polkua, laitetaan yhdistely pois
+      itsCombineDataMaxTimeSteps = 0;
+      // Luodaan lokitussanoma ongelmista
+      itsCombineDataErrorMessage = "Problem when doing CombineData settings with data '";
+      itsCombineDataErrorMessage += itsName;
+      itsCombineDataErrorMessage +=
+          "'. Couldn't create properly a partial-data file pattern or result data file pattern.";
+      itsCombineDataErrorMessage += " Combined data production for this data is now disabled...";
+    }
+  }
+}
+
+void NFmiHelpDataInfo::ImageArea(boost::shared_ptr<NFmiArea> &newValue)
+{
+  itsImageArea = newValue;
+}
 
 static std::string MakeCacheFilePattern(const NFmiHelpDataInfo &theDataInfo,
                                         const NFmiHelpDataInfoSystem &theHelpDataSystem)
 {
   NFmiFileString fileStr(theDataInfo.FileNameFilter());
-  std::string cachePattern(theHelpDataSystem.CacheDirectory());
+  std::string cachePattern(theHelpDataSystem.LocalDataLocalDirectory());
   cachePattern += static_cast<char *>(fileStr.FileName());
   return cachePattern;
 }
@@ -312,7 +245,7 @@ const std::string NFmiHelpDataInfo::UsedFileNameFilter(
     return FileNameFilter();
   else
   {
-    if (itsCombineDataPathAndFileName.empty())
+    if (!IsCombineData())
       return ::MakeCacheFilePattern(*this, theHelpDataInfoSystem);
     else
       return PartialDataCacheFileNameFilter();
@@ -333,6 +266,19 @@ std::string NFmiHelpDataInfo::GetCleanedName() const
 
   return newName;
 }
+
+bool NFmiHelpDataInfo::IsDataUsedCaseStudyChecks(bool caseStudyModeOn) const
+{
+  if (!CaseStudyLegacyOnly())
+  {
+    return true;
+  }
+  return caseStudyModeOn;
+}
+
+// ***********************************************************
+// ******** NFmiHelpDataInfoSystem alkaa *********************
+// ***********************************************************
 
 NFmiHelpDataInfo &NFmiHelpDataInfoSystem::DynamicHelpDataInfo(int theIndex)
 {
@@ -382,8 +328,10 @@ NFmiDataIdent NFmiHelpDataInfoSystem::GetNextSatelChannel(const NFmiDataIdent &t
       currentIndex++;
     else
       currentIndex--;
-    if (currentIndex < 0) currentIndex = counter - 1;
-    if (currentIndex >= counter) currentIndex = 0;
+    if (currentIndex < 0)
+      currentIndex = counter - 1;
+    if (currentIndex >= counter)
+      currentIndex = 0;
     returnDataIdent = dataIdentVec[currentIndex];
   }
   return returnDataIdent;
@@ -418,18 +366,19 @@ void NFmiHelpDataInfoSystem::InitDataType(const std::string &theBaseKey,
     // eri datojen enable-ominaisuudesta yhteen konffitiedostoon (mm.
     // helpdatainfo_enable_data_fmi_heavy.conf),
     // tuli mahdolliseksi, että tässä tuli ns. haamu dataInfoja, jotka nyt pitää karsia.
-    if (hdi.DataType() != NFmiInfoData::kNoDataType) theHelpDataInfos.push_back(hdi);
+    if (hdi.DataType() != NFmiInfoData::kNoDataType)
+      theHelpDataInfos.push_back(hdi);
   }
 }
 
-// Must fix incomplete absolute path with possible drive letter and ':' character.
-// So if cachePath = "/path/xxx" and  absoluteControlBasePath = "C:/yyy/zzz"  => cachePath =
-// "c:/path/xxx" Must also possibly add directory slash at the end of cachePath string. If cachePath
-// = "c:/path/xxx" => "c:/path/xxx/"
-static void FixCachePath(std::string &cachePath, const std::string &absoluteControlBasePath)
+void NFmiHelpDataInfoSystem::SetLocalDataBaseDirectory(const std::string &newBaseDirectory)
 {
-  cachePath = PathUtils::fixMissingDriveLetterToAbsolutePath(cachePath, absoluteControlBasePath);
-  ::FixPathEndWithSeparator(cachePath);
+  itsLocalDataBaseDirectory = newBaseDirectory;
+  ::FixCachePath(itsLocalDataBaseDirectory, itsAbsoluteControlBasePath, true);
+  itsLocalDataLocalDirectory = itsLocalDataBaseDirectory + "local\\";
+  itsLocalDataTmpDirectory = itsLocalDataBaseDirectory + "tmp\\";
+  itsLocalDataPartialDirectory = itsLocalDataBaseDirectory + "partial_data\\";
+  itsLocalDataCacheDirectory = itsLocalDataBaseDirectory + "cache\\";
 }
 
 void NFmiHelpDataInfoSystem::InitFromSettings(const std::string &theBaseNameSpaceStr,
@@ -438,14 +387,11 @@ void NFmiHelpDataInfoSystem::InitFromSettings(const std::string &theBaseNameSpac
                                               std::string theHelpDataName)
 {
   itsBaseNameSpace = theBaseNameSpaceStr;
-  itsCacheDirectory = NFmiSettings::Require<std::string>(itsBaseNameSpace + "::CacheDirectory");
-  ::FixCachePath(itsCacheDirectory, absoluteControlBasePath);
-  itsCacheTmpDirectory =
-      NFmiSettings::Require<std::string>(itsBaseNameSpace + "::CacheTmpDirectory");
-  ::FixCachePath(itsCacheTmpDirectory, absoluteControlBasePath);
-  itsCachePartialDataDirectory =
-      NFmiSettings::Require<std::string>(itsBaseNameSpace + "::CachePartialDataDirectory");
-  ::FixCachePath(itsCachePartialDataDirectory, absoluteControlBasePath);
+  itsAbsoluteControlBasePath = absoluteControlBasePath;
+  auto localDataBaseDirectory =
+      NFmiSettings::Require<std::string>(itsBaseNameSpace + "::LocalDataBaseDirectory");
+  SetLocalDataBaseDirectory(localDataBaseDirectory);
+
   itsCacheTmpFileNameFix =
       NFmiSettings::Require<std::string>(itsBaseNameSpace + "::CacheTmpFileNameFix");
   fUseQueryDataCache = NFmiSettings::Require<bool>(itsBaseNameSpace + "::UseQueryDataCache");
@@ -476,20 +422,18 @@ void NFmiHelpDataInfoSystem::InitFromSettings(const std::string &theBaseNameSpac
     helpDataInfo.Name(theHelpDataName);
     helpDataInfo.FileNameFilter(theHelpEditorFileNameFilter);
     helpDataInfo.DataType(NFmiInfoData::kEditingHelpData);
+    helpDataInfo.NonFixedTimeGab(true);
     AddDynamic(helpDataInfo);
   }
 }
 
-void NFmiHelpDataInfoSystem::StoreToSettings(void)
+void NFmiHelpDataInfoSystem::StoreToSettings()
 {
   if (itsBaseNameSpace.empty() == false)
   {
     // HUOM! tässä on toistaiseksi vain cacheen liittyvien muutosten talletukset
-    NFmiSettings::Set(std::string(itsBaseNameSpace + "::CacheDirectory"), itsCacheDirectory, true);
-    NFmiSettings::Set(
-        std::string(itsBaseNameSpace + "::CacheTmpDirectory"), itsCacheTmpDirectory, true);
-    NFmiSettings::Set(std::string(itsBaseNameSpace + "::CachePartialDataDirectory"),
-                      itsCachePartialDataDirectory,
+    NFmiSettings::Set(std::string(itsBaseNameSpace + "::LocalDataBaseDirectory"),
+                      itsLocalDataBaseDirectory,
                       true);
     NFmiSettings::Set(
         std::string(itsBaseNameSpace + "::CacheTmpFileNameFix"), itsCacheTmpFileNameFix, true);
@@ -523,9 +467,7 @@ void NFmiHelpDataInfoSystem::StoreToSettings(void)
 void NFmiHelpDataInfoSystem::InitSettings(const NFmiHelpDataInfoSystem &theOther,
                                           bool fDoHelpDataInfo)
 {
-  this->itsCacheDirectory = theOther.itsCacheDirectory;
-  this->itsCacheTmpDirectory = theOther.itsCacheTmpDirectory;
-  this->itsCachePartialDataDirectory = theOther.itsCachePartialDataDirectory;
+  SetLocalDataBaseDirectory(theOther.itsLocalDataBaseDirectory);
   this->itsCacheTmpFileNameFix = theOther.itsCacheTmpFileNameFix;
   this->fUseQueryDataCache = theOther.fUseQueryDataCache;
   this->fDoCleanCache = theOther.fDoCleanCache;
@@ -551,16 +493,15 @@ static NFmiHelpDataInfo *FindHelpDataInfo(std::vector<NFmiHelpDataInfo> &theHelp
                                           const std::string &theFileNameFilter,
                                           const NFmiHelpDataInfoSystem &theHelpDataInfoSystem)
 {
-  size_t ssize = theHelpInfos.size();
-  for (size_t i = 0; i < ssize; i++)
+  for (auto &helpDataInfo : theHelpInfos)
   {
     // Siis jos joko FileNameFilter (server path), UsedFileNameFilter (local path) tai
     // CombineDataPathAndFileName (yhdistelmä datoissa tämä on se data joka luetaan sisään
     // SmartMetiin) on etsitty, palautetaan helpInfo.
-    if (theHelpInfos[i].UsedFileNameFilter(theHelpDataInfoSystem) == theFileNameFilter ||
-        theHelpInfos[i].FileNameFilter() == theFileNameFilter ||
-        theHelpInfos[i].CombineDataPathAndFileName() == theFileNameFilter)
-      return &theHelpInfos[i];
+    if (helpDataInfo.UsedFileNameFilter(theHelpDataInfoSystem) == theFileNameFilter ||
+        helpDataInfo.FileNameFilter() == theFileNameFilter ||
+        helpDataInfo.CombinedResultDataFileFilter() == theFileNameFilter)
+      return &helpDataInfo;
   }
   return 0;
 }
@@ -570,7 +511,8 @@ static NFmiHelpDataInfo *FindHelpDataInfo(std::vector<NFmiHelpDataInfo> &theHelp
 // Käy ensin läpi dynaamiset helpDataInfot ja sitten staattiset.
 NFmiHelpDataInfo *NFmiHelpDataInfoSystem::FindHelpDataInfo(const std::string &theFileNameFilter)
 {
-  if (theFileNameFilter.empty()) return 0;
+  if (theFileNameFilter.empty())
+    return 0;
 
   NFmiHelpDataInfo *helpInfo =
       ::FindHelpDataInfo(itsDynamicHelpDataInfos, theFileNameFilter, *this);
@@ -592,7 +534,7 @@ static void CollectCustomMenuItems(const std::vector<NFmiHelpDataInfo> &theHelpI
 }
 
 // kerää uniikki lista mahdollisista custom Menu folder asetuksista
-std::vector<std::string> NFmiHelpDataInfoSystem::GetUniqueCustomMenuList(void)
+std::vector<std::string> NFmiHelpDataInfoSystem::GetUniqueCustomMenuList()
 {
   std::set<std::string> menuSet;
   ::CollectCustomMenuItems(itsDynamicHelpDataInfos, menuSet);

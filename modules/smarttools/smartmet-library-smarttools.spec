@@ -4,30 +4,19 @@
 %define DEVELNAME %{SPECNAME}-devel
 Summary: smarttools library
 Name: %{SPECNAME}
-Version: 20.9.11
+Version: 17.3.28
 Release: 1%{?dist}.fmi
 License: MIT
 Group: Development/Libraries
 URL: https://github.com/fmidev/smartmet-library-smarttools
 Source: %{name}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot-%(%{__id_u} -n)
-BuildRequires: rpm-build
-BuildRequires: gcc-c++
-BuildRequires: make
-BuildRequires: smartmet-library-newbase-devel >= 20.9.11
-BuildRequires: boost169-devel
-BuildRequires: fmt-devel
-Requires: smartmet-library-newbase >= 20.9.11
-Requires: boost169-filesystem
-Requires: boost169-thread
-Requires: fmt
+BuildRequires: smartmet-library-newbase-devel >= 17.3.28
+BuildRequires: boost-devel
+Requires: smartmet-library-newbase >= 17.3.28
 Provides: %{LIBNAME}
 Obsoletes: libsmartmet-smarttools < 17.1.4
 Obsoletes: libsmartmet-smarttools-debuginfo < 17.1.4
-#TestRequires: gcc-c++
-#TestRequires: smartmet-library-newbase-devel >= 20.9.11
-#TestRequires: boost169-devel
-#TestRequires: smartmet-library-regression
 
 %description
 FMI smarttools library
@@ -56,7 +45,6 @@ rm -rf $RPM_BUILD_ROOT
 %package -n %{DEVELNAME}
 Summary: FMI smarttools development files
 Provides: %{DEVELNAME}
-Requires: %{SPECNAME}
 Obsoletes: libsmartmet-smarttools-devel < 17.1.4
 
 %description -n %{DEVELNAME}
@@ -68,49 +56,6 @@ FMI smarttools development files
 
 
 %changelog
-* Fri Sep 11 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.9.11-1.fmi
-- Removed obsolete FMI_DLL export declarations
-
-* Fri Aug 21 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.8.21-1.fmi
-- Upgrade to fmt 6.2
-
-* Sat Apr 18 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.4.18-1.fmi
-- Upgrade to Boost 1.69
-
-* Wed Dec  4 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.12.4-1.fmi
-- Use -fno-omit-frame-pointer for a better profiling and debugging experience                                                                                              
-* Wed Nov 20 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.11.20-1.fmi
-- checkedVector is replaced by std::vector
-- Refactored NFmiSmartToolInterpreter variable handling code
-
-* Thu Oct 31 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.10.31-1.fmi
-- Merged SmartMet Editor changes
-
-* Thu Sep 26 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.9.26-1.fmi
-- Removed boost::regex dependency
-
-* Mon Oct  1 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.10.1-1.fmi
-- Added option -g to get a proper debuginfo package
-
-* Wed May  2 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.5.2-1.fmi
-- Repackaged since newbase NFmiEnumConverted ABI changed
-
-* Sat Apr  7 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.4.7-1.fmi
-- Upgrade to boost 1.66
-
-* Mon Aug 28 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.8.28-1.fmi
-- Upgrade to boost 1.65
-
-* Tue Jun 13 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.6.13-1.fmi
-- Run clang-format after the revert to default include order in clang 4.0.0
-
-* Tue Apr  4 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.4.4-1.fmi
-- Recompiled to use the latest newbase API
-
-* Mon Apr  3 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.4.3-1.fmi
-- Improved handling of sounding data
-- Bug fix to sounding interpolations
-
 * Tue Mar 28 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.28-1.fmi
 - Refactored some code into newbase
 

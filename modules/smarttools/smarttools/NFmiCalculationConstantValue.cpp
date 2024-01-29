@@ -26,7 +26,7 @@ NFmiCalculationConstantValue::NFmiCalculationConstantValue(
 {
 }
 
-NFmiAreaMask *NFmiCalculationConstantValue::Clone(void) const
+NFmiAreaMask *NFmiCalculationConstantValue::Clone() const
 {
   return new NFmiCalculationConstantValue(*this);
 }
@@ -59,7 +59,7 @@ NFmiCalculationSpecialCase::NFmiCalculationSpecialCase(const NFmiCalculationSpec
 {
 }
 
-NFmiAreaMask *NFmiCalculationSpecialCase::Clone(void) const
+NFmiAreaMask *NFmiCalculationSpecialCase::Clone() const
 {
   return new NFmiCalculationSpecialCase(*this);
 }
@@ -87,13 +87,13 @@ NFmiCalculationRampFuction::NFmiCalculationRampFuction(
 {
 }
 
-NFmiCalculationRampFuction::~NFmiCalculationRampFuction(void) {}
+NFmiCalculationRampFuction::~NFmiCalculationRampFuction() {}
 NFmiCalculationRampFuction::NFmiCalculationRampFuction(const NFmiCalculationRampFuction &theOther)
     : NFmiInfoAreaMask(theOther)
 {
 }
 
-NFmiAreaMask *NFmiCalculationRampFuction::Clone(void) const
+NFmiAreaMask *NFmiCalculationRampFuction::Clone() const
 {
   return new NFmiCalculationRampFuction(*this);
 }
@@ -130,13 +130,13 @@ NFmiCalculationIntegrationFuction::NFmiCalculationIntegrationFuction(
 {
 }
 
-NFmiCalculationIntegrationFuction::~NFmiCalculationIntegrationFuction(void) {}
+NFmiCalculationIntegrationFuction::~NFmiCalculationIntegrationFuction() {}
 double NFmiCalculationIntegrationFuction::Value(const NFmiCalculationParams &theCalculationParams,
                                                 bool /* fUseTimeInterpolationAlways */)
 {
   // HUOM!!! Tähän tuli pikaviritys:
   // asetan vain lähimmän pisteen ja ajan kohdalleen.
-  if (itsInfo->NearestPoint(theCalculationParams.itsLatlon) &&
+  if (itsInfo->NearestPoint(theCalculationParams.UsedLatlon()) &&
       itsInfo->TimeToNearestStep(theCalculationParams.itsTime, kForward))
   {
     itsDataIterator->DoForEach(itsDataModifier.get());
@@ -173,7 +173,7 @@ NFmiCalculationRampFuctionWithAreaMask::NFmiCalculationRampFuctionWithAreaMask(
 {
 }
 
-NFmiCalculationRampFuctionWithAreaMask::~NFmiCalculationRampFuctionWithAreaMask(void) {}
+NFmiCalculationRampFuctionWithAreaMask::~NFmiCalculationRampFuctionWithAreaMask() {}
 NFmiCalculationRampFuctionWithAreaMask::NFmiCalculationRampFuctionWithAreaMask(
     const NFmiCalculationRampFuctionWithAreaMask &theOther)
     : NFmiAreaMaskImpl(theOther),
@@ -182,7 +182,7 @@ NFmiCalculationRampFuctionWithAreaMask::NFmiCalculationRampFuctionWithAreaMask(
 {
 }
 
-NFmiAreaMask *NFmiCalculationRampFuctionWithAreaMask::Clone(void) const
+NFmiAreaMask *NFmiCalculationRampFuctionWithAreaMask::Clone() const
 {
   return new NFmiCalculationRampFuctionWithAreaMask(*this);
 }
@@ -195,13 +195,13 @@ NFmiAreaMask *NFmiCalculationRampFuctionWithAreaMask::Clone(void) const
 // ****************************************************************************
 double NFmiCalculationDeltaZValue::itsHeightValue;
 
-NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue(void) : NFmiAreaMaskImpl() {}
+NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue() : NFmiAreaMaskImpl() {}
 NFmiCalculationDeltaZValue::NFmiCalculationDeltaZValue(const NFmiCalculationDeltaZValue &theOther)
     : NFmiAreaMaskImpl(theOther)
 {
 }
 
-NFmiAreaMask *NFmiCalculationDeltaZValue::Clone(void) const
+NFmiAreaMask *NFmiCalculationDeltaZValue::Clone() const
 {
   return new NFmiCalculationDeltaZValue(*this);
 }

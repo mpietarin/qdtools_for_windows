@@ -9,11 +9,12 @@
                                  // merkkiä joka johtuu 'puretuista' STL-template nimistä)
 #endif
 
-#include "NFmiSmartToolUtil.h"
 #include "NFmiInfoOrganizer.h"
 #include "NFmiSmartToolModifier.h"
+#include "NFmiSmartToolUtil.h"
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiQueryData.h>
+#include <newbase/NFmiStreamQueryData.h>
 
 #ifndef UNIX
 #include <direct.h>  // working directory juttuja varten
@@ -108,7 +109,8 @@ NFmiQueryData *NFmiSmartToolUtil::ModifyData(
   }
 
   NFmiQueryData *data = 0;
-  if (editedInfo && editedInfo->RefQueryData()) data = editedInfo->RefQueryData()->Clone();
+  if (editedInfo && editedInfo->RefQueryData())
+    data = editedInfo->RefQueryData()->Clone();
   return data;
 }
 
@@ -140,7 +142,7 @@ NFmiQueryData *NFmiSmartToolUtil::ModifyData(const std::string &theMacroText,
                     fMakeStaticIfOneTimeStepData);  // 0=tyhjä apudata filename-lista
 }
 
-std::string NFmiSmartToolUtil::GetWorkingDirectory(void)
+std::string NFmiSmartToolUtil::GetWorkingDirectory()
 {
 #ifndef UNIX
   static char path[_MAX_PATH];
@@ -150,7 +152,8 @@ std::string NFmiSmartToolUtil::GetWorkingDirectory(void)
   return workingDirectory;
 #else
   static char path[4096];  // we assume 4096 is maximum buffer length
-  if (!::getcwd(path, 4096)) throw std::runtime_error("Error: Current path is too long (>4096)");
+  if (!::getcwd(path, 4096))
+    throw std::runtime_error("Error: Current path is too long (>4096)");
   return std::string(path);
 #endif
 }
@@ -180,7 +183,8 @@ bool NFmiSmartToolUtil::InitDataBase(NFmiInfoOrganizer *theDataBase,
                          0,
                          0,
                          0,
-                         dataWasDeleted);  // 0=undolevel
+                         dataWasDeleted,
+                         true);
     if (theHelperDataFileNames && theHelperDataFileNames->size())
       InitDataBaseHelperData(*theDataBase, *theHelperDataFileNames, fMakeStaticIfOneTimeStepData);
     return true;
@@ -215,7 +219,8 @@ bool NFmiSmartToolUtil::InitDataBaseHelperData(
                         0,
                         0,
                         0,
-                        dataWasDeleted);  // 0=undolevel
+                        dataWasDeleted,
+                        true);
   }
   return true;
 }

@@ -36,9 +36,9 @@ class NFmiStation2GridMask : public NFmiInfoAreaMask
                        NFmiInfoData::Type theDataType,
                        boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                        unsigned long thePossibleMetaParamId);
-  ~NFmiStation2GridMask(void);
+  ~NFmiStation2GridMask();
   NFmiStation2GridMask(const NFmiStation2GridMask &theOther);
-  NFmiAreaMask *Clone(void) const override;
+  NFmiAreaMask *Clone() const override;
   NFmiStation2GridMask &operator=(const NFmiStation2GridMask &theMask) = delete;
 
   double Value(const NFmiCalculationParams &theCalculationParams,
@@ -124,9 +124,9 @@ class NFmiNearestObsValue2GridMask : public NFmiInfoAreaMask
                                boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                int theArgumentCount,
                                unsigned long thePossibleMetaParamId);
-  ~NFmiNearestObsValue2GridMask(void);
+  ~NFmiNearestObsValue2GridMask();
   NFmiNearestObsValue2GridMask(const NFmiNearestObsValue2GridMask &theOther);
-  NFmiAreaMask *Clone(void) const override;
+  NFmiAreaMask *Clone() const override;
   NFmiStation2GridMask &operator=(const NFmiStation2GridMask &theMask) = delete;
 
   double Value(const NFmiCalculationParams &theCalculationParams,
@@ -181,9 +181,9 @@ class NFmiLastTimeValueMask : public NFmiStation2GridMask
                         boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                         int theArgumentCount,
                         unsigned long thePossibleMetaParamId);
-  ~NFmiLastTimeValueMask(void);
+  ~NFmiLastTimeValueMask();
   NFmiLastTimeValueMask(const NFmiLastTimeValueMask &theOther);
-  NFmiAreaMask *Clone(void) const override;
+  NFmiAreaMask *Clone() const override;
   NFmiLastTimeValueMask &operator=(const NFmiLastTimeValueMask &theMask) = delete;
 
   double Value(const NFmiCalculationParams &theCalculationParams,
@@ -212,9 +212,9 @@ class NFmiStation2GridTimeShiftMask : public NFmiStation2GridMask
                                 boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                 float theTimeOffsetInHours,
                                 unsigned long thePossibleMetaParamId);
-  ~NFmiStation2GridTimeShiftMask(void);
+  ~NFmiStation2GridTimeShiftMask();
   NFmiStation2GridTimeShiftMask(const NFmiStation2GridTimeShiftMask &theOther);
-  NFmiAreaMask *Clone(void) const override;
+  NFmiAreaMask *Clone() const override;
   NFmiStation2GridTimeShiftMask &operator=(const NFmiStation2GridTimeShiftMask &theMask) = delete;
 
   double Value(const NFmiCalculationParams &theCalculationParams,

@@ -11,7 +11,7 @@
 #include <set>
 #include <sstream>
 
-NFmiTEMPCode::NFmiTEMPCode(void)
+NFmiTEMPCode::NFmiTEMPCode()
     : itsOriginalCodeAStr(),
       itsOriginalCodeBStr(),
       itsOriginalCodeCStr(),
@@ -40,9 +40,9 @@ NFmiTEMPCode::NFmiTEMPCode(NFmiAviationStationInfoSystem *theTempStations,
 {
 }
 
-NFmiTEMPCode::~NFmiTEMPCode(void) {}
+NFmiTEMPCode::~NFmiTEMPCode() {}
 
-void NFmiTEMPCode::Clear(void)
+void NFmiTEMPCode::Clear()
 {
   itsOriginalCodeAStr.clear();
   itsOriginalCodeBStr.clear();
@@ -64,7 +64,8 @@ static void InsertLevelData(std::map<double, TEMPLevelData> &theLevelMap,
 void NFmiTEMPCode::ForceWantedPressureLevels(NFmiVPlaceDescriptor &theLevels)
 {
   size_t levelSize = itsLevels.size();
-  if (levelSize <= 2) return;
+  if (levelSize <= 2)
+    return;
   theLevels.Reset();
   theLevels.Next();
   double currentMainLevel = static_cast<double>(theLevels.Level()->LevelValue());
@@ -100,7 +101,8 @@ void NFmiTEMPCode::ForceWantedPressureLevels(NFmiVPlaceDescriptor &theLevels)
        // level, mikä ei ole molempien yläpuolella
       do
       {
-        if (theLevels.Next() == false) break;
+        if (theLevels.Next() == false)
+          break;
         currentMainLevel = static_cast<double>(theLevels.Level()->LevelValue());
       } while (p1 < currentMainLevel && p2 < currentMainLevel);
     }
@@ -191,7 +193,8 @@ int NFmiTEMPCode::InsertCodeStrings(const std::string &theCodeAStr,
                                     bool fNoEqualSignInCode)
 {
   std::string ttStr;
-  if (fNoEqualSignInCode) ttStr = "TT";
+  if (fNoEqualSignInCode)
+    ttStr = "TT";
   itsOriginalCodeAStr = ttStr + theCodeAStr;
   itsOriginalCodeBStr = ttStr + theCodeBStr;
   itsOriginalCodeCStr = ttStr + theCodeCStr;
@@ -202,7 +205,7 @@ int NFmiTEMPCode::InsertCodeStrings(const std::string &theCodeAStr,
   return Decode();
 }
 
-int NFmiTEMPCode::Decode(void)
+int NFmiTEMPCode::Decode()
 {
   int tempCount = 0;
   if (DecodeA())
@@ -242,7 +245,8 @@ static bool GetTandTd(const std::string &theTnTnTanDnDn_str, double &T, double &
 {
   T = kFloatMissing;
   Td = kFloatMissing;
-  if (theTnTnTanDnDn_str == "/////") return true;  // ok, palautetaan puuttuvat arvot
+  if (theTnTnTanDnDn_str == "/////")
+    return true;  // ok, palautetaan puuttuvat arvot
 
   std::string TnTn_str(theTnTnTanDnDn_str.begin(), theTnTnTanDnDn_str.begin() + 2);
   double TintPart = ::GetValue<double>(TnTn_str);
@@ -276,7 +280,8 @@ static bool GetWDandWS(const std::string &thedddff_Str, double &WD, double &WS, 
 {
   WD = kFloatMissing;
   WS = kFloatMissing;
-  if (thedddff_Str == "/////") return true;  // ok, palautetaan puuttuvat arvot
+  if (thedddff_Str == "/////")
+    return true;  // ok, palautetaan puuttuvat arvot
 
   // HUOM! jos tuulen suunta tai nopeus puuttuu, niitä voisi hanskata paremmin ja laskea toisen
   // vaikka
@@ -284,10 +289,12 @@ static bool GetWDandWS(const std::string &thedddff_Str, double &WD, double &WS, 
   // piirretyksi)
   std::string ddd_str(thedddff_Str.begin(), thedddff_Str.begin() + 3);
   int WDtmp = static_cast<int>(kFloatMissing);
-  if (ddd_str.find('/') == std::string::npos) WDtmp = ::GetValue<int>(ddd_str);
+  if (ddd_str.find('/') == std::string::npos)
+    WDtmp = ::GetValue<int>(ddd_str);
   std::string ff_str(thedddff_Str.begin() + 3, thedddff_Str.begin() + 5);
   double WStmp = kFloatMissing;
-  if (ff_str.find('/') == std::string::npos) WStmp = ::GetValue<double>(ff_str);
+  if (ff_str.find('/') == std::string::npos)
+    WStmp = ::GetValue<double>(ff_str);
 
   if (WDtmp != kFloatMissing && WStmp != kFloatMissing)
   {
@@ -301,7 +308,8 @@ static bool GetWDandWS(const std::string &thedddff_Str, double &WD, double &WS, 
       WD = WDtmp - 1;
       WS = (WStmp + 100) / 2;  // kt -> m/s konversio nyt jaetaan 2:lla!!!!!
     }
-    if (fConvertKt2Ms) WS = WS / 2.0;  // 1.94384; // muunnetaan solmut -> m/s
+    if (fConvertKt2Ms)
+      WS = WS / 2.0;  // 1.94384; // muunnetaan solmut -> m/s
   }
 
   return true;
@@ -379,7 +387,8 @@ static bool GetPandH(const std::string &thePPhhh_Str, double &P, double &h)
   std::string hhh_str(thePPhhh_Str.begin() + 2, thePPhhh_Str.begin() + 5);
   double hhhtmp = ::GetValue<double>(hhh_str);
 
-  if (PPtmp != kFloatMissing) P = ::GetMainPressureLevel(static_cast<int>(PPtmp));
+  if (PPtmp != kFloatMissing)
+    P = ::GetMainPressureLevel(static_cast<int>(PPtmp));
   if (P != kFloatMissing && hhhtmp != kFloatMissing)
     h = ::GetMainPressureHeight(static_cast<int>(PPtmp), static_cast<int>(hhhtmp));
 
@@ -426,7 +435,8 @@ static bool DecodeHeader(std::stringstream &ssin,
       ssin >> MiMiMjMj_Str;  // joskus voi olla esim. RRB sana ennen TTxx -stringiä, tällöin vain
                              // luetaan seuraava sana
   }
-  if (MiMiMjMj_Str.size() != 4) return false;
+  if (MiMiMjMj_Str.size() != 4)
+    return false;
   bool doTempMobil = false;  // jos false, normaali TEMP, muuten TEMP MOBIL
   bool doShip = false;  // jos false, normaali TEMP, muuten TEMP MOBIL, joka on aseman korkeus info
                         // muuten sama kuin MOBIL
@@ -444,7 +454,8 @@ static bool DecodeHeader(std::stringstream &ssin,
     fTempMobil = doTempMobil;  // A-osiossa vain talletetaan onko mobiili temp kyseessä
   else
   {  // tarkistetaan että sama temp tyyppi, kuin A-osiossa ollut
-    if (fTempMobil != doTempMobil) return false;  // pitäisi heittää poikkeus!!
+    if (fTempMobil != doTempMobil)
+      return false;  // pitäisi heittää poikkeus!!
   }
 
   if (::toupper(MiMiMjMj_Str[2]) == theWantedSectionChar &&
@@ -458,7 +469,8 @@ static bool DecodeHeader(std::stringstream &ssin,
     }
     std::string YYGGId_Str;  // esim. "64022"
     ssin >> YYGGId_Str;
-    if (YYGGId_Str.size() != 5) return false;
+    if (YYGGId_Str.size() != 5)
+      return false;
     std::string dayStr(YYGGId_Str.begin(), YYGGId_Str.begin() + 2);
     short day = NFmiStringTools::Convert<short>(dayStr);
     if (day > 50)
@@ -487,8 +499,9 @@ static bool DecodeHeader(std::stringstream &ssin,
     if (fInitializeValues)
       theTime = tempTime;  // A-osiossa vain talletetaan aika
     else
-    {                                         // tarkistetaan että sama aika, kuin A-osiossa ollut
-      if (theTime != tempTime) return false;  // pitäisi heittää poikkeus!!
+    {  // tarkistetaan että sama aika, kuin A-osiossa ollut
+      if (theTime != tempTime)
+        return false;  // pitäisi heittää poikkeus!!
     }
 
     if (doTempMobil)
@@ -496,7 +509,8 @@ static bool DecodeHeader(std::stringstream &ssin,
       std::string _99LaLaLa_Str;  // esim. "99613" // muuttujassa alaviiva alku, koska numero ei voi
                                   // aloittaa muuttujaa
       ssin >> _99LaLaLa_Str;
-      if (_99LaLaLa_Str.size() != 5) return false;
+      if (_99LaLaLa_Str.size() != 5)
+        return false;
       double lat = NFmiStringTools::Convert<double>(
           std::string(_99LaLaLa_Str.begin() + 2, _99LaLaLa_Str.begin() + 4));
       double latTenth = NFmiStringTools::Convert<double>(
@@ -505,7 +519,8 @@ static bool DecodeHeader(std::stringstream &ssin,
       lat += latTenth;
       std::string QcLoLoLoLo_Str;  // esim. "10280"
       ssin >> QcLoLoLoLo_Str;
-      if (QcLoLoLoLo_Str.size() != 5) return false;
+      if (QcLoLoLoLo_Str.size() != 5)
+        return false;
       double lon = NFmiStringTools::Convert<double>(
           std::string(QcLoLoLoLo_Str.begin() + 1, QcLoLoLoLo_Str.begin() + 4));
       double lonTenth = NFmiStringTools::Convert<double>(
@@ -527,7 +542,8 @@ static bool DecodeHeader(std::stringstream &ssin,
       std::string IIiii_Str;  // IIiii asematunnuskoodi esim. "02963" II on alue koodi ja 963 on
                               // asema tunnus
       ssin >> IIiii_Str;
-      if (IIiii_Str.size() != 5) return false;
+      if (IIiii_Str.size() != 5)
+        return false;
 
       // HUOM! tässä pitäisi olla joku asema tietokanta käytössä, mistä saisi aseman sijainnin
       unsigned long stationId = NFmiStringTools::Convert<unsigned long>(IIiii_Str);
@@ -552,14 +568,15 @@ static bool DecodeHeader(std::stringstream &ssin,
       theStation = station;  // A-osiossa vain talletetaan aika
     else
     {  // tarkistetaan että sama asema, kuin A-osiossa ollut
-      if (theStation != station) return false;  // pitäisi heittää poikkeus!!
+      if (theStation != station)
+        return false;  // pitäisi heittää poikkeus!!
     }
     return true;
   }
   return false;
 }
 
-bool NFmiTEMPCode::DecodeA(void)
+bool NFmiTEMPCode::DecodeA()
 {
   bool fConvertKt2Ms = false;
   std::stringstream ssin(itsOriginalCodeAStr);
@@ -580,17 +597,21 @@ bool NFmiTEMPCode::DecodeA(void)
       std::string TTTaDD_Str;
       std::string dddff_Str;
       ssin >> _99PPP_Str;
-      if (_99PPP_Str.size() != 5) return false;
+      if (_99PPP_Str.size() != 5)
+        return false;
       ssin >> TTTaDD_Str;
-      if (TTTaDD_Str.size() != 5) return false;
+      if (TTTaDD_Str.size() != 5)
+        return false;
       ssin >> dddff_Str;
-      if (dddff_Str.size() != 5) return false;
+      if (dddff_Str.size() != 5)
+        return false;
       if (std::string(_99PPP_Str.begin(), _99PPP_Str.begin() + 2) ==
           "99")  // tarkistetaan että 99-taikasana löytyy
       {
         double surfPressure = NFmiStringTools::Convert<double>(
             std::string(_99PPP_Str.begin() + 2, _99PPP_Str.begin() + 5));
-        if (surfPressure < 100.) surfPressure += 1000.;
+        if (surfPressure < 100.)
+          surfPressure += 1000.;
         double T = kFloatMissing;
         double Td = kFloatMissing;
         bool status = ::GetTandTd(TTTaDD_Str, T, Td);
@@ -622,7 +643,8 @@ bool NFmiTEMPCode::DecodeA(void)
           WD = kFloatMissing;
           WS = kFloatMissing;
 
-          if (PnPnhnhnhn_Str.size() != 5) return false;
+          if (PnPnhnhnhn_Str.size() != 5)
+            return false;
           if (PnPnhnhnhn_Str == "77999")
             break;  // nyt tultiin loppuun, ei ole tietoa max tuuli jutuista
           else if (PnPnhnhnhn_Str == "88999")
@@ -660,9 +682,11 @@ bool NFmiTEMPCode::DecodeA(void)
             ssin >> dddff_Str;
           }
 
-          if (TTTaDD_Str.size() != 5) return false;
+          if (TTTaDD_Str.size() != 5)
+            return false;
           //					ssin >> dddff_Str;
-          if (dddff_Str.size() != 5) return false;
+          if (dddff_Str.size() != 5)
+            return false;
 
           // TÄMÄ erikois kerroksien tarkastelu menee ihan pieleen
           status &= ::GetPandH(PnPnhnhnhn_Str, P, h);
@@ -679,7 +703,8 @@ bool NFmiTEMPCode::DecodeA(void)
           AddData(levelData);  // laitetaan saatu leveli talteen
 
           ssin >> PnPnhnhnhn_Str;  // tämä pitää lukea lopuksi, koska loopin lopetus riippuu tästä
-          if (ssin.good() == false) break;
+          if (ssin.good() == false)
+            break;
           // throw std::runtime_error("Data tiedostossa loppui kesken.");
           PnPn_Str = std::string(PnPnhnhnhn_Str.begin(), PnPnhnhnhn_Str.begin() + 2);
         }
@@ -698,7 +723,7 @@ void NFmiTEMPCode::AddData(const TEMPLevelData &theLevelData)
         std::make_pair(theLevelData.itsPressure, theLevelData));  // laitetaan saatu leveli talteen
 }
 
-bool NFmiTEMPCode::DecodeB(void)
+bool NFmiTEMPCode::DecodeB()
 {
   bool status = true;
   bool fConvertKt2Ms = false;
@@ -727,9 +752,12 @@ bool NFmiTEMPCode::DecodeB(void)
         double Td = kFloatMissing;
 
         ssin >> XXPPP_Str;
-        if (XXPPP_Str.size() != 5) return false;
-        if (XXPPP_Str == "21212") break;  // nyt tultiin tämän osion loppuun
-        if (XXPPP_Str == "31313") break;  // nyt tultiin tämän osion loppuun
+        if (XXPPP_Str.size() != 5)
+          return false;
+        if (XXPPP_Str == "21212")
+          break;  // nyt tultiin tämän osion loppuun
+        if (XXPPP_Str == "31313")
+          break;  // nyt tultiin tämän osion loppuun
         if (XXPPP_Str == "41414")
         {
           _41414_groupMissing =
@@ -742,9 +770,11 @@ bool NFmiTEMPCode::DecodeB(void)
           // paine jää puuttuvaksi ja kaikki tämän levelin arvot jäävät
           // taltioimatta
           P = NFmiStringTools::Convert<double>(PPP_partStr);
-        if (P < 50.) P += 1000.;
+        if (P < 50.)
+          P += 1000.;
         ssin >> TTTaDD_Str;
-        if (TTTaDD_Str.size() != 5) return false;
+        if (TTTaDD_Str.size() != 5)
+          return false;
         status &= ::GetTandTd(TTTaDD_Str, T, Td);
 
         levelData.Clear();
@@ -767,9 +797,11 @@ bool NFmiTEMPCode::DecodeB(void)
             double WS = kFloatMissing;
 
             ssin >> XXPPP_Str;
-            if (XXPPP_Str.size() != 5) return false;
-            if (XXPPP_Str == "41414") break;  // nyt tultiin tämän osion loppuun
-            if (XXPPP_Str == "51515")         // joskus 51515 tulee ilman 41414:ää
+            if (XXPPP_Str.size() != 5)
+              return false;
+            if (XXPPP_Str == "41414")
+              break;                   // nyt tultiin tämän osion loppuun
+            if (XXPPP_Str == "51515")  // joskus 51515 tulee ilman 41414:ää
             {
               _41414_groupMissing = true;
               break;  // nyt tultiin tämän osion loppuun
@@ -785,9 +817,11 @@ bool NFmiTEMPCode::DecodeB(void)
 
             P = NFmiStringTools::Convert<double>(
                 std::string(XXPPP_Str.begin() + 2, XXPPP_Str.begin() + 5));
-            if (P < 50.) P += 1000.;
+            if (P < 50.)
+              P += 1000.;
             ssin >> dddff_Str;
-            if (dddff_Str.size() != 5) return false;
+            if (dddff_Str.size() != 5)
+              return false;
             status &= ::GetWDandWS(dddff_Str, WD, WS, fConvertKt2Ms);
 
             levelData.Clear();
@@ -820,7 +854,7 @@ bool NFmiTEMPCode::DecodeB(void)
   return false;
 }
 
-bool NFmiTEMPCode::DecodeC(void)
+bool NFmiTEMPCode::DecodeC()
 {
   bool fConvertKt2Ms = false;
   std::stringstream ssin(itsOriginalCodeCStr);
@@ -843,7 +877,7 @@ bool NFmiTEMPCode::DecodeC(void)
   return false;
 }
 
-bool NFmiTEMPCode::DecodeD(void)
+bool NFmiTEMPCode::DecodeD()
 {
   bool fConvertKt2Ms = false;
   std::stringstream ssin(itsOriginalCodeDStr);
@@ -871,7 +905,8 @@ struct LevelSorter
   bool operator()(const TEMPLevelData &theLevel1, const TEMPLevelData &theLevel2)
   {
     if (theLevel1.itsPressure != kFloatMissing && theLevel2.itsPressure != kFloatMissing)
-      if (theLevel1.itsPressure < theLevel2.itsPressure) return true;
+      if (theLevel1.itsPressure < theLevel2.itsPressure)
+        return true;
     return false;
   }
 };

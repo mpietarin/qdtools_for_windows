@@ -10,7 +10,6 @@
 #include "NFmiSoundingIndexCalculator.h"
 #include "NFmiDrawParam.h"
 #include "NFmiInfoOrganizer.h"
-#include "NFmiSoundingData.h"
 #include "NFmiSoundingFunctions.h"
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiGrid.h>
@@ -38,13 +37,19 @@ bool NFmiSoundingIndexCalculator::FillSoundingData(
     NFmiSoundingData &theSoundingData,
     const NFmiMetTime &theTime,
     const NFmiLocation &theLocation,
-    const boost::shared_ptr<NFmiFastQueryInfo> &theGroundDataInfo)
+    const boost::shared_ptr<NFmiFastQueryInfo> &theGroundDataInfo,
+    const NFmiGroundLevelValue &theGroundLevelValue)
 {
   if (theInfo)
   {
     if (theInfo->IsGrid())
-      return theSoundingData.FillSoundingData(
-          theInfo, theTime, theInfo->OriginTime(), theLocation, theGroundDataInfo);
+      return theSoundingData.FillSoundingData(theInfo,
+                                              theTime,
+                                              theInfo->OriginTime(),
+                                              theLocation,
+                                              theGroundDataInfo,
+                                              false,
+                                              theGroundLevelValue);
     else
       return theSoundingData.FillSoundingData(theInfo, theTime, theInfo->OriginTime(), theLocation);
   }
@@ -52,21 +57,21 @@ bool NFmiSoundingIndexCalculator::FillSoundingData(
 }
 
 static bool FillSoundingData(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-                                 NFmiSoundingData &theSoundingData,
-                                 const boost::shared_ptr<NFmiFastQueryInfo> &thePossibleGroundInfo,
-                                 const NFmiMetTime &theTime,
-                                 const NFmiPoint &theLatlon,
-                                 bool useFastFill)
+                             NFmiSoundingData &theSoundingData,
+                             const boost::shared_ptr<NFmiFastQueryInfo> &thePossibleGroundInfo,
+                             const NFmiMetTime &theTime,
+                             const NFmiPoint &theLatlon,
+                             bool useFastFill)
 {
   if (theInfo)
   {
     if (theInfo->IsGrid())
       return theSoundingData.FillSoundingData(theInfo,
-                                                  theTime,
-                                                  theInfo->OriginTime(),
-                                                  NFmiLocation(theLatlon),
-                                                  thePossibleGroundInfo,
-                                                  useFastFill);
+                                              theTime,
+                                              theInfo->OriginTime(),
+                                              NFmiLocation(theLatlon),
+                                              thePossibleGroundInfo,
+                                              useFastFill);
   }
   return false;
 }
@@ -102,7 +107,8 @@ static bool FillSurfaceValuesFromInfo(NFmiSmartInfo *theInfo, NFmiSoundingData &
 
 static void CheckIfStopped(NFmiStopFunctor *theStopFunctor)
 {
-  if (theStopFunctor && theStopFunctor->Stop()) throw NFmiStopThreadException();
+  if (theStopFunctor && theStopFunctor->Stop())
+    throw NFmiStopThreadException();
 }
 
 static void CalcAllSoundingIndexParamFields(
@@ -122,13 +128,14 @@ static void CalcAllSoundingIndexParamFields(
     try
     {
       // bool surfaceBaseStatus = false;
-      if (useFastFill) theSourceInfo->LocationIndex(theResultInfo->LocationIndex());
+      if (useFastFill)
+        theSourceInfo->LocationIndex(theResultInfo->LocationIndex());
       ::FillSoundingData(theSourceInfo,
-                             soundingData,
-                             thePossibleGroundInfo,
-                             theResultInfo->Time(),
-                             theResultInfo->LatLon(),
-                             useFastFill);
+                         soundingData,
+                         thePossibleGroundInfo,
+                         theResultInfo->Time(),
+                         theResultInfo->LatLon(),
+                         useFastFill);
       if (theSourceInfo->Grid() && !soundingData.IsDataGood())
         continue;  // jos oltiin mallidatassa ja datassa oli tiettyjä puutteita, ei tehdä laskentoja
 
@@ -147,8 +154,7 @@ static void CalcAllSoundingIndexParamFields(
 
         // HUOM!!!! muista muuttaa luotaus-parametri pelkäksi surface arvoksi, koska loppu menee
         // itsestään sitten
-        float value =
-            NFmiSoundingIndexCalculator::Calc(soundingData, soundingParameter);
+        float value = NFmiSoundingIndexCalculator::Calc(soundingData, soundingParameter);
         theResultInfo->FloatValue(value);
       }
     }
@@ -218,7 +224,8 @@ static void CalculatePartOfSoundingData(
     if (fDoCerrReporting)
       std::cerr << "thread nro: " << index << " stops because unknown error." << std::endl;
   }
-  if (fDoCerrReporting) std::cerr << "thread nro: " << index << " end here." << std::endl;
+  if (fDoCerrReporting)
+    std::cerr << "thread nro: " << index << " end here." << std::endl;
 }
 
 static void CalculateSoundingDataOneTimeStepAtTime(
@@ -275,7 +282,8 @@ static void CalculateSoundingDataOneTimeStepAtTime(
     if (fDoCerrReporting)
       std::cerr << "thread nro: " << index << " stops because unknown error." << std::endl;
   }
-  if (fDoCerrReporting) std::cerr << "thread nro: " << index << " end here." << std::endl;
+  if (fDoCerrReporting)
+    std::cerr << "thread nro: " << index << " end here." << std::endl;
 }
 
 // Jos useFastFill on true, on datoilla sama hila ja aika descriptor rakenne
@@ -298,7 +306,7 @@ void NFmiSoundingIndexCalculator::CalculateWholeSoundingData(NFmiQueryData &theS
   // alustetaan ensimmäisellä kerralla ja multi-threaddaavassa jutussa se voisi olla ongelma.
 
   unsigned long timeSize = theResultData.Info()->SizeTimes();
-  unsigned int usedThreadCount = boost::thread::hardware_concurrency();
+  unsigned int usedThreadCount = NFmiQueryDataUtil::GetReasonableWorkingThreadCount(40);
   if (theMaxThreadCount > 0 && usedThreadCount > static_cast<unsigned int>(theMaxThreadCount))
     usedThreadCount = static_cast<unsigned int>(theMaxThreadCount);  // jos on haluttu säätää maksim
   // threadien määrää, säädetään
@@ -310,7 +318,8 @@ void NFmiSoundingIndexCalculator::CalculateWholeSoundingData(NFmiQueryData &theS
   if (fUseOnlyOneThread || usedThreadCount < 2)
   {  // jos aikoja oli alle kaksi, lasketaan data yhdessä funktiossa
 
-    if (fDoCerrReporting) std::cerr << "making data in single thread" << std::endl;
+    if (fDoCerrReporting)
+      std::cerr << "making data in single thread" << std::endl;
     boost::shared_ptr<NFmiFastQueryInfo> sourceInfo(new NFmiFastQueryInfo(&theSourceData));
     boost::shared_ptr<NFmiFastQueryInfo> resultInfo(new NFmiFastQueryInfo(&theResultData));
     boost::shared_ptr<NFmiFastQueryInfo> possibleGroundInfo(
@@ -327,13 +336,15 @@ void NFmiSoundingIndexCalculator::CalculateWholeSoundingData(NFmiQueryData &theS
   }
   else
   {
-    if (fDoCerrReporting) std::cerr << "making data in multiple threads" << std::endl;
+    if (fDoCerrReporting)
+      std::cerr << "making data in multiple threads" << std::endl;
 
     theSourceData.LatLonCache();  // Ennen multi-thread laskuja pitää varmistaa että kunkin datan
                                   // (source + result) latlon-cache on alustettu, muutern tulee
                                   // ongelmia.
     theResultData.LatLonCache();
-    if (thePossibleGroundData) thePossibleGroundData->LatLonCache();
+    if (thePossibleGroundData)
+      thePossibleGroundData->LatLonCache();
 
     // pakko luoda dynaamisesti eri threadeille tarvittavat kopiot source ja target datoista
     std::vector<boost::shared_ptr<NFmiFastQueryInfo> > resultInfos(usedThreadCount);
@@ -362,12 +373,13 @@ void NFmiSoundingIndexCalculator::CalculateWholeSoundingData(NFmiQueryData &theS
                                              fDoCerrReporting));
     calcParts.join_all();  // odotetaan että threadit lopettavat
 
-    if (fDoCerrReporting) std::cerr << "all threads ended" << std::endl;
+    if (fDoCerrReporting)
+      std::cerr << "all threads ended" << std::endl;
   }
 }
 
 float NFmiSoundingIndexCalculator::Calc(NFmiSoundingData &theSoundingData,
-                                            FmiSoundingParameters theParam)
+                                        FmiSoundingParameters theParam)
 {
   double value = kFloatMissing;
   double xxxxValue = kFloatMissing;  // tämä on ns. hukka parametri, koska jotkut parametrit
@@ -544,13 +556,14 @@ float NFmiSoundingIndexCalculator::Calc(const boost::shared_ptr<NFmiFastQueryInf
                                         FmiSoundingParameters theParam)
 {
   NFmiSoundingData soundingData;
-  NFmiLocation wantedLocation(theLatlon);
-  if(FillSoundingData(theInfo, soundingData, theTime, wantedLocation, nullptr))
+  if (::FillSoundingData(theInfo, soundingData, nullptr, theTime, theLatlon, false))
+  {
     return Calc(soundingData, theParam);
+  }
   return kFloatMissing;
 }
 
-static const NFmiParamDescriptor &GetSoundingIndexParams(void)
+static const NFmiParamDescriptor &GetSoundingIndexParams()
 {
   static bool firstTime = true;
   static NFmiParamDescriptor soundingParams;
@@ -1047,7 +1060,8 @@ boost::shared_ptr<NFmiQueryData> NFmiSoundingIndexCalculator::CreateNewSoundingI
     throw std::runtime_error("Error in CreateNewSoundingIndexData, cannot read source data.");
   else
   {
-    if (fDoCerrReporting) std::cerr << "read qd-file: " << theSourceFileFilter << std::endl;
+    if (fDoCerrReporting)
+      std::cerr << "read qd-file: " << theSourceFileFilter << std::endl;
   }
 
   boost::shared_ptr<NFmiQueryData> possibleGroundData =

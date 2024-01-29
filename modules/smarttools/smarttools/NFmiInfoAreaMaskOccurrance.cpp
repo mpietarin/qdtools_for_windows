@@ -1,23 +1,19 @@
 
 #include "NFmiInfoAreaMaskOccurrance.h"
 #include "NFmiDrawParam.h"
+#include "NFmiSimpleCondition.h"
 #include "NFmiSmartInfo.h"
 #include <boost/math/special_functions/round.hpp>
 #include <newbase/NFmiDataModifier.h>
+#include <newbase/NFmiDataModifierExtreme.h>
 #include <newbase/NFmiFastQueryInfo.h>
 #include <newbase/NFmiProducerName.h>
-#include <newbase/NFmiSimpleCondition.h>
 
 // **********************************************************
 // *****    NFmiInfoAreaMaskOccurrance  *********************
 // **********************************************************
 
-std::function<void(std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &,
-                   boost::shared_ptr<NFmiDrawParam> &,
-                   const boost::shared_ptr<NFmiArea> &)>
-    NFmiInfoAreaMaskOccurrance::itsMultiSourceDataGetter;  // Alustetaan tyhjäksi ensin
-
-NFmiInfoAreaMaskOccurrance::~NFmiInfoAreaMaskOccurrance(void) {}
+NFmiInfoAreaMaskOccurrance::~NFmiInfoAreaMaskOccurrance() {}
 NFmiInfoAreaMaskOccurrance::NFmiInfoAreaMaskOccurrance(
     const NFmiCalculationCondition &theOperation,
     Type theMaskType,
@@ -27,7 +23,6 @@ NFmiInfoAreaMaskOccurrance::NFmiInfoAreaMaskOccurrance(
     NFmiAreaMask::FunctionType theSecondaryFunc,
     int theArgumentCount,
     const boost::shared_ptr<NFmiArea> &theCalculationArea,
-    bool synopXCase,
     unsigned long thePossibleMetaParamId)
     : NFmiInfoAreaMaskProbFunc(theOperation,
                                theMaskType,
@@ -37,74 +32,28 @@ NFmiInfoAreaMaskOccurrance::NFmiInfoAreaMaskOccurrance(
                                theSecondaryFunc,
                                theArgumentCount,
                                thePossibleMetaParamId),
-      fSynopXCase(synopXCase),
-      fUseMultiSourceData(false),
       itsCalculationArea(theCalculationArea),
-      itsInfoVector(),
       itsCalculatedLocationIndexies()
 {
-  fUseMultiSourceData = NFmiInfoAreaMaskOccurrance::IsKnownMultiSourceData(itsInfo);
 }
 
 NFmiInfoAreaMaskOccurrance::NFmiInfoAreaMaskOccurrance(const NFmiInfoAreaMaskOccurrance &theOther)
     : NFmiInfoAreaMaskProbFunc(theOther),
-      fSynopXCase(theOther.fSynopXCase),
-      fUseMultiSourceData(theOther.fUseMultiSourceData),
       itsCalculationArea(theOther.itsCalculationArea),
-      itsInfoVector(),
       itsCalculatedLocationIndexies(theOther.itsCalculatedLocationIndexies)
 {
-  itsInfoVector = NFmiInfoAreaMaskOccurrance::CreateShallowCopyOfInfoVector(theOther.itsInfoVector);
 }
 
-NFmiAreaMask *NFmiInfoAreaMaskOccurrance::Clone(void) const
+NFmiAreaMask *NFmiInfoAreaMaskOccurrance::Clone() const
 {
   return new NFmiInfoAreaMaskOccurrance(*this);
 }
 
-void NFmiInfoAreaMaskOccurrance::SetMultiSourceDataGetterCallback(
-    const std::function<void(std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &,
-                             boost::shared_ptr<NFmiDrawParam> &,
-                             const boost::shared_ptr<NFmiArea> &)> &theCallbackFunction)
+void NFmiInfoAreaMaskOccurrance::Initialize()
 {
-  NFmiInfoAreaMaskOccurrance::itsMultiSourceDataGetter = theCallbackFunction;
-}
-
-std::vector<boost::shared_ptr<NFmiFastQueryInfo>> NFmiInfoAreaMaskOccurrance::GetMultiSourceData(
-    const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
-    boost::shared_ptr<NFmiArea> &calculationArea,
-    bool getSynopXData)
-{
-  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> infoVector;
-  boost::shared_ptr<NFmiDrawParam> drawParam(
-      new NFmiDrawParam(theInfo->Param(), *theInfo->Level(), 0, theInfo->DataType()));
-  if (getSynopXData) drawParam->Param().GetProducer()->SetIdent(NFmiInfoData::kFmiSpSynoXProducer);
-  itsMultiSourceDataGetter(infoVector, drawParam, calculationArea);
-  return infoVector;
-}
-
-std::vector<boost::shared_ptr<NFmiFastQueryInfo>>
-NFmiInfoAreaMaskOccurrance::CreateShallowCopyOfInfoVector(
-    const std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector)
-{
-  // tehdään matala kopio info-vektorista
-  std::vector<boost::shared_ptr<NFmiFastQueryInfo>> shallowCopyVector;
-  for (const auto &info : infoVector)
-    shallowCopyVector.push_back(NFmiSmartInfo::CreateShallowCopyOfHighestInfo(info));
-  return shallowCopyVector;
-}
-
-void NFmiInfoAreaMaskOccurrance::Initialize(void)
-{
+  NFmiInfoAreaMaskProbFunc::Initialize();
   // cachejen alustuksia tehdään vain asemadatoille. Hila datat hanskataan emoluokassa ja sitä en
   // lähde tässä vielä optinmoimaan.
-  if (!fUseMultiSourceData)
-    itsInfoVector.push_back(itsInfo);
-  else
-  {
-    itsInfoVector =
-        NFmiInfoAreaMaskOccurrance::GetMultiSourceData(itsInfo, itsCalculationArea, fSynopXCase);
-  }
   InitializeLocationIndexCaches();
 }
 
@@ -140,23 +89,6 @@ std::vector<unsigned long> NFmiInfoAreaMaskOccurrance::CalcLocationIndexCache(
   }
 }
 
-// Nyt synop ja salama datat ovat tälläisiä. Tämä on yritys tehdä vähän optimointia muutenkin jo
-// pirun raskaaseen koodiin.
-// HUOM! Tämä on riippuvainen NFmiEditMapGeneralDataDoc::MakeDrawedInfoVectorForMapView -metodin
-// erikoistapauksista.
-bool NFmiInfoAreaMaskOccurrance::IsKnownMultiSourceData(
-    const boost::shared_ptr<NFmiFastQueryInfo> &theInfo)
-{
-  if (theInfo)
-  {
-    if (theInfo->DataType() == NFmiInfoData::kFlashData) return true;
-    // HUOM! kaikkien synop datojen käyttö on aivan liian hidasta, käytetään vain primääri synop
-    // dataa laskuissa.
-    if (theInfo->Producer()->GetIdent() == kFmiSYNOP) return true;
-  }
-  return false;
-}
-
 // tätä kaytetaan smarttool-modifierin yhteydessä
 double NFmiInfoAreaMaskOccurrance::Value(const NFmiCalculationParams &theCalculationParams,
                                          bool fUseTimeInterpolationAlways)
@@ -176,7 +108,11 @@ double NFmiInfoAreaMaskOccurrance::Value(const NFmiCalculationParams &theCalcula
     // Mutta esiintymislukumäärä on ihan ok laskea (mm. salamadatasta salamoiden esiintymiset jne.)
 
     InitializeFromArguments();
-    NFmiLocation location(theCalculationParams.itsLatlon);
+    // Jos käytössä on CalculationPoint, käytetään suoraan sitä, muuten itsLatlon arvoa, joka on
+    // laskentahilan laskettava piste
+    NFmiLocation location(theCalculationParams.itsActualCalculationPoint
+                              ? *theCalculationParams.itsActualCalculationPoint
+                              : theCalculationParams.UsedLatlon());
     int occurranceCount = 0;
 
     if (fUseMultiSourceData && itsMultiSourceDataGetter)
@@ -254,7 +190,8 @@ void NFmiInfoAreaMaskOccurrance::DoCalculations(
             theInfo, theLocation, stationLocationsStoredInData, theOccurranceCountInOut);
       }
     }
-    if (NFmiInfoAreaMaskProbFunc::CheckTimeIndicesForLoopBreak(startTimeIndex, endTimeIndex)) break;
+    if (NFmiInfoAreaMaskProbFunc::CheckTimeIndicesForLoopBreak(startTimeIndex, endTimeIndex))
+      break;
   }
   theInfo->TimeIndex(origTimeIndex);
 }
@@ -270,12 +207,14 @@ void NFmiInfoAreaMaskOccurrance::DoCalculateCurrentLocation(
       theLocation.Distance(theIsStationLocationsStoredInData ? theInfo->GetLatlonFromData()
                                                              : theInfo->LatLon()) *
       0.001;
-  if (distanceInKM > itsSearchRangeInKM) return;  // kyseinen piste oli ympyrän ulkopuolella
+  if (distanceInKM > itsSearchRangeInKM)
+    return;  // kyseinen piste oli ympyrän ulkopuolella
 
   float value = theInfo->FloatValue();
   if (value != kFloatMissing)
   {
-    if (CheckProbabilityCondition(value)) theOccurranceCountInOut++;
+    if (CheckProbabilityCondition(value))
+      theOccurranceCountInOut++;
   }
 }
 
@@ -295,8 +234,7 @@ bool NFmiInfoAreaMaskOccurrance::IsGridData() const
 // *****  NFmiInfoAreaMaskOccurranceSimpleCondition *********
 // **********************************************************
 
-NFmiInfoAreaMaskOccurranceSimpleCondition::~NFmiInfoAreaMaskOccurranceSimpleCondition(void) =
-    default;
+NFmiInfoAreaMaskOccurranceSimpleCondition::~NFmiInfoAreaMaskOccurranceSimpleCondition() = default;
 
 NFmiInfoAreaMaskOccurranceSimpleCondition::NFmiInfoAreaMaskOccurranceSimpleCondition(
     const NFmiCalculationCondition &theOperation,
@@ -307,7 +245,6 @@ NFmiInfoAreaMaskOccurranceSimpleCondition::NFmiInfoAreaMaskOccurranceSimpleCondi
     NFmiAreaMask::FunctionType theSecondaryFunc,
     int theArgumentCount,
     const boost::shared_ptr<NFmiArea> &theCalculationArea,
-    bool synopXCase,
     unsigned long thePossibleMetaParamId)
     : NFmiInfoAreaMaskOccurrance(theOperation,
                                  theMaskType,
@@ -317,7 +254,6 @@ NFmiInfoAreaMaskOccurranceSimpleCondition::NFmiInfoAreaMaskOccurranceSimpleCondi
                                  theSecondaryFunc,
                                  theArgumentCount,
                                  theCalculationArea,
-                                 synopXCase,
                                  thePossibleMetaParamId)
 {
 }
@@ -328,7 +264,7 @@ NFmiInfoAreaMaskOccurranceSimpleCondition::NFmiInfoAreaMaskOccurranceSimpleCondi
 {
 }
 
-NFmiAreaMask *NFmiInfoAreaMaskOccurranceSimpleCondition::Clone(void) const
+NFmiAreaMask *NFmiInfoAreaMaskOccurranceSimpleCondition::Clone() const
 {
   return new NFmiInfoAreaMaskOccurranceSimpleCondition(*this);
 }
@@ -337,14 +273,13 @@ double NFmiInfoAreaMaskOccurranceSimpleCondition::Value(
     const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways)
 {
   // Nämä occurance tetit tehdään erilailla riippuen onko kyse hila vai asema datasta
-  if (IsGridData())
-  {
-    return NFmiInfoAreaMaskOccurrance::Value(theCalculationParams, fUseTimeInterpolationAlways);
-  }
-  else
-    throw std::runtime_error(
-        "Internal error in program: observation data given to occurance with simple-condition "
-        "calculations");
+  //    if(IsGridData())
+  //    {
+  return NFmiInfoAreaMaskOccurrance::Value(theCalculationParams, fUseTimeInterpolationAlways);
+  //    }
+  //    else
+  //        throw std::runtime_error("Internal error in program: observation data given to occurance
+  //        with simple-condition calculations");
 }
 
 float NFmiInfoAreaMaskOccurranceSimpleCondition::CalculationPointValue(
@@ -379,11 +314,16 @@ void NFmiInfoAreaMaskOccurranceSimpleCondition::DoCalculateCurrentLocation(
       theLocation.Distance(theIsStationLocationsStoredInData ? theInfo->GetLatlonFromData()
                                                              : theInfo->LatLon()) *
       0.001;
-  if (distanceInKM > itsSearchRangeInKM) return;  // kyseinen piste oli ympyrän ulkopuolella
+  if (distanceInKM > itsSearchRangeInKM)
+    return;  // kyseinen piste oli ympyrän ulkopuolella
 
+  float value = theInfo->FloatValue();
   NFmiCalculationParams calculationParams(
       theInfo->LatLon(), theInfo->LocationIndex(), theInfo->Time(), theInfo->TimeIndex());
-  if (SimpleConditionCheck(calculationParams)) theOccurranceCountInOut++;
+  if (itsInfoVector.size() > 1)
+    calculationParams.itsCurrentMultiInfoData = theInfo.get();
+  if (SimpleConditionCheck(calculationParams))
+    theOccurranceCountInOut++;
 }
 
 // **********************************************************
@@ -398,7 +338,6 @@ NFmiPeekTimeMask::NFmiPeekTimeMask(Type theMaskType,
                                    NFmiInfoData::Type theDataType,
                                    const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                    int theArgumentCount,
-                                   double observationRadiusInKm,
                                    unsigned long thePossibleMetaParamId)
     : NFmiInfoAreaMask(NFmiCalculationCondition(),
                        theMaskType,
@@ -406,40 +345,21 @@ NFmiPeekTimeMask::NFmiPeekTimeMask(Type theMaskType,
                        theInfo,
                        thePossibleMetaParamId,
                        NFmiAreaMask::kNoValue),
-      itsTimeOffsetInMinutes(0),
-      fUseMultiSourceData(false),
-      itsInfoVector(),
-      itsObservationRadiusInKm(observationRadiusInKm)
+      itsTimeOffsetInMinutes(0)
 {
   itsFunctionArgumentCount = theArgumentCount;
-  fUseMultiSourceData = NFmiInfoAreaMaskOccurrance::IsKnownMultiSourceData(itsInfo);
 }
 
-NFmiPeekTimeMask::~NFmiPeekTimeMask(void) {}
+NFmiPeekTimeMask::~NFmiPeekTimeMask() {}
 
 NFmiPeekTimeMask::NFmiPeekTimeMask(const NFmiPeekTimeMask &theOther)
-    : NFmiInfoAreaMask(theOther),
-      itsTimeOffsetInMinutes(theOther.itsTimeOffsetInMinutes),
-      fUseMultiSourceData(theOther.fUseMultiSourceData),
-      itsInfoVector(),
-      itsObservationRadiusInKm(theOther.itsObservationRadiusInKm)
+    : NFmiInfoAreaMask(theOther), itsTimeOffsetInMinutes(theOther.itsTimeOffsetInMinutes)
 {
-  itsInfoVector = NFmiInfoAreaMaskOccurrance::CreateShallowCopyOfInfoVector(theOther.itsInfoVector);
 }
 
-NFmiAreaMask *NFmiPeekTimeMask::Clone(void) const { return new NFmiPeekTimeMask(*this); }
-
-void NFmiPeekTimeMask::Initialize(void)
+NFmiAreaMask *NFmiPeekTimeMask::Clone() const
 {
-  if (fUseMultiSourceData)
-  {
-    boost::shared_ptr<NFmiArea> dummyArea;
-    bool getOnlyStationarySynopData = true;
-    itsInfoVector = NFmiInfoAreaMaskOccurrance::GetMultiSourceData(
-        itsInfo, dummyArea, getOnlyStationarySynopData);
-  }
-  else
-    itsInfoVector.push_back(itsInfo);
+  return new NFmiPeekTimeMask(*this);
 }
 
 double NFmiPeekTimeMask::Value(const NFmiCalculationParams &theCalculationParams,
@@ -456,25 +376,17 @@ double NFmiPeekTimeMask::Value(const NFmiCalculationParams &theCalculationParams
     return NFmiInfoAreaMask::Value(peekCalculationParams, true);
   }
   else
-    return CalcValueFromObservation(theCalculationParams.itsLatlon, peekTime);
+    return CalcValueFromObservation(theCalculationParams, peekTime);
 }
 
-static double GetSearchRadiusInMetres(double observationRadiusInKm)
-{
-  if (observationRadiusInKm == kFloatMissing)
-    return kFloatMissing *
-           1000.;  // Tämä on rajaton etsintä NFmiFastInfo::NearestLocation metodissa
-  else
-    return observationRadiusInKm * 1000.;
-}
-
-double NFmiPeekTimeMask::CalcValueFromObservation(const NFmiPoint &theLatlon,
+double NFmiPeekTimeMask::CalcValueFromObservation(const NFmiCalculationParams &theCalculationParams,
                                                   const NFmiMetTime &thePeekTime)
 {
-  NFmiLocation wantedLocation(theLatlon);
+  NFmiLocation wantedLocation(theCalculationParams.UsedLatlon());
   double valueFromMinDistance = kFloatMissing;
   double minDistanceInMetres = 99999999999;
-  double searchRadiusInMetres = ::GetSearchRadiusInMetres(itsObservationRadiusInKm);
+  double searchRadiusInMetres =
+      GetSearchRadiusInMetres(theCalculationParams.itsObservationRadiusInKm);
   for (auto &info : itsInfoVector)
   {
     // Datasta pitää löytyä etsitty aika suoraan ilman aikainterpolaatioita
@@ -523,14 +435,8 @@ NFmiInfoAreaMaskTimeRange::NFmiInfoAreaMaskTimeRange(
     const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
     NFmiAreaMask::FunctionType theIntegrationFunc,
     int theArgumentCount,
-    double observationRadiusInKm,
     unsigned long thePossibleMetaParamId)
-    : NFmiPeekTimeMask(theMaskType,
-                       theDataType,
-                       theInfo,
-                       theArgumentCount,
-                       observationRadiusInKm,
-                       thePossibleMetaParamId),
+    : NFmiPeekTimeMask(theMaskType, theDataType, theInfo, theArgumentCount, thePossibleMetaParamId),
       itsIntegrationFunc(theIntegrationFunc),
       itsFunctionModifier(),
       itsArgumentVector(),
@@ -591,13 +497,16 @@ double NFmiInfoAreaMaskTimeRange::Value(const NFmiCalculationParams &theCalculat
   return itsFunctionModifier->CalculationResult();
 }
 
-void NFmiInfoAreaMaskTimeRange::InitializeIntegrationValues() { itsFunctionModifier->Clear(); }
+void NFmiInfoAreaMaskTimeRange::InitializeIntegrationValues()
+{
+  itsFunctionModifier->Clear();
+}
 
 void NFmiInfoAreaMaskTimeRange::CalcValueFromGridData(
     const NFmiCalculationParams &theCalculationParams)
 {
   NFmiCalculationParams calculationParams = theCalculationParams;
-  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.itsLatlon);
+  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.UsedLatlon());
   if (!locationCache.NoValue())
   {
     // Lasketaan aikaloopitus rajat
@@ -625,38 +534,12 @@ void NFmiInfoAreaMaskTimeRange::DoTimeLoopCalculationsForGridData(
   for (unsigned long timeIndex = theStartTimeIndex; timeIndex <= theEndTimeIndex; timeIndex++)
   {
     itsInfo->TimeIndex(timeIndex);
-    if (itsSimpleCondition) theCalculationParams.itsTime = itsInfo->Time();
+    if (itsSimpleCondition)
+      theCalculationParams.itsTime = itsInfo->Time();
     if (SimpleConditionCheck(theCalculationParams))
       AddValuesToFunctionModifier(
           itsInfo, itsFunctionModifier, theLocationCache, itsIntegrationFunc);
   }
-}
-
-static bool FindClosestStationData(
-    const std::vector<boost::shared_ptr<NFmiFastQueryInfo>> &infoVector,
-    const NFmiPoint &latlon,
-    double observationRadiusInKm,
-    size_t &dataIndexOut,
-    unsigned long &locationIndexOut)
-{
-  NFmiLocation wantedLocation(latlon);
-  double minDistanceInMetres = 99999999999;
-  double searchRadiusInMetres = ::GetSearchRadiusInMetres(observationRadiusInKm);
-  for (size_t dataCounter = 0; dataCounter < infoVector.size(); dataCounter++)
-  {
-    const auto &info = infoVector[dataCounter];
-    if (info->NearestLocation(latlon, searchRadiusInMetres))
-    {
-      double currentDistanceInMetres = wantedLocation.Distance(info->LatLon());
-      if (currentDistanceInMetres < minDistanceInMetres)
-      {
-        minDistanceInMetres = currentDistanceInMetres;
-        dataIndexOut = dataCounter;
-        locationIndexOut = info->LocationIndex();
-      }
-    }
-  }
-  return minDistanceInMetres <= searchRadiusInMetres;
 }
 
 void NFmiInfoAreaMaskTimeRange::CalcValueFromObservationData(
@@ -665,18 +548,17 @@ void NFmiInfoAreaMaskTimeRange::CalcValueFromObservationData(
   NFmiCalculationParams calculationParams = theCalculationParams;
   size_t dataIndex = 0;
   unsigned long locationIndex = 0;
-  if (::FindClosestStationData(itsInfoVector,
-                               calculationParams.itsLatlon,
-                               itsObservationRadiusInKm,
-                               dataIndex,
-                               locationIndex))
+  if (FindClosestStationData(calculationParams, dataIndex, locationIndex))
   {
-    auto &info = itsInfoVector[dataIndex];
-    info->LocationIndex(locationIndex);
+    // Otetaan käytetty info itsInfo:on, tarvitaan jos kyseessä multi-data tapaus (synop/salama)
+    itsInfo = itsInfoVector[dataIndex];
+    itsInfo->LocationIndex(locationIndex);
+    // Tämä ei näytä toimivan oikein, koska itsCurrentMultiInfoData jää osoittamaan nullptr:ia.
+    calculationParams.itsCurrentMultiInfoData = itsInfo.get();
 
     unsigned long startTimeIndex = 0;
     unsigned long endTimeIndex = 0;
-    if (NFmiInfoAreaMask::CalcTimeLoopIndexies(info,
+    if (NFmiInfoAreaMask::CalcTimeLoopIndexies(itsInfo,
                                                calculationParams,
                                                itsStartTimeOffsetInHours,
                                                itsEndTimeOffsetInHours,
@@ -684,7 +566,7 @@ void NFmiInfoAreaMaskTimeRange::CalcValueFromObservationData(
                                                &endTimeIndex))
     {
       DoTimeLoopCalculationsForObservationData(
-          info, startTimeIndex, endTimeIndex, calculationParams);
+          itsInfo, startTimeIndex, endTimeIndex, calculationParams);
     }
   }
 }
@@ -698,9 +580,10 @@ void NFmiInfoAreaMaskTimeRange::DoTimeLoopCalculationsForObservationData(
   for (unsigned long timeIndex = theStartTimeIndex; timeIndex <= theEndTimeIndex; timeIndex++)
   {
     info->TimeIndex(timeIndex);
-    if (itsSimpleCondition) theCalculationParams.itsTime = info->Time();
+    if (itsSimpleCondition)
+      theCalculationParams.itsTime = info->Time();
     if (SimpleConditionCheck(theCalculationParams))
-      itsFunctionModifier->Calculate(info->FloatValue());
+      AddValueToModifier(info, itsFunctionModifier, info->FloatValue());
   }
 }
 
@@ -712,7 +595,7 @@ void NFmiInfoAreaMaskTimeRange::DoTimeLoopCalculationsForObservationData(
 // *****    NFmiInfoAreaMaskPreviousFullDays  ***************
 // **********************************************************
 
-NFmiInfoAreaMaskPreviousFullDays::~NFmiInfoAreaMaskPreviousFullDays(void) = default;
+NFmiInfoAreaMaskPreviousFullDays::~NFmiInfoAreaMaskPreviousFullDays() = default;
 NFmiInfoAreaMaskPreviousFullDays::NFmiInfoAreaMaskPreviousFullDays(
     const NFmiCalculationCondition &theOperation,
     Type theMaskType,
@@ -720,7 +603,6 @@ NFmiInfoAreaMaskPreviousFullDays::NFmiInfoAreaMaskPreviousFullDays(
     const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
     NFmiAreaMask::FunctionType theIntegrationFunc,
     int theArgumentCount,
-    double observationRadiusInKm,
     unsigned long thePossibleMetaParamId)
     : NFmiInfoAreaMaskTimeRange(theOperation,
                                 theMaskType,
@@ -728,7 +610,6 @@ NFmiInfoAreaMaskPreviousFullDays::NFmiInfoAreaMaskPreviousFullDays(
                                 theInfo,
                                 theIntegrationFunc,
                                 theArgumentCount,
-                                observationRadiusInKm,
                                 thePossibleMetaParamId),
       itsPreviousDayCount(0)
 {
@@ -740,12 +621,12 @@ NFmiInfoAreaMaskPreviousFullDays::NFmiInfoAreaMaskPreviousFullDays(
 {
 }
 
-NFmiAreaMask *NFmiInfoAreaMaskPreviousFullDays::Clone(void) const
+NFmiAreaMask *NFmiInfoAreaMaskPreviousFullDays::Clone() const
 {
   return new NFmiInfoAreaMaskPreviousFullDays(*this);
 }
 
-void NFmiInfoAreaMaskPreviousFullDays::InitializeFromArguments(void)
+void NFmiInfoAreaMaskPreviousFullDays::InitializeFromArguments()
 {
   itsPreviousDayCount = static_cast<int>(itsArgumentVector[0]);
 }
@@ -756,12 +637,14 @@ static bool CalcTimeLoopIndexiesForPreviousFullDays(boost::shared_ptr<NFmiFastQu
                                                     unsigned long *startTimeIndexOut,
                                                     unsigned long *endTimeIndexOut)
 {
-  if (previousDayCount <= 0) return false;
+  if (previousDayCount <= 0)
+    return false;
   auto localCalculationTime = calculationParams.itsTime.LocalTime();
   auto localHour = localCalculationTime.GetHour();
   // Jos localHour on 0, lasketaan täydet päivät taaksepäin, jos > 0, lasketaan täysiä päiviä yksi
   // vähemmän.
-  if (localHour > 0) previousDayCount--;
+  if (localHour > 0)
+    previousDayCount--;
   auto hourDifference = localHour + (previousDayCount * 24);
   NFmiMetTime startTime(calculationParams.itsTime);
   startTime.ChangeByHours(-hourDifference);
@@ -777,7 +660,7 @@ void NFmiInfoAreaMaskPreviousFullDays::CalcValueFromGridData(
     const NFmiCalculationParams &theCalculationParams)
 {
   NFmiCalculationParams calculationParams = theCalculationParams;
-  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.itsLatlon);
+  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.UsedLatlon());
   if (!locationCache.NoValue())
   {
     // Lasketaan aikaloopitus rajat
@@ -798,14 +681,11 @@ void NFmiInfoAreaMaskPreviousFullDays::CalcValueFromObservationData(
   NFmiCalculationParams calculationParams = theCalculationParams;
   size_t dataIndex = 0;
   unsigned long locationIndex = 0;
-  if (::FindClosestStationData(itsInfoVector,
-                               calculationParams.itsLatlon,
-                               itsObservationRadiusInKm,
-                               dataIndex,
-                               locationIndex))
+  if (FindClosestStationData(calculationParams, dataIndex, locationIndex))
   {
     auto &info = itsInfoVector[dataIndex];
     info->LocationIndex(locationIndex);
+    calculationParams.itsCurrentMultiInfoData = info.get();
 
     unsigned long startTimeIndex = 0;
     unsigned long endTimeIndex = 0;
@@ -826,7 +706,7 @@ void NFmiInfoAreaMaskPreviousFullDays::CalcValueFromObservationData(
 // *****    NFmiInfoAreaMaskTimeDuration    *****************
 // **********************************************************
 
-NFmiInfoAreaMaskTimeDuration::~NFmiInfoAreaMaskTimeDuration(void) = default;
+NFmiInfoAreaMaskTimeDuration::~NFmiInfoAreaMaskTimeDuration() = default;
 
 NFmiInfoAreaMaskTimeDuration::NFmiInfoAreaMaskTimeDuration(
     const NFmiCalculationCondition &theOperation,
@@ -834,7 +714,6 @@ NFmiInfoAreaMaskTimeDuration::NFmiInfoAreaMaskTimeDuration(
     NFmiInfoData::Type theDataType,
     const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
     int theArgumentCount,
-    double observationRadiusInKm,
     unsigned long thePossibleMetaParamId)
     : NFmiInfoAreaMaskTimeRange(
           theOperation,
@@ -844,7 +723,6 @@ NFmiInfoAreaMaskTimeDuration::NFmiInfoAreaMaskTimeDuration(
           NFmiAreaMask::Min,  // tähän on vain pakko antaa joku integraatio funktio, vaikka sitä ei
                               // käytetäkään tässä luokassa
           theArgumentCount,
-          observationRadiusInKm,
           thePossibleMetaParamId),
       itsSeekTimeInHours(0),
       itsSeekTimeInMinutes(0),
@@ -859,16 +737,17 @@ NFmiInfoAreaMaskTimeDuration::NFmiInfoAreaMaskTimeDuration(
       itsSeekTimeInHours(theOther.itsSeekTimeInHours),
       itsSeekTimeInMinutes(theOther.itsSeekTimeInMinutes),
       itsCalculatedTimeDurationInMinutes(theOther.itsCalculatedTimeDurationInMinutes),
-      fUseCumulativeCalculation(theOther.fUseCumulativeCalculation)
+      fUseCumulativeCalculation(theOther.fUseCumulativeCalculation),
+      fHasLegitDataAvailable(theOther.fHasLegitDataAvailable)
 {
 }
 
-NFmiAreaMask *NFmiInfoAreaMaskTimeDuration::Clone(void) const
+NFmiAreaMask *NFmiInfoAreaMaskTimeDuration::Clone() const
 {
   return new NFmiInfoAreaMaskTimeDuration(*this);
 }
 
-void NFmiInfoAreaMaskTimeDuration::InitializeFromArguments(void)
+void NFmiInfoAreaMaskTimeDuration::InitializeFromArguments()
 {
   itsSeekTimeInHours = itsArgumentVector[0];
   itsSeekTimeInMinutes = boost::math::iround(itsSeekTimeInHours * 60.f);
@@ -886,12 +765,16 @@ double NFmiInfoAreaMaskTimeDuration::Value(const NFmiCalculationParams &theCalcu
     CalcValueFromObservationData(theCalculationParams);
 
   // Palautetaan kesto tunneissa
-  return itsCalculatedTimeDurationInMinutes / 60.f;
+  if (fHasLegitDataAvailable)
+    return itsCalculatedTimeDurationInMinutes / 60.f;
+  else
+    return kFloatMissing;
 }
 
 void NFmiInfoAreaMaskTimeDuration::InitializeIntegrationValues()
 {
   itsCalculatedTimeDurationInMinutes = 0;
+  fHasLegitDataAvailable = false;
 }
 
 static bool CalcTimeLoopIndexiesForTimeDuration(boost::shared_ptr<NFmiFastQueryInfo> &info,
@@ -913,7 +796,8 @@ static bool CalcTimeLoopIndexiesForTimeDuration(boost::shared_ptr<NFmiFastQueryI
 
   // indeksit pitää kääntää, jos halutaan mennä taaksepäin ajassa, koska
   // NFmiInfoAreaMask::CalcTimeLoopIndexies -metodi laittaa indeksit 'nousevaan' järjestykseen
-  if (startTime > endTime) std::swap(*startTimeIndexOut, *endTimeIndexOut);
+  if (startTime > endTime)
+    std::swap(*startTimeIndexOut, *endTimeIndexOut);
   return indexStatus;
 }
 
@@ -921,7 +805,7 @@ void NFmiInfoAreaMaskTimeDuration::CalcValueFromGridData(
     const NFmiCalculationParams &theCalculationParams)
 {
   NFmiCalculationParams calculationParams = theCalculationParams;
-  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.itsLatlon);
+  NFmiLocationCache locationCache = itsInfo->CalcLocationCache(calculationParams.UsedLatlon());
   if (!locationCache.NoValue())
   {
     CalcDurationTime(itsInfo, theCalculationParams);
@@ -933,14 +817,11 @@ void NFmiInfoAreaMaskTimeDuration::CalcValueFromObservationData(
 {
   size_t dataIndex = 0;
   unsigned long locationIndex = 0;
-  if (::FindClosestStationData(itsInfoVector,
-                               theCalculationParams.itsLatlon,
-                               itsObservationRadiusInKm,
-                               dataIndex,
-                               locationIndex))
+  if (FindClosestStationData(theCalculationParams, dataIndex, locationIndex))
   {
     auto &info = itsInfoVector[dataIndex];
     info->LocationIndex(locationIndex);
+    theCalculationParams.itsCurrentMultiInfoData = info.get();
     CalcDurationTime(info, theCalculationParams);
   }
 }
@@ -979,6 +860,7 @@ void NFmiInfoAreaMaskTimeDuration::CalcDurationTime(
   if (::CalcTimeLoopIndexiesForTimeDuration(
           theInfo, theCalculationParams, itsSeekTimeInMinutes, &startTimeIndex, &endTimeIndex))
   {
+    fHasLegitDataAvailable = true;
     int timeIndexIncrement = 1;
     bool reverserTime = false;
     if (startTimeIndex > endTimeIndex)
@@ -986,7 +868,8 @@ void NFmiInfoAreaMaskTimeDuration::CalcDurationTime(
       timeIndexIncrement = -1;
       reverserTime = true;
     }
-    if (!fUseCumulativeCalculation) currentTimeInterval.first = theCalculationParams.itsTime;
+    if (!fUseCumulativeCalculation)
+      currentTimeInterval.first = theCalculationParams.itsTime;
     NFmiCalculationParams calculationParams = theCalculationParams;
     for (int timeIndex = startTimeIndex; reverserTime ? timeIndex >= static_cast<int>(endTimeIndex)
                                                       : timeIndex <= static_cast<int>(endTimeIndex);
@@ -1031,4 +914,110 @@ void NFmiInfoAreaMaskTimeDuration::CalcDurationTime(
 
 // **********************************************************
 // *****    NFmiInfoAreaMaskTimeDuration    *****************
+// **********************************************************
+
+// **********************************************************
+// *****  NFmiInfoAreaMaskTimeRangeSecondParValue  **********
+// **********************************************************
+
+NFmiInfoAreaMaskTimeRangeSecondParValue::~NFmiInfoAreaMaskTimeRangeSecondParValue() = default;
+
+NFmiInfoAreaMaskTimeRangeSecondParValue::NFmiInfoAreaMaskTimeRangeSecondParValue(
+    const NFmiCalculationCondition &theOperation,
+    Type theMaskType,
+    NFmiInfoData::Type theDataType,
+    const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+    const boost::shared_ptr<NFmiFastQueryInfo> &theSecondInfo,
+    NFmiAreaMask::FunctionType theIntegrationFunc,
+    int theArgumentCount,
+    unsigned long thePossibleMetaParamId)
+    : NFmiInfoAreaMaskTimeRange(theOperation,
+                                theMaskType,
+                                theDataType,
+                                theInfo,
+                                theIntegrationFunc,
+                                theArgumentCount,
+                                thePossibleMetaParamId),
+      itsFunctionModifierExtreme(),
+      itsSecondInfo(theSecondInfo)
+{
+  itsFunctionModifierExtreme.reset(
+      dynamic_cast<NFmiDataModifierExtreme *>(itsFunctionModifier->Clone()));
+}
+
+NFmiInfoAreaMaskTimeRangeSecondParValue::NFmiInfoAreaMaskTimeRangeSecondParValue(
+    const NFmiInfoAreaMaskTimeRangeSecondParValue &theOther)
+    : NFmiInfoAreaMaskTimeRange(theOther),
+      itsFunctionModifierExtreme(theOther.itsFunctionModifierExtreme
+                                     ? dynamic_cast<NFmiDataModifierExtreme *>(
+                                           theOther.itsFunctionModifierExtreme->Clone())
+                                     : nullptr),
+      itsSecondInfo(NFmiAreaMask::DoShallowCopy(theOther.itsSecondInfo))
+{
+}
+
+NFmiAreaMask *NFmiInfoAreaMaskTimeRangeSecondParValue::Clone() const
+{
+  return new NFmiInfoAreaMaskTimeRangeSecondParValue(*this);
+}
+
+double NFmiInfoAreaMaskTimeRangeSecondParValue::Value(
+    const NFmiCalculationParams &theCalculationParams, bool fUseTimeInterpolationAlways)
+{
+  if (!itsFunctionModifierExtreme || !itsSecondInfo)
+  {
+    throw std::runtime_error(
+        "Error with get_2nd_par_value_from_extreme function: FunctionModifierExtreme or SecondInfo "
+        "was null.");
+  }
+  // Äääriarvo pitää hakea ja laskea emoluokan Value metodilla, jotta saadaan
+  // ääriarvon aika itsFunctionModifierExtreme oliolle.
+  auto extremeValue =
+      NFmiInfoAreaMaskTimeRange::Value(theCalculationParams, fUseTimeInterpolationAlways);
+  return GetSecondParamValue(theCalculationParams);
+}
+
+double NFmiInfoAreaMaskTimeRangeSecondParValue::GetSecondParamValue(
+    const NFmiCalculationParams &theCalculationParams)
+{
+  NFmiMetTime extremeTime(itsFunctionModifierExtreme->itsExtremeTime, 1);
+  if (extremeTime != NFmiMetTime::gMissingTime)
+  {
+    // secondInfolle pitää vielä hanskata mahdollinen multi-data tapaus, eli
+    // kyseessä havainto data ja ovat samalta tuottajalta, tällöin itsInfo:ssa on
+    // aina oikea data, ja sitä pitää käyttää (theCalculationParams.itsCurrentMultiInfoData
+    // mekaniikka ei näytä toimivan oikein).
+    if (itsInfo != nullptr && !itsSecondInfo->IsGrid() &&
+        *itsSecondInfo->Producer() == *itsInfo->Producer())
+    {
+      NFmiFastInfoUtils::QueryInfoTotalStateRestorer queryInfoTotalStateRestorer(*itsInfo);
+      itsInfo->Param(itsSecondInfo->Param());
+      return itsInfo->InterpolatedValue(theCalculationParams.UsedLatlon(), extremeTime);
+    }
+    else
+    {
+      return itsSecondInfo->InterpolatedValue(theCalculationParams.UsedLatlon(), extremeTime);
+    }
+  }
+  return kFloatMissing;
+}
+
+void NFmiInfoAreaMaskTimeRangeSecondParValue::AddValueToModifier(
+    boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
+    boost::shared_ptr<NFmiDataModifier> & /* theFunctionModifier */,
+    float theValue)
+{
+  // In this virtual method the time of extreme value is stored.
+  itsFunctionModifierExtreme->Calculate(theValue, theInfo.get());
+}
+
+void NFmiInfoAreaMaskTimeRangeSecondParValue::InitializeIntegrationValues()
+{
+  NFmiInfoAreaMaskTimeRange::InitializeIntegrationValues();
+  itsFunctionModifierExtreme->Clear();
+  itsFunctionModifierExtreme->itsExtremeTime = NFmiMetTime::gMissingTime;
+}
+
+// **********************************************************
+// *****  NFmiInfoAreaMaskTimeRangeSecondParValue  **********
 // **********************************************************

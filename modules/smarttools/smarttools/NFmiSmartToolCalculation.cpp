@@ -42,7 +42,7 @@ using namespace std;
 //--------------------------------------------------------
 // Constructor/Destructor
 //--------------------------------------------------------
-NFmiSmartToolCalculation::NFmiSmartToolCalculation(void)
+NFmiSmartToolCalculation::NFmiSmartToolCalculation()
     : itsCalculationText(),
       itsLowerLimit(0),
       itsUpperLimit(1),
@@ -84,7 +84,7 @@ NFmiSmartToolCalculation::NFmiSmartToolCalculation(const NFmiSmartToolCalculatio
 {
 }
 
-NFmiSmartToolCalculation::~NFmiSmartToolCalculation(void) {}
+NFmiSmartToolCalculation::~NFmiSmartToolCalculation() {}
 
 //--------------------------------------------------------
 // Calculate
@@ -95,20 +95,19 @@ void NFmiSmartToolCalculation::Calculate(const NFmiCalculationParams &theCalcula
   if (theMacroParamValue.fDoCrossSectionCalculations)
   {
     fUsePressureLevelCalculation = true;
-    itsPressureHeightValue = theMacroParamValue.itsPressureHeight;
+    itsPressureHeightValue = theCalculationParams.itsPressureHeight =
+        theMacroParamValue.itsPressureHeight;
+  }
+  else if (theMacroParamValue.fDoTimeSerialCalculations)
+  {
+    fUseTimeInterpolationAlways = true;
   }
   double value = eval_exp(theCalculationParams);
 
-  //	value = FmiMakeValidNumber(value); // NFmiQueryInfo::FloatValue(value) -metodi tarkastaa
-  // nykyään onko kyseessä sallittu luku, inf ja nan -arvojen asetus on nykyään estetty
-  if (value != kFloatMissing)  // tuli ongelmia missing asetuksissa, pitää mietti vaikka jokin
-  // funktio, jolla asetetaan puuttuva arvo // pitää pystyä sittenkin
-  // asettamaan arvoksi kFloatMissing:in!!!
+  // kohde dataa juoksutetaan, joten lokaatio indeksien pitää olla synkassa!!!
+  itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);
+  if (value != kFloatMissing)
   {
-    itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);  // kohde dataa
-                                                                          // juoksutetaan, joten
-                                                                          // lokaatio indeksien
-    // pitää olla synkassa!!!
     value = FixCircularValues(value);  // ensin tehdään circular tarkistus ja sitten vasta min/max
     value = GetInsideLimitsValue(static_cast<float>(value));  // asetetaan value vielä drawparamista
                                                               // satuihin rajoihin, ettei esim. RH
@@ -121,11 +120,6 @@ void NFmiSmartToolCalculation::Calculate(const NFmiCalculationParams &theCalcula
   {
     if (fAllowMissingValueAssignment)
     {
-      itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);  // kohde dataa
-                                                                            // juoksutetaan, joten
-                                                                            // lokaatio indeksien
-                                                                            // pitää olla
-                                                                            // synkassa!!!
       itsResultInfo->FloatValue(
           static_cast<float>(value));  // nyt voidaan asettaa puuttuva arvo dataan
     }
@@ -134,6 +128,7 @@ void NFmiSmartToolCalculation::Calculate(const NFmiCalculationParams &theCalcula
   NFmiInfoData::Type dataType = itsResultInfo->DataType();
   if (theMacroParamValue.fSetValue &&
       (dataType == NFmiInfoData::kMacroParam || dataType == NFmiInfoData::kCrossSectionMacroParam ||
+       dataType == NFmiInfoData::kTimeSerialMacroParam ||
        dataType == NFmiInfoData::kScriptVariableData))
     theMacroParamValue.itsValue = static_cast<float>(value);
 }
@@ -194,17 +189,10 @@ static void MakeCalculateDebugLogging_SUPER_HEAVY(NFmiSmartToolCalculation &calc
 void NFmiSmartToolCalculation::Calculate_ver2(const NFmiCalculationParams &theCalculationParams)
 {
   double value = eval_exp(theCalculationParams);
-
-  //	value = FmiMakeValidNumber(value); // NFmiQueryInfo::FloatValue(value) -metodi tarkastaa
-  // nykyään onko kyseessä sallittu luku, inf ja nan -arvojen asetus on nykyään estetty
-  if (value != kFloatMissing)  // tuli ongelmia missing asetuksissa, pitää mietti vaikka jokin
-  // funktio, jolla asetetaan puuttuva arvo // pitää pystyä sittenkin
-  // asettamaan arvoksi kFloatMissing:in!!!
+  // kohde dataa juoksutetaan, joten lokaatio indeksien pitää olla synkassa!!!
+  itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);
+  if (value != kFloatMissing)
   {
-    itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);  // kohde dataa
-                                                                          // juoksutetaan, joten
-                                                                          // lokaatio indeksien
-    // pitää olla synkassa!!!
     value = FixCircularValues(value);  // ensin tehdään circular tarkistus ja sitten vasta min/max
     value = GetInsideLimitsValue(static_cast<float>(value));  // asetetaan value vielä drawparamista
                                                               // satuihin rajoihin, ettei esim. RH
@@ -217,11 +205,6 @@ void NFmiSmartToolCalculation::Calculate_ver2(const NFmiCalculationParams &theCa
   {
     if (fAllowMissingValueAssignment)
     {
-      itsResultInfo->LocationIndex(theCalculationParams.itsLocationIndex);  // kohde dataa
-                                                                            // juoksutetaan, joten
-                                                                            // lokaatio indeksien
-                                                                            // pitää olla
-                                                                            // synkassa!!!
       itsResultInfo->FloatValue(
           static_cast<float>(value));  // nyt voidaan asettaa puuttuva arvo dataan
     }
@@ -236,7 +219,8 @@ void NFmiSmartToolCalculation::Calculate_ver2(const NFmiCalculationParams &theCa
 // ei ota huomioon missing arvoa, koska se pitää ottaa huomioon jo ennen tämän kutsua.
 float NFmiSmartToolCalculation::GetInsideLimitsValue(float theValue)
 {
-  if (theValue == kFloatMissing) return theValue;
+  if (theValue == kFloatMissing)
+    return theValue;
 
   if (fDoLimitCheck)
   {
@@ -425,10 +409,12 @@ void NFmiSmartToolCalculation::eval_exp5(double &result,
                                          const NFmiCalculationParams &theCalculationParams)
 {
   NFmiAreaMask::CalculationOperator op = token->GetCalculationOperator();
-  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub) get_token();
+  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub)
+    get_token();
   eval_exp6(result, theCalculationParams);
 
-  if (op == NFmiAreaMask::Sub && result != kFloatMissing) result = -result;
+  if (op == NFmiAreaMask::Sub && result != kFloatMissing)
+    result = -result;
 }
 
 #if 0
@@ -574,7 +560,8 @@ static float GetCurrentHeightStep(float theHeight)
 template <typename T>
 static bool IsEqualEnough(T value1, T value2, T usedEpsilon)
 {
-  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon) return true;
+  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon)
+    return true;
   return false;
 }
 void NFmiSmartToolCalculation::eval_ThreeArgumentFunctionZ(
@@ -666,7 +653,10 @@ std::random_device rd;
 std::mt19937 mt(rd());
 std::uniform_real_distribution<double> uniformDistribution0to1(0, 1);
 
-double GetRandomNumber(double maxValue) { return maxValue * uniformDistribution0to1(mt); }
+double GetRandomNumber(double maxValue)
+{
+  return maxValue * uniformDistribution0to1(mt);
+}
 }  // namespace
 
 // HUOM! trigonometriset funktiot tehdään asteille, joten annettu luku pitää konvertoida
@@ -756,15 +746,15 @@ void NFmiSmartToolCalculation::eval_math_function(double &result, int theFunctio
   }
 }
 
-bool NFmiSmartToolCalculation::IsCrossSectionVariableCase(
+bool NFmiSmartToolCalculation::IsSpecialCalculationVariableCase(
     const NFmiCalculationParams &theCalculationParams)
 {
-  return (theCalculationParams.fCrossSectionCase &&
+  return (theCalculationParams.fSpecialCalculationCase &&
           token->GetDataType() == NFmiInfoData::Type::kScriptVariableData);
 }
 
 // Oletus: ensin tarkistetaan IsCrossSectionVariableCase metodilla onko tarvetta tälle operaatiolle.
-double NFmiSmartToolCalculation::CrossSectionVariableCaseValue(
+double NFmiSmartToolCalculation::SpecialCalculationVariableCaseValue(
     const NFmiCalculationParams &theCalculationParams)
 {
   // Erikoistapaus: poikkileikkaus macroParam laskuissa var -muuttuja pitää ottaa vain suoraan
@@ -782,14 +772,22 @@ double NFmiSmartToolCalculation::CrossSectionVariableCaseValue(
 void NFmiSmartToolCalculation::atom(double &result,
                                     const NFmiCalculationParams &theCalculationParams)
 {
-  if (IsCrossSectionVariableCase(theCalculationParams))
-    result = CrossSectionVariableCaseValue(theCalculationParams);
-  else if (fUseHeightCalculation)
-    result = token->HeightValue(itsHeightValue, theCalculationParams);
-  else if (fUsePressureLevelCalculation)
-    result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
+  if (IsSpecialCalculationVariableCase(theCalculationParams))
+  {
+    result = SpecialCalculationVariableCaseValue(theCalculationParams);
+  }
   else
-    result = token->Value(theCalculationParams, fUseTimeInterpolationAlways);
+  {
+    if (token->CheckPossibleObservationDistance(theCalculationParams))
+    {
+      if (fUseHeightCalculation)
+        result = token->HeightValue(itsHeightValue, theCalculationParams);
+      else if (fUsePressureLevelCalculation)
+        result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
+      else
+        result = token->Value(theCalculationParams, fUseTimeInterpolationAlways);
+    }
+  }
   get_token();
 }
 
@@ -797,7 +795,7 @@ void NFmiSmartToolCalculation::atom(double &result,
 // itsCalcIterator osoittaa jo 1. tokeniin, tehdään ensin
 // sijoitus tokeniin ja sitten siirretään iteraattoria eteenpäin.
 // Tällä lailla C++: Compl. Ref. kirjasta kopioitu koodi toimii 'sellaisenaan'.
-void NFmiSmartToolCalculation::get_token(void)
+void NFmiSmartToolCalculation::get_token()
 {
   if (itsCalcIterator != itsCalculations.end())
   {
@@ -1005,10 +1003,12 @@ void NFmiSmartToolCalculation::bin_eval_exp5(bool &maskresult,
                                              const NFmiCalculationParams &theCalculationParams)
 {
   NFmiAreaMask::CalculationOperator op = token->GetCalculationOperator();
-  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub) get_token();
+  if (op == NFmiAreaMask::Add || op == NFmiAreaMask::Sub)
+    get_token();
   bin_eval_exp6(maskresult, result, theCalculationParams);
 
-  if (op == NFmiAreaMask::Sub && result != kFloatMissing) result = -result;
+  if (op == NFmiAreaMask::Sub && result != kFloatMissing)
+    result = -result;
 }
 
 void NFmiSmartToolCalculation::CalcThreeArgumentFunction(
@@ -1118,20 +1118,28 @@ void NFmiSmartToolCalculation::bin_atom(bool &maskresult,
                                         double &result,
                                         const NFmiCalculationParams &theCalculationParams)
 {
-  if (IsCrossSectionVariableCase(theCalculationParams))
-    result = CrossSectionVariableCaseValue(theCalculationParams);
-  else if (fUseHeightCalculation)
-    result = token->HeightValue(itsHeightValue, theCalculationParams);
-  else if (fUsePressureLevelCalculation)
-    result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
+  if (IsSpecialCalculationVariableCase(theCalculationParams))
+  {
+    result = SpecialCalculationVariableCaseValue(theCalculationParams);
+  }
   else
-    result = token->Value(theCalculationParams, fUseTimeInterpolationAlways);
+  {
+    if (token->CheckPossibleObservationDistance(theCalculationParams))
+    {
+      if (fUseHeightCalculation)
+        result = token->HeightValue(itsHeightValue, theCalculationParams);
+      else if (fUsePressureLevelCalculation)
+        result = token->PressureValue(itsPressureHeightValue, theCalculationParams);
+      else
+        result = token->Value(theCalculationParams, fUseTimeInterpolationAlways);
+    }
+  }
   get_token();
 }
 
 // tarkistaa onko resultinfon aktiivinen parametri kuten tuulen suunta
 // ja tekee tarvittavat asetukset
-void NFmiSmartToolCalculation::CheckIfModularParameter(void)
+void NFmiSmartToolCalculation::CheckIfModularParameter()
 {
   fCircularValue = false;
   itsCircularValueModulor = kFloatMissing;

@@ -4,6 +4,7 @@
 #include <newbase/NFmiAreaMask.h>
 
 class NFmiAreaMaskInfo;
+class NFmiProducer;
 
 // Simple-condition koostuu 2-3 osiosta, jotka laitetaan näihin Part-olioihin.
 // Part koostuu joko yhdestä maskista TAI kahdesta maskista ja niihin liittyvästä
@@ -25,6 +26,11 @@ class NFmiSimpleConditionPartInfo
   boost::shared_ptr<NFmiAreaMaskInfo> Mask1() const { return itsMask1; }
   NFmiAreaMask::CalculationOperator CalculationOperator() const { return itsCalculationOperator; }
   boost::shared_ptr<NFmiAreaMaskInfo> Mask2() const { return itsMask2; }
+  void SetStationDataUsage(const NFmiProducer &mainFunctionProducer);
+
+ private:
+  void SetMaskStationDataUsage(boost::shared_ptr<NFmiAreaMaskInfo> &mask,
+                               const NFmiProducer &mainFunctionProducer);
 };
 
 // Single-condition koostuu 2-3 osiosta (Part), joissa voi olla 1-2 maskia ja mahdollinen
@@ -34,8 +40,8 @@ class NFmiSimpleConditionPartInfo
 class NFmiSingleConditionInfo
 {
  public:
-  NFmiSingleConditionInfo(void);
-  ~NFmiSingleConditionInfo(void);
+  NFmiSingleConditionInfo();
+  ~NFmiSingleConditionInfo();
   NFmiSingleConditionInfo(const boost::shared_ptr<NFmiSimpleConditionPartInfo> &part1,
                           FmiMaskOperation conditionOperand1,
                           const boost::shared_ptr<NFmiSimpleConditionPartInfo> &part2,
@@ -47,6 +53,7 @@ class NFmiSingleConditionInfo
   boost::shared_ptr<NFmiSimpleConditionPartInfo> Part2() { return itsPart2; }
   FmiMaskOperation ConditionOperand2() const { return itsConditionOperand2; }
   boost::shared_ptr<NFmiSimpleConditionPartInfo> Part3() { return itsPart3; }
+  void SetStationDataUsage(const NFmiProducer &mainFunctionProducer);
 
  protected:
   // part1 and part2 are always present, because they form basic simple condition:
@@ -70,8 +77,8 @@ class NFmiSingleConditionInfo
 class NFmiSimpleConditionInfo
 {
  public:
-  NFmiSimpleConditionInfo(void);
-  ~NFmiSimpleConditionInfo(void);
+  NFmiSimpleConditionInfo();
+  ~NFmiSimpleConditionInfo();
   NFmiSimpleConditionInfo(const boost::shared_ptr<NFmiSingleConditionInfo> &condition1,
                           NFmiAreaMask::BinaryOperator conditionOperator,
                           const boost::shared_ptr<NFmiSingleConditionInfo> &condition2);
@@ -79,6 +86,7 @@ class NFmiSimpleConditionInfo
   boost::shared_ptr<NFmiSingleConditionInfo> Condition1() { return itsCondition1; }
   NFmiAreaMask::BinaryOperator ConditionOperator() const { return itsConditionOperator; }
   boost::shared_ptr<NFmiSingleConditionInfo> Condition2() { return itsCondition2; }
+  void SetStationDataUsage(const NFmiProducer &mainFunctionProducer);
 
  protected:
   // part1 and part2 are always present, because they form basic simple condition:

@@ -58,9 +58,9 @@ class NFmiLocalAreaMinMaxMask : public NFmiInfoAreaMask
                           int theArgumentCount,
                           const NFmiGrid &theCalculationGrid,
                           unsigned long thePossibleMetaParamId);
-  ~NFmiLocalAreaMinMaxMask(void);
+  ~NFmiLocalAreaMinMaxMask();
   NFmiLocalAreaMinMaxMask(const NFmiLocalAreaMinMaxMask &theOther);
-  NFmiAreaMask *Clone(void) const override;
+  NFmiAreaMask *Clone() const override;
   NFmiLocalAreaMinMaxMask &operator=(const NFmiLocalAreaMinMaxMask &theMask) = delete;
 
   double Value(const NFmiCalculationParams &theCalculationParams,
@@ -82,7 +82,7 @@ class NFmiLocalAreaMinMaxMask : public NFmiInfoAreaMask
   void FillResultMatrixWithLocalExtremePlaces(std::vector<LocalExtreme> &localExtremeResults,
                                               NFmiDataMatrix<float> &resultMatrix,
                                               float localAreaSearchRangeInKm);
-  bool InitializeFromArguments(void);
+  bool InitializeFromArguments();
 
   // Vertikaali funktion loput argumentit
   std::vector<float> itsArgumentVector;

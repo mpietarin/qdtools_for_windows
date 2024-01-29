@@ -46,7 +46,8 @@ float CalcLogInterpolatedWindWectorValue(float x1, float x2, float x, float wv1,
 template <typename T>
 bool IsEqualEnough(T value1, T value2, T usedEpsilon)
 {
-  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon) return true;
+  if (::fabs(static_cast<double>(value1 - value2)) < usedEpsilon)
+    return true;
   return false;
 }
 
@@ -54,7 +55,7 @@ class MyPoint
 {
  public:
   MyPoint(double theX, double theY) : x(theX), y(theY) {}
-  bool IsValid(void) const { return (x != kFloatMissing) && (y != kFloatMissing); }
+  bool IsValid() const { return (x != kFloatMissing) && (y != kFloatMissing); }
   double x;
   double y;
 };

@@ -21,20 +21,20 @@ class NFmiAreaMaskInfo
  public:
   NFmiAreaMaskInfo(const std::string& theOrigLineText = "");
   NFmiAreaMaskInfo(const NFmiAreaMaskInfo& theOther);
-  ~NFmiAreaMaskInfo(void);
+  ~NFmiAreaMaskInfo();
 
   void SetDataIdent(const NFmiDataIdent& value) { itsDataIdent = value; }
-  const NFmiDataIdent& GetDataIdent(void) const { return itsDataIdent; }
+  const NFmiDataIdent& GetDataIdent() const { return itsDataIdent; }
   void SetUseDefaultProducer(bool value) { fUseDefaultProducer = value; }
-  bool GetUseDefaultProducer(void) const { return fUseDefaultProducer; }
+  bool GetUseDefaultProducer() const { return fUseDefaultProducer; }
   void SetMaskCondition(const NFmiCalculationCondition& value) { itsMaskCondition = value; }
-  const NFmiCalculationCondition& GetMaskCondition(void) const { return itsMaskCondition; }
-  NFmiAreaMask::CalculationOperationType GetOperationType(void) const { return itsOperationType; }
+  const NFmiCalculationCondition& GetMaskCondition() const { return itsMaskCondition; }
+  NFmiAreaMask::CalculationOperationType GetOperationType() const { return itsOperationType; }
   void SetOperationType(NFmiAreaMask::CalculationOperationType newValue)
   {
     itsOperationType = newValue;
   }
-  NFmiAreaMask::CalculationOperator GetCalculationOperator(void) const
+  NFmiAreaMask::CalculationOperator GetCalculationOperator() const
   {
     return itsCalculationOperator;
   }
@@ -42,27 +42,24 @@ class NFmiAreaMaskInfo
   {
     itsCalculationOperator = newValue;
   }
-  NFmiAreaMask::BinaryOperator GetBinaryOperator(void) const { return itsBinaryOperator; }
+  NFmiAreaMask::BinaryOperator GetBinaryOperator() const { return itsBinaryOperator; }
   void SetBinaryOperator(NFmiAreaMask::BinaryOperator theValue) { itsBinaryOperator = theValue; }
-  NFmiInfoData::Type GetDataType(void) const { return itsDataType; }
+  NFmiInfoData::Type GetDataType() const { return itsDataType; }
   void SetDataType(NFmiInfoData::Type newValue) { itsDataType = newValue; }
-  NFmiLevel* GetLevel(void) const { return itsLevel; }
+  NFmiLevel* GetLevel() const { return itsLevel; }
   void SetLevel(NFmiLevel* theLevel);
-  const std::string& GetMaskText(void) const { return itsMaskText; }
+  const std::string& GetMaskText() const { return itsMaskText; }
   void SetMaskText(const std::string& theText) { itsMaskText = theText; }
-  const std::string& GetOrigLineText(void) const { return itsOrigLineText; }
+  const std::string& GetOrigLineText() const { return itsOrigLineText; }
   void SetOrigLineText(const std::string& theText) { itsOrigLineText = theText; }
-  NFmiAreaMask::FunctionType GetFunctionType(void) const { return itsFunctionType; }
+  NFmiAreaMask::FunctionType GetFunctionType() const { return itsFunctionType; }
   void SetFunctionType(NFmiAreaMask::FunctionType newType) { itsFunctionType = newType; }
-  NFmiAreaMask::FunctionType GetSecondaryFunctionType(void) const
-  {
-    return itsSecondaryFunctionType;
-  }
+  NFmiAreaMask::FunctionType GetSecondaryFunctionType() const { return itsSecondaryFunctionType; }
   void SetSecondaryFunctionType(NFmiAreaMask::FunctionType newType)
   {
     itsSecondaryFunctionType = newType;
   }
-  NFmiAreaMask::MetFunctionDirection MetFunctionDirection(void) const
+  NFmiAreaMask::MetFunctionDirection MetFunctionDirection() const
   {
     return itsMetFunctionDirection;
   }
@@ -70,22 +67,22 @@ class NFmiAreaMaskInfo
   {
     itsMetFunctionDirection = newValue;
   }
-  const NFmiPoint& GetOffsetPoint1(void) const { return itsOffsetPoint1; }
+  const NFmiPoint& GetOffsetPoint1() const { return itsOffsetPoint1; }
   void SetOffsetPoint1(const NFmiPoint& newValue) { itsOffsetPoint1 = newValue; }
-  const NFmiPoint& GetOffsetPoint2(void) const { return itsOffsetPoint2; }
+  const NFmiPoint& GetOffsetPoint2() const { return itsOffsetPoint2; }
   void SetOffsetPoint2(const NFmiPoint& newValue) { itsOffsetPoint2 = newValue; }
-  NFmiAreaMask::MathFunctionType GetMathFunctionType(void) const { return itsMathFunctionType; };
+  NFmiAreaMask::MathFunctionType GetMathFunctionType() const { return itsMathFunctionType; };
   void SetMathFunctionType(NFmiAreaMask::MathFunctionType newValue)
   {
     itsMathFunctionType = newValue;
   };
-  int IntegrationFunctionType(void) const { return itsIntegrationFunctionType; }
+  int IntegrationFunctionType() const { return itsIntegrationFunctionType; }
   void IntegrationFunctionType(int newValue) { itsIntegrationFunctionType = newValue; }
-  int FunctionArgumentCount(void) const { return itsFunctionArgumentCount; }
+  int FunctionArgumentCount() const { return itsFunctionArgumentCount; }
   void FunctionArgumentCount(int newValue) { itsFunctionArgumentCount = newValue; }
-  FmiSoundingParameters SoundingParameter(void) const { return itsSoundingParameter; }
+  FmiSoundingParameters SoundingParameter() const { return itsSoundingParameter; }
   void SoundingParameter(FmiSoundingParameters newValue) { itsSoundingParameter = newValue; }
-  int ModelRunIndex(void) const { return itsModelRunIndex; }
+  int ModelRunIndex() const { return itsModelRunIndex; }
   void ModelRunIndex(int newValue) { itsModelRunIndex = newValue; }
   bool AllowSimpleCondition() const;
   NFmiAreaMask::SimpleConditionRule SimpleConditionRule() const { return itsSimpleConditionRule; }
@@ -97,12 +94,23 @@ class NFmiAreaMaskInfo
   {
     return itsSimpleConditionInfo;
   }
-  void SimpleConditionInfo(boost::shared_ptr<NFmiSimpleConditionInfo>& theSimpleConditionInfo)
-  {
-    itsSimpleConditionInfo = theSimpleConditionInfo;
-  }
+  void SimpleConditionInfo(boost::shared_ptr<NFmiSimpleConditionInfo>& theSimpleConditionInfo);
   float TimeOffsetInHours() const { return itsTimeOffsetInHours; }
   void TimeOffsetInHours(float newValue) { itsTimeOffsetInHours = newValue; }
+  void SetSecondaryParam(const NFmiDataIdent& value) { itsSecondaryParam = value; }
+  const NFmiDataIdent& GetSecondaryParam() const { return itsSecondaryParam; }
+  NFmiLevel* GetSecondaryParamLevel() const { return itsSecondaryParamLevel; }
+  void SetSecondaryParamLevel(NFmiLevel* theLevel);
+  NFmiInfoData::Type GetSecondaryParamDataType() const { return itsSecondaryParamDataType; }
+  void SetSecondaryParamDataType(NFmiInfoData::Type newValue)
+  {
+    itsSecondaryParamDataType = newValue;
+  }
+  bool GetSecondaryParamUseDefaultProducer() const { return fSecondaryParamUseDefaultProducer; }
+  void SetSecondaryParamUseDefaultProducer(bool newValue)
+  {
+    fSecondaryParamUseDefaultProducer = newValue;
+  }
 
  private:
   NFmiDataIdent itsDataIdent;
@@ -150,4 +158,9 @@ class NFmiAreaMaskInfo
   // Tietyillä funktioilla voi olla simple-condition-info osio, joka talletetaan tähän
   boost::shared_ptr<NFmiSimpleConditionInfo> itsSimpleConditionInfo;
   float itsTimeOffsetInHours = 0;
+  // Jos laskuissa on käytössä sekundaari parametri, tässä on sen par+prod+level tiedot
+  NFmiDataIdent itsSecondaryParam;
+  NFmiLevel* itsSecondaryParamLevel = nullptr;  // mahd. level tieto, omistaa ja tuhoaa
+  NFmiInfoData::Type itsSecondaryParamDataType = NFmiInfoData::kNoDataType;
+  bool fSecondaryParamUseDefaultProducer = true;
 };

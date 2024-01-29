@@ -23,5 +23,15 @@ std::string getRelativeStrippedFileName(const std::string &theAbsoluteFilePath,
                                         const std::string &theStrippedFileExtension);
 std::string doDriveLetterFix(const NFmiFileString &filePathString,
                              const NFmiFileString &baseDirectoryPathString);
-bool pathEndsInDirectorySeparator(const std::string &aPath);
+std::string simplifyWindowsPath(const std::string &pathstring);
+bool lastCharacterIsSeparator(const std::string &aPath);
+std::string getFixedAbsolutePathFromSettings(const std::string &theSettingsKey,
+                                             const std::string &theAbsoluteWorkingPath,
+                                             bool fEnsureEndDirectorySeparator = false);
+std::string makeFixedAbsolutePath(const std::string &thePath,
+                                  const std::string &theAbsoluteWorkingPath,
+                                  bool fEnsureEndDirectorySeparator = false);
+std::string getFilename(const std::string &filePath);
+std::string fixPathSeparators(const std::string &pathstring);
+
 }  // namespace PathUtils

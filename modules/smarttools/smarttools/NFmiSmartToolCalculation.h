@@ -10,33 +10,11 @@
 
 #include <boost/shared_ptr.hpp>
 #include <newbase/NFmiAreaMask.h>
-#include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiMetTime.h>
 #include <newbase/NFmiPoint.h>
 
 class NFmiFastQueryInfo;
 class NFmiDataModifier;
-
-class NFmiMacroParamValue
-{
- public:
-  NFmiMacroParamValue(void)
-      : itsLatlon(),
-        itsTime(),
-        itsValue(kFloatMissing),
-        itsPressureHeight(kFloatMissing),
-        fSetValue(false),
-        fDoCrossSectionCalculations(false)
-  {
-  }
-
-  NFmiPoint itsLatlon;
-  NFmiMetTime itsTime;
-  float itsValue;           // tähän talletetaan value
-  float itsPressureHeight;  // poikkileikkaus laskuissa käytetään tätä
-  bool fSetValue;           // tätä luokkaa käytetään vain jos tämä on true
-  bool fDoCrossSectionCalculations;
-};
 
 class NFmiSmartToolCalculation
 {
@@ -47,9 +25,9 @@ class NFmiSmartToolCalculation
   void Calculate_ver2(const NFmiCalculationParams &theCalculationParams);
   void Time(const NFmiMetTime &theTime);  // optimointia laskuja varten
 
-  NFmiSmartToolCalculation(void);
+  NFmiSmartToolCalculation();
   NFmiSmartToolCalculation(const NFmiSmartToolCalculation &theOther);
-  ~NFmiSmartToolCalculation(void);
+  ~NFmiSmartToolCalculation();
   static std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > DoShallowCopy(
       const std::vector<boost::shared_ptr<NFmiSmartToolCalculation> > &theCalculationVector);
 
@@ -58,13 +36,13 @@ class NFmiSmartToolCalculation
     itsResultInfo = value;
     CheckIfModularParameter();
   }
-  boost::shared_ptr<NFmiFastQueryInfo> GetResultInfo(void) { return itsResultInfo; }
-  std::vector<boost::shared_ptr<NFmiAreaMask> > &GetCalculations(void) { return itsCalculations; }
+  boost::shared_ptr<NFmiFastQueryInfo> GetResultInfo() { return itsResultInfo; }
+  std::vector<boost::shared_ptr<NFmiAreaMask> > &GetCalculations() { return itsCalculations; }
   void AddCalculation(const boost::shared_ptr<NFmiAreaMask> &theCalculation);
-  const std::string &GetCalculationText(void) { return itsCalculationText; }
+  const std::string &GetCalculationText() { return itsCalculationText; }
   void SetCalculationText(const std::string &theText) { itsCalculationText = theText; }
   void SetLimits(float theLowerLimit, float theUpperLimit, bool theDoLimitCheck);
-  bool AllowMissingValueAssignment(void) { return fAllowMissingValueAssignment; };
+  bool AllowMissingValueAssignment() { return fAllowMissingValueAssignment; };
   void AllowMissingValueAssignment(bool newState) { fAllowMissingValueAssignment = newState; };
 
  private:
@@ -100,7 +78,7 @@ class NFmiSmartToolCalculation
                                    int theIntegrationFunctionType,
                                    const NFmiCalculationParams &theCalculationParams);
   void atom(double &result, const NFmiCalculationParams &theCalculationParams);
-  void get_token(void);
+  void get_token();
   boost::shared_ptr<NFmiAreaMask> token;  // tässä on kulloinenkin laskun osa tarkastelussa
   CalcIter itsCalcIterator;               // get_token siirtää tätä
   // Lisäksi piti maskia varten binääri versio evaluaatio systeemistä
@@ -135,7 +113,7 @@ class NFmiSmartToolCalculation
   void CalcThreeArgumentFunction(double &result, const NFmiCalculationParams &theCalculationParams);
   void CalcVertFunction(double &result, const NFmiCalculationParams &theCalculationParams);
 
-  boost::shared_ptr<NFmiFastQueryInfo> itsResultInfo;               // omistaa+tuhoaa
+  boost::shared_ptr<NFmiFastQueryInfo> itsResultInfo;             // omistaa+tuhoaa
   std::vector<boost::shared_ptr<NFmiAreaMask> > itsCalculations;  // omistaa+tuhoaa
   float itsHeightValue;
   float itsPressureHeightValue;
@@ -152,8 +130,8 @@ class NFmiSmartToolCalculation
   // maksimi) jne.
   bool fCircularValue;
   double itsCircularValueModulor;
-  void CheckIfModularParameter(void);
+  void CheckIfModularParameter();
   double FixCircularValues(double theValue);
-  bool IsCrossSectionVariableCase(const NFmiCalculationParams &theCalculationParams);
-  double CrossSectionVariableCaseValue(const NFmiCalculationParams &theCalculationParams);
+  bool IsSpecialCalculationVariableCase(const NFmiCalculationParams &theCalculationParams);
+  double SpecialCalculationVariableCaseValue(const NFmiCalculationParams &theCalculationParams);
 };

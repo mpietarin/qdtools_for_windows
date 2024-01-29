@@ -24,6 +24,7 @@
 #endif
 
 #include "NFmiAreaMaskInfo.h"
+#include "NFmiSimpleConditionInfo.h"
 #include <newbase/NFmiLevel.h>
 
 //--------------------------------------------------------
@@ -76,11 +77,20 @@ NFmiAreaMaskInfo::NFmiAreaMaskInfo(const NFmiAreaMaskInfo &theOther)
       itsSoundingParameter(theOther.itsSoundingParameter),
       itsModelRunIndex(theOther.itsModelRunIndex),
       itsSimpleConditionInfo(theOther.itsSimpleConditionInfo),
-      itsTimeOffsetInHours(theOther.itsTimeOffsetInHours)
+      itsTimeOffsetInHours(theOther.itsTimeOffsetInHours),
+      itsSecondaryParam(theOther.itsSecondaryParam),
+      itsSecondaryParamLevel(theOther.itsSecondaryParamLevel
+                                 ? new NFmiLevel(*theOther.itsSecondaryParamLevel)
+                                 : nullptr),
+      itsSecondaryParamDataType(theOther.itsSecondaryParamDataType),
+      fSecondaryParamUseDefaultProducer(theOther.fSecondaryParamUseDefaultProducer)
 {
 }
 
-NFmiAreaMaskInfo::~NFmiAreaMaskInfo(void) { delete itsLevel; }
+NFmiAreaMaskInfo::~NFmiAreaMaskInfo()
+{
+  delete itsLevel;
+}
 
 void NFmiAreaMaskInfo::SetLevel(NFmiLevel *theLevel)
 {
@@ -92,4 +102,20 @@ bool NFmiAreaMaskInfo::AllowSimpleCondition() const
 {
   return (itsSimpleConditionRule == NFmiAreaMask::SimpleConditionRule::Allowed ||
           itsSimpleConditionRule == NFmiAreaMask::SimpleConditionRule::MustHave);
+}
+
+void NFmiAreaMaskInfo::SimpleConditionInfo(
+    boost::shared_ptr<NFmiSimpleConditionInfo> &theSimpleConditionInfo)
+{
+  itsSimpleConditionInfo = theSimpleConditionInfo;
+  if (itsSimpleConditionInfo)
+  {
+    itsSimpleConditionInfo->SetStationDataUsage(*itsDataIdent.GetProducer());
+  }
+}
+
+void NFmiAreaMaskInfo::SetSecondaryParamLevel(NFmiLevel *theLevel)
+{
+  delete itsSecondaryParamLevel;
+  itsSecondaryParamLevel = theLevel ? new NFmiLevel(*theLevel) : nullptr;
 }

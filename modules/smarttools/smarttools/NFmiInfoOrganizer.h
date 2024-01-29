@@ -23,7 +23,6 @@
 // tuhoa alkuperäinen luokka.
 
 #include <boost/shared_ptr.hpp>
-#include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiInfoData.h>
 #include <newbase/NFmiParamBag.h>
 #include <newbase/NFmiPoint.h>
@@ -65,8 +64,8 @@ class NFmiInfoOrganizer
     bool fTrajectory;
   };
 
-  NFmiInfoOrganizer(void);
-  ~NFmiInfoOrganizer(void);
+  NFmiInfoOrganizer();
+  ~NFmiInfoOrganizer();
 
   bool Init(const std::string &theDrawParamPath,
             bool createDrawParamFileIfNotExist,
@@ -79,8 +78,9 @@ class NFmiInfoOrganizer
                int theUndoLevel,
                int theMaxLatestDataCount,
                int theModelRunTimeGap,
-               bool &fDataWasDeletedOut);
-  int CleanUnusedDataFromMemory(void);
+               bool &fDataWasDeletedOut,
+               bool reloadCaseStudyData);
+  int CleanUnusedDataFromMemory();
   static boost::shared_ptr<NFmiFastQueryInfo> DoDynamicShallowCopy(
       const boost::shared_ptr<NFmiFastQueryInfo> &theInfo);
   static bool IsTempData(boost::shared_ptr<NFmiFastQueryInfo> &theInfo);
@@ -93,6 +93,8 @@ class NFmiInfoOrganizer
   static bool CheckForDataIdent(const boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                 const NFmiDataIdent &theDataIdent,
                                 bool fUseParIdOnly);
+  static void MarkLoadedDataAsOld(bool newState);
+  static bool IsLoadedDataTreatedAsOld();
 
   // ***************************************************************************************************************
   // Tässä perässä on pienin mahdollinen julkinen rajapinta, jonka sain siivottua originaali
@@ -151,9 +153,10 @@ class NFmiInfoOrganizer
   boost::shared_ptr<NFmiFastQueryInfo> FindSoundingInfo(
       const NFmiProducer &theProducer,
       const NFmiMetTime &theDataTime,
+      const NFmiPoint &theLatlon,
       int theIndex = 0,
-      ParamCheckFlags paramCheckFlags =
-          ParamCheckFlags());  // Hakee parhaan luotaus infon tuottajalle
+      ParamCheckFlags paramCheckFlags = ParamCheckFlags(),
+      int amdarDataStartOffsetInMinutes = 0);  // Hakee parhaan luotaus infon tuottajalle
   boost::shared_ptr<NFmiFastQueryInfo> GetPrioritizedSoundingInfo(
       ParamCheckFlags paramCheckFlags =
           ParamCheckFlags());  // Hakee tietyn prioriteetin mukaisesti parhaan luotaus-infon
@@ -161,8 +164,13 @@ class NFmiInfoOrganizer
   // HUOM! Nämä makroParamData jutut pitää miettiä uusiksi, jos niitä aletaan käsittelemään eri
   // säikeissä. Tällöin
   // Niistä pitää luoda aina ilmeisesti paikalliset kopiot?!?!
-  boost::shared_ptr<NFmiFastQueryInfo> MacroParamData(void);
-  boost::shared_ptr<NFmiFastQueryInfo> CrossSectionMacroParamData(void);
+  boost::shared_ptr<NFmiFastQueryInfo> MacroParamData();
+  boost::shared_ptr<NFmiFastQueryInfo> OptimizedVisualizationMacroParamData()
+  {
+    return itsOptimizedVisualizationMacroParamData;
+  }
+  boost::shared_ptr<NFmiFastQueryInfo> CrossSectionMacroParamData();
+  boost::shared_ptr<NFmiFastQueryInfo> TimeSerialMacroParamData();
 
   NFmiParamBag GetParams(int theProducerId1);
   int GetNearestUnRegularTimeIndex(boost::shared_ptr<NFmiDrawParam> &theDrawParam,
@@ -174,42 +182,42 @@ class NFmiInfoOrganizer
   boost::shared_ptr<NFmiDrawParam> CreateCrossSectionDrawParam(const NFmiDataIdent &theDataIdent,
                                                                NFmiInfoData::Type theType);
 
-  bool Clear(void);
+  bool Clear();
   void ClearData(NFmiInfoData::Type theDataType);
   void ClearThisKindOfData(NFmiQueryInfo *theInfo,
                            NFmiInfoData::Type theDataType,
                            const std::string &theFileNamePattern,
                            NFmiTimeDescriptor &theRemovedDatasTimesOut);
-  void ClearDynamicHelpData();
+  void ClearDynamicHelpData(bool caseStudyEvent);
 
-  const std::string &WorkingDirectory(void) const { return itsWorkingDirectory; };
+  const std::string &WorkingDirectory() const { return itsWorkingDirectory; };
   void WorkingDirectory(const std::string &newValue) { itsWorkingDirectory = newValue; };
-  void UpdateEditedDataCopy(void);  // 28.09.1999/Marko
+  void UpdateEditedDataCopy();  // 28.09.1999/Marko
 
-  void SetDrawParamPath(const std::string &theDrawParamPath);
-  const std::string GetDrawParamPath(void);
+  const std::string GetDrawParamPath();
   void SetMacroParamDataGridSize(int x, int y);
+  void SetOptimizedVisualizationMacroParamDataGridSize(int x, int y);
   void SetMacroParamDataMinGridSize(int x, int y);
   void SetMacroParamDataMaxGridSize(int x, int y);
 
-  boost::shared_ptr<NFmiFastQueryInfo> CreateNewMacroParamData(int x,
-                                                               int y,
-                                                               NFmiInfoData::Type theDataType);
+  static boost::shared_ptr<NFmiFastQueryInfo> CreateNewMacroParamData(
+      int x, int y, NFmiInfoData::Type theDataType);
 
-  const NFmiPoint &GetMacroParamDataGridSize(void) const { return itsMacroParamGridSize; }
-  const NFmiPoint &GetMacroParamDataMaxGridSize(void) const { return itsMacroParamMaxGridSize; }
-  const NFmiPoint &GetMacroParamDataMinGridSize(void) const { return itsMacroParamMinGridSize; }
-  int CountData(void);
-  double CountDataSize(void);
+  const NFmiPoint &GetMacroParamDataGridSize() const { return itsMacroParamGridSize; }
+  static const NFmiPoint &GetMacroParamDataMaxGridSize() { return itsMacroParamMaxGridSize; }
+  static const NFmiPoint &GetMacroParamDataMinGridSize() { return itsMacroParamMinGridSize; }
+  int CountData();
+  double CountDataSize();
   void UpdateCrossSectionMacroParamDataSize(int x, int y);
+  void UpdateTimeSerialMacroParamDataSize(int x);
   void UpdateMacroParamDataSize(int x, int y);
+  void UpdateOptimizedVisualizationMacroParamDataSize(int x,
+                                                      int y,
+                                                      boost::shared_ptr<NFmiArea> wantedArea);
   static bool HasGoodParamsForSoundingData(boost::shared_ptr<NFmiFastQueryInfo> &theInfo,
                                            const ParamCheckFlags &paramCheckFlags);
   static boost::shared_ptr<NFmiFastQueryInfo> CreateNewMacroParamData_checkedInput(
-      int x,
-      int y,
-      NFmiInfoData::Type theDataType,
-      boost::shared_ptr<NFmiArea> wantedArea = nullptr);
+      int x, int y, NFmiInfoData::Type theDataType, const NFmiArea *wantedArea = nullptr);
   // ***************************************************************************************************************
 
  private:
@@ -221,7 +229,8 @@ class NFmiInfoOrganizer
   bool Add(NFmiOwnerInfo *theInfo,
            int theMaxLatestDataCount,
            int theModelRunTimeGap,
-           bool &fDataWasDeletedOut);
+           bool &fDataWasDeletedOut,
+           bool reloadCaseStudyData);
 
   boost::shared_ptr<NFmiFastQueryInfo> Info(boost::shared_ptr<NFmiDrawParam> &theDrawParam,
                                             bool fCrossSectionInfoWanted);
@@ -250,7 +259,7 @@ class NFmiInfoOrganizer
                          const NFmiProducer &theProducer,
                          bool ignoreProducer,
                          const ParamCheckFlags &paramCheckFlags);
-  void FixMacroParamDataGridSize(int &x, int &y);
+  static void FixMacroParamDataGridSize(int &x, int &y);
 
   boost::shared_ptr<NFmiQueryDataKeeper>
       itsEditedDataKeeper;  // pitää sisällään oikeasti NFmiSmartInfo-olion
@@ -260,22 +269,24 @@ class NFmiInfoOrganizer
   boost::shared_ptr<NFmiDrawParamFactory> itsDrawParamFactory;
   std::string itsWorkingDirectory;
   NFmiPoint itsMacroParamGridSize;
-  NFmiPoint itsMacroParamMinGridSize;
-  NFmiPoint itsMacroParamMaxGridSize;
-  boost::shared_ptr<NFmiFastQueryInfo> itsMacroParamData;  // makro-parametrien laskuja varten pitää
-  // pitää yllä yhden hilan kokoista dataa
-  // (yksi aika,param ja level, editoitavan
-  // datan hplaceDesc)
-  boost::shared_ptr<NFmiFastQueryInfo> itsCrossSectionMacroParamData;  // poikkileikkaus
-                                                                       // makro-parametrien laskuja
-  // varten pitää pitää yllä
-  // yhden hilan kokoista dataa
-  // (yksi aika,param ja level,
-  // editoitavan datan
-  // hplaceDesc)
+  static NFmiPoint itsMacroParamMinGridSize;
+  static NFmiPoint itsMacroParamMaxGridSize;
+  // makro-parametrien laskuja varten pitää pitää yllä yhden hilan kokoista dataa
+  // (yksi aika,param ja level, editoitavan datan hplaceDesc)
+  boost::shared_ptr<NFmiFastQueryInfo> itsMacroParamData;
+  boost::shared_ptr<NFmiFastQueryInfo> itsOptimizedVisualizationMacroParamData;
+  NFmiPoint itsOptimizedVisualizationGridSize;
+  // poikkileikkaus makro-parametrien laskuja
+  // varten pitää pitää yllä yhden hilan kokoista dataa
+  // (yksi aika,param ja level, editoitavan datan hplaceDesc)
+  boost::shared_ptr<NFmiFastQueryInfo> itsCrossSectionMacroParamData;
+  // aikasarja makro-parametrien laskuja
+  // varten pitää pitää yllä yhden hilan (nx1) kokoista dataa
+  // (yksi aika,param ja level, editoitavan datan hplaceDesc)
+  boost::shared_ptr<NFmiFastQueryInfo> itsTimeSerialMacroParamData;
   bool fCreateEditedDataCopy;  // luodaanko vai eikö luoda kopiota editoidusta datasta
   static std::vector<FmiParameterName> itsWantedSoundingParams;
   static std::vector<FmiParameterName> itsWantedTrajectoryParams;
   static bool fCheckParamsInitialized;
-  static void InitializeCheckParams(void);
+  static void InitializeCheckParams();
 };

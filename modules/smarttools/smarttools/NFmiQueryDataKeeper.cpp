@@ -6,9 +6,51 @@
 #include <newbase/NFmiQueryData.h>
 #include <fstream>
 
+namespace
+{
+TraceLogMessageCallback g_TraceLogMessageCallback;
+IsTraceLoggingInUseCallback g_IsTraceLoggingInUseCallback;
+// Runsaasti loggausta tekevän koodin saa pois päältä, kun laittaa tähän false arvon.
+bool g_AllowTraceLogging = true;
+
+bool IsTraceLoggingUsed()
+{
+  if (g_AllowTraceLogging)
+  {
+    if (g_TraceLogMessageCallback && g_IsTraceLoggingInUseCallback)
+    {
+      return g_IsTraceLoggingInUseCallback();
+    }
+  }
+
+  return false;
+}
+
+void TraceLogMessage(const std::string &message)
+{
+  if (IsTraceLoggingUsed())
+  {
+    g_TraceLogMessageCallback(message);
+  }
+}
+
+}  // namespace
+
 // ************* NFmiQueryDataKeeper-class **********************
 
-NFmiQueryDataKeeper::NFmiQueryDataKeeper(void)
+void NFmiQueryDataSetKeeper::SetTraceLogMessageCallback(
+    TraceLogMessageCallback &traceLogMessageCallback)
+{
+  g_TraceLogMessageCallback = traceLogMessageCallback;
+}
+
+void NFmiQueryDataSetKeeper::SetIsTraceLoggingInUseCallback(
+    IsTraceLoggingInUseCallback &isTraceLoggingInUseCallback)
+{
+  g_IsTraceLoggingInUseCallback = isTraceLoggingInUseCallback;
+}
+
+NFmiQueryDataKeeper::NFmiQueryDataKeeper()
     : itsData(),
       itsLastTimeUsedTimer(),
       itsIndex(0),
@@ -28,16 +70,16 @@ NFmiQueryDataKeeper::NFmiQueryDataKeeper(boost::shared_ptr<NFmiOwnerInfo> &theOr
 {
 }
 
-NFmiQueryDataKeeper::~NFmiQueryDataKeeper(void) {}
+NFmiQueryDataKeeper::~NFmiQueryDataKeeper() {}
 
-boost::shared_ptr<NFmiOwnerInfo> NFmiQueryDataKeeper::OriginalData(void)
+boost::shared_ptr<NFmiOwnerInfo> NFmiQueryDataKeeper::OriginalData()
 {
   itsLastTimeUsedTimer.StartTimer();
   return itsData;
 }
 
 // Tämä palauttaa vapaana olevan Info-iteraattori kopion dataan.
-boost::shared_ptr<NFmiFastQueryInfo> NFmiQueryDataKeeper::GetIter(void)
+boost::shared_ptr<NFmiFastQueryInfo> NFmiQueryDataKeeper::GetIter()
 {
   WriteLock lock(itsMutex);  // tämä funktio pitää suorittaa aina max yhdestä säikeestä (ainakin kun
                              // tehdään moni-säie laskuja smarttool-kielellä, missä on mukana
@@ -47,7 +89,8 @@ boost::shared_ptr<NFmiFastQueryInfo> NFmiQueryDataKeeper::GetIter(void)
   // Katsotaan onko listassa yhtään Info-iteraattoria, joka ei ole käytössä (ref-count = 1)
   for (size_t i = 0; i < itsIteratorList.size(); i++)
   {
-    if (itsIteratorList[i].use_count() <= 1) return itsIteratorList[i];
+    if (itsIteratorList[i].use_count() <= 1)
+      return itsIteratorList[i];
   }
 
   // Ei löytynyt vapaata (tai ollenkaan) Info-iteraattoria, pitää luoda sellainen ja lisätä listaan
@@ -69,64 +112,31 @@ boost::shared_ptr<NFmiFastQueryInfo> NFmiQueryDataKeeper::GetIter(void)
   return infoIter;
 }
 
-int NFmiQueryDataKeeper::LastUsedInMS(void) const
+int NFmiQueryDataKeeper::LastUsedInMS() const
 {
   return itsLastTimeUsedTimer.CurrentTimeDiffInMSeconds();
 }
 
 // ************* NFmiQueryDataSetKeeper-class **********************
 
-NFmiQueryDataSetKeeper::NFmiQueryDataSetKeeper(void)
-    : itsQueryDatas(),
-      itsMaxLatestDataCount(0),
-      itsModelRunTimeGap(0),
-      itsFilePattern(),
-      itsLatestOriginTime(),
-      itsDataType(NFmiInfoData::kNoDataType),
-      itsKeepInMemoryTime(5)
-{
-}
-
 NFmiQueryDataSetKeeper::NFmiQueryDataSetKeeper(boost::shared_ptr<NFmiOwnerInfo> &theData,
                                                int theMaxLatestDataCount,
                                                int theModelRunTimeGap,
-                                               int theKeepInMemoryTime)
+                                               int theKeepInMemoryTime,
+                                               bool reloadCaseStudyData)
     : itsQueryDatas(),
       itsMaxLatestDataCount(theMaxLatestDataCount),
       itsModelRunTimeGap(theModelRunTimeGap),
       itsFilePattern(),
       itsLatestOriginTime(),
-      itsKeepInMemoryTime(theKeepInMemoryTime)
+      itsKeepInMemoryTime(theKeepInMemoryTime),
+      fReloadCaseStudyData(reloadCaseStudyData)
 {
   // Kutsutaan vielä erikseen tämä setter, joka tekee tarpeellisia säätöjä annettuun arvoon
   MaxLatestDataCount(theMaxLatestDataCount);
   bool dataWasDeleted = false;
   AddData(theData, true, dataWasDeleted);  // true tarkoittaa että kyse on 1. lisättävästä datasta
 }
-
-NFmiQueryDataSetKeeper::~NFmiQueryDataSetKeeper(void) {}
-/*
-static void QDataListDestroyer(NFmiQueryDataSetKeeper::ListType *theQDataListToBeDestroyed)
-{
-        if(theQDataListToBeDestroyed)
-        {
-                theQDataListToBeDestroyed->clear();
-                delete theQDataListToBeDestroyed;
-        }
-}
-
-static void DestroyQDatasInSeparateThread(NFmiQueryDataSetKeeper::ListType
-&theQDataListToBeDestroyed)
-{
-        NFmiQueryDataSetKeeper::ListType *swapList = new NFmiQueryDataSetKeeper::ListType;
-        theQDataListToBeDestroyed.swap(*swapList); // siirretään tuhottava lista toiseen
-lista-olioon
-        // Käynnistetään uusi threadi, joka hoitaa lopullisen tuhoamisen
-        boost::thread wrk_thread(::QDataListDestroyer, swapList);
-
-        // ei jäädä odottamaan lopetusta
-}
-*/
 
 // Lisätätään annettu data keeper-settiin.
 // Jos	itsMaxLatestDataCount on 0, tyhjennnetään olemassa olevat listat ja datat ja laitetaan
@@ -208,7 +218,8 @@ bool NFmiQueryDataSetKeeper::OrigTimeDataExist(const NFmiMetTime &theOrigTime)
 {
   for (ListType::iterator it = itsQueryDatas.begin(); it != itsQueryDatas.end(); ++it)
   {
-    if ((*it)->OriginTime() == theOrigTime) return true;
+    if ((*it)->OriginTime() == theOrigTime)
+      return true;
   }
   return false;
 }
@@ -217,7 +228,8 @@ static int CalcIndex(const NFmiMetTime &theLatestOrigTime,
                      const NFmiMetTime &theOrigCurrentTime,
                      int theModelRunTimeGap)
 {
-  if (theModelRunTimeGap == 0) return 0;
+  if (theModelRunTimeGap == 0)
+    return 0;
   int diffInMinutes = theLatestOrigTime.DifferenceInMinutes(theOrigCurrentTime);
   return static_cast<int>(round(-diffInMinutes / theModelRunTimeGap));
 }
@@ -254,14 +266,15 @@ struct OldDataRemover
   OldDataRemover(int theMaxLatestDataCount) : itsMaxLatestDataCount(theMaxLatestDataCount) {}
   bool operator()(boost::shared_ptr<NFmiQueryDataKeeper> &theDataKeeper)
   {
-    if (::abs(theDataKeeper->Index()) > itsMaxLatestDataCount) return true;
+    if (::abs(theDataKeeper->Index()) > itsMaxLatestDataCount)
+      return true;
     return false;
   }
 
   int itsMaxLatestDataCount;
 };
 
-void NFmiQueryDataSetKeeper::DeleteTooOldDatas(void)
+void NFmiQueryDataSetKeeper::DeleteTooOldDatas()
 {
   itsQueryDatas.remove_if(OldDataRemover(itsMaxLatestDataCount));
 }
@@ -273,7 +286,8 @@ static boost::shared_ptr<NFmiQueryDataKeeper> FindQDataKeeper(
        it != theQueryDatas.end();
        ++it)
   {
-    if ((*it)->Index() == theIndex) return (*it);
+    if ((*it)->Index() == theIndex)
+      return (*it);
   }
   return boost::shared_ptr<NFmiQueryDataKeeper>();
 }
@@ -288,11 +302,13 @@ static boost::shared_ptr<NFmiQueryDataKeeper> FindQDataKeeper(
 // esimerkin mukaisesti 00 mallipinta data.
 boost::shared_ptr<NFmiQueryDataKeeper> NFmiQueryDataSetKeeper::GetDataKeeper(int theIndex)
 {
-  if (theIndex > 0) theIndex = 0;
+  if (theIndex > 0)
+    theIndex = 0;
 
   boost::shared_ptr<NFmiQueryDataKeeper> qDataKeeperPtr =
       ::FindQDataKeeper(itsQueryDatas, theIndex);
-  if (qDataKeeperPtr) return qDataKeeperPtr;
+  if (qDataKeeperPtr)
+    return qDataKeeperPtr;
 
   if (DoOnDemandOldDataLoad(theIndex))
     return ::FindQDataKeeper(
@@ -321,18 +337,56 @@ static std::string GetFullFileName(const std::string &theFileFilter, const std::
 
 bool NFmiQueryDataSetKeeper::DoOnDemandOldDataLoad(int theIndex)
 {
-  if (::abs(theIndex) < itsMaxLatestDataCount)  // ei yritetä hakea liian vanhoja datoja
+  std::string traceLogMessage;
+  auto doTraceLogging = ::IsTraceLoggingUsed();
+  if (::abs(theIndex) > itsMaxLatestDataCount)  // ei yritetä hakea liian vanhoja datoja
+  {
+    if (doTraceLogging)
+    {
+      traceLogMessage +=
+          "QueryDataSetKeeper: Too old data requested to be loaded from local querydata file, "
+          "fileFilter was ";
+      traceLogMessage += itsFilePattern;
+      traceLogMessage += ", requested index ";
+      traceLogMessage += std::to_string(theIndex);
+      traceLogMessage += " is bigger than locally stored file count ";
+      traceLogMessage += std::to_string(itsMaxLatestDataCount);
+    }
+  }
+  else
   {
     if (itsModelRunTimeGap > 0)
     {
+      if (doTraceLogging)
+      {
+        traceLogMessage +=
+            "QueryDataSetKeeper: Trying to load older model-run data from local querydata file, "
+            "fileFilter was ";
+        traceLogMessage += itsFilePattern;
+        traceLogMessage += ", requested index ";
+        traceLogMessage += std::to_string(theIndex);
+        traceLogMessage += ", ModelRuntimeGab ";
+        traceLogMessage += std::to_string(itsModelRunTimeGap);
+      }
+
       NFmiMetTime wantedOrigTime =
           ::CalcWantedOrigTime(itsLatestOriginTime, theIndex, itsModelRunTimeGap);
+      if (doTraceLogging)
+      {
+        traceLogMessage += ", wanted model-runtime ";
+        traceLogMessage += wantedOrigTime.ToStr("YYYY.MM.DD HH:mm", kEnglish);
+      }
       std::list<std::string> files = NFmiFileSystem::PatternFiles(itsFilePattern);
       for (std::list<std::string>::iterator it = files.begin(); it != files.end(); ++it)
       {
         try
         {
           std::string usedFileName = ::GetFullFileName(itsFilePattern, *it);
+          if (doTraceLogging)
+          {
+            traceLogMessage += "\nchecking file ";
+            traceLogMessage += usedFileName;
+          }
           NFmiQueryInfo info;
           std::ifstream in(usedFileName.c_str(), std::ios::binary);
           if (in)
@@ -340,34 +394,127 @@ bool NFmiQueryDataSetKeeper::DoOnDemandOldDataLoad(int theIndex)
             in >> info;
             if (in.good())
             {
-              if (info.OriginTime() == wantedOrigTime)
+              const auto &originTime = info.OriginTime();
+              if (originTime == wantedOrigTime)
               {
+                if (doTraceLogging)
+                {
+                  traceLogMessage += ", origin time in file was the wanted one, using this file";
+                  ::TraceLogMessage(traceLogMessage);
+                }
                 in.close();
                 return ReadDataFileInUse(usedFileName);
               }
+              else
+              {
+                if (doTraceLogging)
+                {
+                  traceLogMessage += ", origin time (";
+                  traceLogMessage += originTime.ToStr("YYYY.MM.DD HH:mm", kEnglish);
+                  traceLogMessage += ") in file was not the wanted ";
+                }
+              }
+            }
+            else
+            {
+              if (doTraceLogging)
+              {
+                traceLogMessage += ", unable to read meta info part from file";
+              }
+            }
+          }
+          else
+          {
+            if (doTraceLogging)
+            {
+              traceLogMessage += ", unable to open the file for unknown reason";
             }
           }
         }
-        catch (...)
-        {  // pitää vain varmistaa että jos tiedosto on viallinen, poikkeukset napataan kiinni tässä
+        catch (std::exception &e)
+        {
+          // pitää vain varmistaa että jos tiedosto on viallinen, poikkeukset napataan kiinni tässä
+          if (doTraceLogging)
+          {
+            traceLogMessage += ", file handling caused exception to be thrown: ";
+            traceLogMessage += e.what();
+          }
         }
+        catch (...)
+        {
+          // pitää vain varmistaa että jos tiedosto on viallinen, poikkeukset napataan kiinni tässä
+          if (doTraceLogging)
+          {
+            traceLogMessage += ", file handling caused unknown exception to be thrown";
+          }
+        }
+      }
+
+      if (doTraceLogging)
+      {
+        traceLogMessage += "\n, couldn't find the wanted origin-time from any of the datafiles";
       }
     }
     else if (itsModelRunTimeGap < 0)
-      ReadAllOldDatasInMemory();  // editoidut datat (tai vastaavat, joilla ei ole siis säännöllisiä
-    // tekoaikoja) pitää lukea kaikki muistiin, muuten ei voida laskea
-    // niiden indeksejä
+    {
+      if (doTraceLogging)
+      {
+        traceLogMessage +=
+            ", ModelRunTimeGap was less than 0, means that producer has data generated at random "
+            "times (like edited data)";
+      }
+      // editoidut datat (tai vastaavat, joilla ei ole siis säännöllisiä
+      // tekoaikoja) pitää lukea kaikki muistiin, muuten ei voida laskea
+      // niiden indeksejä
+      ReadAllOldDatasInMemory();
+    }
+  }
+
+  if (doTraceLogging)
+  {
+    ::TraceLogMessage(traceLogMessage);
   }
   return false;
 }
 
+const NFmiProducer *NFmiQueryDataSetKeeper::GetLatestDataProducer() const
+{
+  // Jos ei ole yhtään dataa, palauta 0, joka on error koodi tuottaja id:nä
+  if (itsQueryDatas.empty())
+    return nullptr;
+  else
+  {
+    // Muuten palauta 1. datan (joka on siis ajallisesti viimeisin eli latest) tuottaja id
+    return itsQueryDatas.front()->OriginalData()->Producer();
+  }
+}
+
+void NFmiQueryDataSetKeeper::FixLocallyReadDataProducer(NFmiQueryData *locallyReadData)
+{
+  auto wantedProducer = GetLatestDataProducer();
+  if (locallyReadData && wantedProducer)
+  {
+    auto info = locallyReadData->Info();
+    info->FirstParam();
+    if (*wantedProducer != *info->Producer())
+    {
+      info->SetProducer(*wantedProducer);
+    }
+  }
+}
+
+// Huom! Jos vanhempia lokaal iversioita luetaan erikseen käyttöön (käytetään edellisiä malliajoja),
+// pitää tällä lailla luetuille datoille laittaa oikea tuottaja id, koska SmartMetin konffeissä
+// voidaan vaihtaa kullekin datalle haluttu producer-id (esim. virallinen data, jonka id pitää
+// muuttaa että se ei menisi sekaisin editoidun datan kanssa).
 bool NFmiQueryDataSetKeeper::ReadDataFileInUse(const std::string &theFileName)
 {
   try
   {
-    NFmiQueryData *data = new NFmiQueryData(theFileName);
+    std::unique_ptr<NFmiQueryData> dataPtr(new NFmiQueryData(theFileName));
+    FixLocallyReadDataProducer(dataPtr.get());
     boost::shared_ptr<NFmiOwnerInfo> ownerInfoPtr(
-        new NFmiOwnerInfo(data, itsDataType, theFileName, itsFilePattern));
+        new NFmiOwnerInfo(dataPtr.release(), itsDataType, theFileName, itsFilePattern, true));
     bool dataWasDeleted = false;
     AddDataToSet(ownerInfoPtr, dataWasDeleted);
     return (dataWasDeleted == false);
@@ -378,7 +525,7 @@ bool NFmiQueryDataSetKeeper::ReadDataFileInUse(const std::string &theFileName)
   return false;
 }
 
-std::set<std::string> NFmiQueryDataSetKeeper::GetAllFileNames(void)
+std::set<std::string> NFmiQueryDataSetKeeper::GetAllFileNames()
 {
   std::set<std::string> fileNames;
   for (ListType::iterator it = itsQueryDatas.begin(); it != itsQueryDatas.end(); ++it)
@@ -386,7 +533,7 @@ std::set<std::string> NFmiQueryDataSetKeeper::GetAllFileNames(void)
   return fileNames;
 }
 
-void NFmiQueryDataSetKeeper::ReadAllOldDatasInMemory(void)
+void NFmiQueryDataSetKeeper::ReadAllOldDatasInMemory()
 {
   std::set<std::string> filesInMemory = GetAllFileNames();
   std::list<std::string> filesOnDrive = NFmiFileSystem::PatternFiles(itsFilePattern);
@@ -401,9 +548,12 @@ void NFmiQueryDataSetKeeper::ReadAllOldDatasInMemory(void)
   }
 }
 
-size_t NFmiQueryDataSetKeeper::DataCount(void) { return itsQueryDatas.size(); }
+size_t NFmiQueryDataSetKeeper::DataCount()
+{
+  return itsQueryDatas.size();
+}
 
-size_t NFmiQueryDataSetKeeper::DataByteCount(void)
+size_t NFmiQueryDataSetKeeper::DataByteCount()
 {
   size_t sizeInBytes = 0;
   for (ListType::iterator it = itsQueryDatas.begin(); it != itsQueryDatas.end(); ++it)
@@ -417,7 +567,8 @@ bool NFmiQueryDataSetKeeper::CheckKeepTime(ListType::iterator &it)
 {
   if ((*it)->Index() != 0)
   {  // vain viimeisin data jää tutkimatta, koska sitä ei ole tarkoitus poistaa muistista koskaan
-    if ((*it)->LastUsedInMS() > itsKeepInMemoryTime * 60 * 1000) return true;
+    if ((*it)->LastUsedInMS() > itsKeepInMemoryTime * 60 * 1000)
+      return true;
   }
   return false;
 }
@@ -430,7 +581,7 @@ bool NFmiQueryDataSetKeeper::CheckKeepTime(ListType::iterator &it)
 // käytetty aikarajan sisällä,
 // ei mitään heitetä pois muistista.
 // 4. Palauttaa kuinka monta dataa poistettiin muistista operaation aikana
-int NFmiQueryDataSetKeeper::CleanUnusedDataFromMemory(void)
+int NFmiQueryDataSetKeeper::CleanUnusedDataFromMemory()
 {
   int dataRemovedCounter = 0;
   if (itsModelRunTimeGap > 0)
@@ -492,7 +643,8 @@ int NFmiQueryDataSetKeeper::GetNearestUnRegularTimeIndex(const NFmiMetTime &theT
 
     if (timeDiffsWithIndexies.size())
     {
-      if (timeDiffsWithIndexies.size() <= 1) return timeDiffsWithIndexies.begin()->second;
+      if (timeDiffsWithIndexies.size() <= 1)
+        return timeDiffsWithIndexies.begin()->second;
 
       std::map<long, int>::iterator it2 = timeDiffsWithIndexies.begin();
       long diffValue1 = it2->first;
@@ -523,5 +675,6 @@ void NFmiQueryDataSetKeeper::MaxLatestDataCount(int newValue)
 {
   itsMaxLatestDataCount = newValue;
   // "Pitää olla minimissään" 0 -tarkastus
-  if (itsMaxLatestDataCount < 0) itsMaxLatestDataCount = 0;
+  if (itsMaxLatestDataCount < 0)
+    itsMaxLatestDataCount = 0;
 }

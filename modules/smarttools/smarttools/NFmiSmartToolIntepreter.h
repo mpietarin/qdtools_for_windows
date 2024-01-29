@@ -27,8 +27,8 @@
 // jälkeen pitää tulla calculationSection.
 //**********************************************************
 
+#include "NFmiExtraMacroParamData.h"
 #include <newbase/NFmiAreaMask.h>
-#include <newbase/NFmiDataMatrix.h>
 #include <newbase/NFmiLevelType.h>
 #include <newbase/NFmiParamBag.h>
 #include <newbase/NFmiParameterName.h>
@@ -51,19 +51,27 @@ class NFmiExtraMacroParamData;
 class NFmiSimpleConditionPartInfo;
 class NFmiSingleConditionInfo;
 
+enum class SmarttoolsUserVariableType
+{
+    None,
+    Var,
+    Const
+};
+
 class NFmiSmartToolCalculationBlockInfoVector
 {
  public:
   typedef std::vector<boost::shared_ptr<NFmiSmartToolCalculationBlockInfo> >::iterator Iterator;
 
-  NFmiSmartToolCalculationBlockInfoVector(void);
-  ~NFmiSmartToolCalculationBlockInfoVector(void);
-  void Clear(void);
+  NFmiSmartToolCalculationBlockInfoVector();
+  ~NFmiSmartToolCalculationBlockInfoVector();
+  void Clear();
   void Add(boost::shared_ptr<NFmiSmartToolCalculationBlockInfo> &theBlockInfo);
   void AddModifiedParams(std::map<int, std::string> &theModifiedParams);
-  Iterator Begin(void) { return itsCalculationBlockInfos.begin(); };
-  Iterator End(void) { return itsCalculationBlockInfos.end(); };
-  bool Empty(void) const { return itsCalculationBlockInfos.empty(); }
+  Iterator Begin() { return itsCalculationBlockInfos.begin(); };
+  Iterator End() { return itsCalculationBlockInfos.end(); };
+  bool Empty() const { return itsCalculationBlockInfos.empty(); }
+  bool BlockWasEnclosedInBrackets() const;
 
  private:
   // luokka ei omista vektorissa olevia otuksia, Clear pitää kutsua erikseen!!!
@@ -73,9 +81,9 @@ class NFmiSmartToolCalculationBlockInfoVector
 class NFmiSmartToolCalculationBlockInfo
 {
  public:
-  NFmiSmartToolCalculationBlockInfo(void);
-  ~NFmiSmartToolCalculationBlockInfo(void);
-  void Clear(void);
+  NFmiSmartToolCalculationBlockInfo();
+  ~NFmiSmartToolCalculationBlockInfo();
+  void Clear();
   void AddModifiedParams(std::map<int, std::string> &theModifiedParams);
 
   // luokka ei omista näitä, Clear pitää kutsua erikseen!!!
@@ -87,12 +95,17 @@ class NFmiSmartToolCalculationBlockInfo
   bool fElseSectionExist;
   boost::shared_ptr<NFmiSmartToolCalculationBlockInfoVector> itsElseCalculationBlockInfos;
   boost::shared_ptr<NFmiSmartToolCalculationSectionInfo> itsLastCalculationSectionInfo;
+  bool fStartingBracketFound = false;
+  bool fEndingBracketFound = false;
+  bool BlockWasEnclosedInBrackets() const { return fStartingBracketFound && fEndingBracketFound; }
 };
 
 class NFmiSmartToolIntepreter
 {
  public:
-  typedef std::map<std::string, FmiProducerName> ProducerMap;
+  typedef std::pair<FmiProducerName, NFmiInfoData::Type> ProducerIdTypePair;
+  typedef std::pair<NFmiProducer, NFmiInfoData::Type> ProducerTypePair;
+  typedef std::map<std::string, ProducerIdTypePair> ProducerMap;
   typedef std::map<std::string, double> ConstantMap;  // esim. MISS 32700 tai PI 3.14159
   typedef std::map<std::string, FmiParameterName> ParamMap;
   // Vert(ikaali)Funktioihin talletetaan:
@@ -116,28 +129,29 @@ class NFmiSmartToolIntepreter
   // painepintojen väliltä).
   typedef std::map<std::string, VertFunctionMapValue> VertFunctionMap;
   typedef std::map<std::string, NFmiAreaMask::FunctionType> FunctionMap;
+  typedef std::map<std::string, FmiLevelType> ResolutionLevelTypesMap;
 
   void Interpret(const std::string &theMacroText, bool fThisIsMacroParamSkript = false);
 
   NFmiSmartToolIntepreter(NFmiProducerSystem *theProducerSystem,
                           NFmiProducerSystem *theObservationProducerSystem = 0);
-  ~NFmiSmartToolIntepreter(void);
+  ~NFmiSmartToolIntepreter();
 
-  void Clear(void);
-  const std::string &GetMacroText(void) const { return itsMacroText; }
-  const std::string &GetStrippedMacroText(void) const { return itsStrippedMacroText; }
-  const std::string &IncludeDirectory(void) const { return itsIncludeDirectory; }
+  void Clear();
+  const std::string &GetMacroText() const { return itsMacroText; }
+  const std::string &GetStrippedMacroText() const { return itsStrippedMacroText; }
+  const std::string &IncludeDirectory() const { return itsIncludeDirectory; }
   void IncludeDirectory(const std::string &newValue) { itsIncludeDirectory = newValue; }
-  std::vector<NFmiSmartToolCalculationBlockInfo> &SmartToolCalculationBlocks(void)
+  std::vector<NFmiSmartToolCalculationBlockInfo> &SmartToolCalculationBlocks()
   {
     return itsSmartToolCalculationBlocks;
   }
-  NFmiParamBag ModifiedParams(void);
+  NFmiParamBag ModifiedParams();
   NFmiParam GetParamFromString(const std::string &theParamText);
   // kun intepreter on tulkinnut smarttool-tekstin, voidaan kysyä, onko kyseinen makro ns.
   // macroParam-skripti eli sisältääkö se RESULT = ??? tapaista tekstiä
-  bool IsInterpretedSkriptMacroParam(void);
-  std::unique_ptr<NFmiExtraMacroParamData> GetOwnershipOfExtraMacroParamData();
+  bool IsInterpretedSkriptMacroParam();
+  NFmiExtraMacroParamData &ExtraMacroParamData() { return itsExtraMacroParamData; }
 
   // Näitä static funktioita on tarkoitus käyttää sekä tässä luokassa että sen ulkopuolella.
   static bool IsBaseDelimiter(char c);
@@ -155,6 +169,11 @@ class NFmiSmartToolIntepreter
   }
   static FunctionMap &GetTokenThreeArgumentFunctions() { return itsTokenThreeArgumentFunctions; }
   static bool IsWantedStart(const std::string &theText, const std::string &theWantedStart);
+  static void SetAbsoluteBasePaths(const std::string &theAbsoluteSmarttoolsBasePath,
+                                   const std::string &theAbsoluteMacroParamBasePath);
+  static ProducerTypePair GetPossibleProducerInfo(const std::string &theProducerText);
+  static std::pair<bool, NFmiDefineWantedData> CheckForVariableDataType(
+      const std::string &originalDataVariableString);
 
  private:
   bool CheckoutPossibleNextCalculationBlockVector(
@@ -165,7 +184,6 @@ class NFmiSmartToolIntepreter
   std::string HandlePossibleUnaryMarkers(const std::string &theCurrentString);
   static NFmiLevel GetPossibleLevelInfo(const std::string &theLevelText,
                                         NFmiInfoData::Type theDataType);
-  static NFmiProducer GetPossibleProducerInfo(const std::string &theProducerText);
   static bool IsProducerOrig(std::string &theProducerText);
   static bool FindParamAndLevelAndSetMaskInfo(const std::string &theVariableText,
                                               const std::string &theLevelText,
@@ -232,7 +250,7 @@ class NFmiSmartToolIntepreter
   std::string::const_iterator ExtractFirstCalculationSection(
       const std::string &theMacroText, std::string::iterator theStartPosition);
 
-  void InitCheckOut(void);
+  void InitCheckOut();
   static bool IsPossiblyLevelItem(const std::string &theText);
   static bool IsPossiblyProducerItem(const std::string &theText, ProducerMap &theMap);
   static bool GetProducerFromVariableById(const std::string &theVariableText,
@@ -249,13 +267,13 @@ class NFmiSmartToolIntepreter
       boost::shared_ptr<NFmiAreaMaskSectionInfo> &theAreaMaskSectionInfo);
   bool CheckoutPossibleElseIfClauseSection(
       boost::shared_ptr<NFmiAreaMaskSectionInfo> &theAreaMaskSectionInfo);
-  bool CheckoutPossibleElseClauseSection(void);
+  bool CheckoutPossibleElseClauseSection();
   bool CheckoutPossibleNextCalculationSection(
       boost::shared_ptr<NFmiSmartToolCalculationSectionInfo> &theSectionInfo,
       bool &fWasBlockMarksFound);
   bool ExtractPossibleNextCalculationSection(bool &fWasBlockMarksFound);
-  bool ExtractPossibleIfClauseSection(void);
-  bool ExtractPossibleElseIfClauseSection(void);
+  bool ExtractPossibleIfClauseSection();
+  bool ExtractPossibleElseIfClauseSection();
   template <typename memfunction>
   bool ExtractPossibleConditionalClauseSection(memfunction conditionalChecker);
   bool IsPossibleCalculationLine(const std::string &theTextLine);
@@ -264,6 +282,8 @@ class NFmiSmartToolIntepreter
   bool IsPossibleElseConditionLine(const std::string &theTextLine);
   bool FindAnyFromText(const std::string &theText,
                        const std::vector<std::string> &theSearchedItems);
+  bool StartsWithAnyWholeWord(const std::string &theText,
+                              const std::vector<std::string> &theSearchedWords);
   bool ConsistOnlyWhiteSpaces(const std::string &theText);
   bool IsVariableBinaryOperator(const std::string &theVariableText,
                                 boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
@@ -271,7 +291,7 @@ class NFmiSmartToolIntepreter
       const std::string &theOperatorText);
   void InterpretVariable(const std::string &theVariableText,
                          boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo,
-                         bool fNewScriptVariable = false);
+                         SmarttoolsUserVariableType theNewVariableType = SmarttoolsUserVariableType::None);
   void InterpretStringLiteral(const std::string &theVariableText,
                               boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
   bool InterpretSimpleCondition(const std::string &theVariableText,
@@ -311,7 +331,10 @@ class NFmiSmartToolIntepreter
 
   bool InterpretPossibleScriptVariable(const std::string &theVariableText,
                                        boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo,
-                                       bool fNewScriptVariable);
+                                       SmarttoolsUserVariableType theNewVariableType);
+  bool InterpretPossibleScriptConstVariable(const std::string &theVariableText,
+                                       boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo,
+                                       SmarttoolsUserVariableType theNewVariableType);
   static void CheckVariableString(const std::string &theVariableText,
                                   std::string &theParamText,
                                   bool &fLevelExist,
@@ -335,6 +358,7 @@ class NFmiSmartToolIntepreter
                              boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
   bool IsVariableVertFunction(const std::string &theVariableText,
                               boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
+  void ExtractPossibleSecondaryParameterInfo(boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
   bool IsVariableMathFunction(const std::string &theVariableText,
                               boost::shared_ptr<NFmiAreaMaskInfo> &theMaskInfo);
   void SearchUntil(std::string::iterator &theExp_ptr,
@@ -346,8 +370,12 @@ class NFmiSmartToolIntepreter
   bool ExtractResolutionInfo();
   bool ExtractCalculationPointInfo();
   bool ExtractObservationRadiusInfo();
-  bool ExtractSymbolTooltipFile();
+  bool ExtractSymbolTooltipFile(bool multiParamCase);
   bool ExtractMacroParamDescription();
+  bool ExtractCalculationType();
+  bool ExtractWorkingThreadCount();
+  bool ExtractFixedBaseData();
+  bool ExtractMultiParam(NFmiAreaMask::FunctionType multiParamId);
   std::string GetWholeNumberFromTokens();
   void CheckMustHaveSimpleConditionFunctions(
       boost::shared_ptr<NFmiSmartToolCalculationInfo> &theCalculationInfo);
@@ -356,6 +384,11 @@ class NFmiSmartToolIntepreter
   void AddSimpleCalculationToCallingAreaMask(
       boost::shared_ptr<NFmiSmartToolCalculationInfo> &theCalculationInfo,
       const boost::shared_ptr<NFmiAreaMaskInfo> &theSimpleCalculationAreaMask);
+  std::pair<bool, NFmiDefineWantedData> GetPossibleVariableDataInfo(
+      const std::string &originalResolutionStr);
+  const std::string &GetUsedAbsoluteBasePath() const;
+  std::string FixGivenSmarttoolsScriptPath(const std::string &thePathInScript) const;
+  SmarttoolsUserVariableType DoUserVariableChecks(std::string &variableNameOut);
 
   NFmiProducerSystem *itsProducerSystem;               // ei omista
   std::string itsCheckOutSectionText;                  // esim. if-sectionin koko teksti
@@ -371,13 +404,15 @@ class NFmiSmartToolIntepreter
 
   std::vector<NFmiSmartToolCalculationBlockInfo> itsSmartToolCalculationBlocks;
   int itsMaxCalculationSectionCount;
-  std::unique_ptr<NFmiExtraMacroParamData> itsExtraMacroParamData;
+  NFmiExtraMacroParamData itsExtraMacroParamData;
 
   static void InitTokens(NFmiProducerSystem *theProducerSystem,
                          NFmiProducerSystem *theObservationProducerSystem);
-  static void InitProducerTokens(NFmiProducerSystem *theProducerSystem);
+  static void InitProducerTokens(NFmiProducerSystem *theProducerSystem,
+                                 NFmiInfoData::Type theDefaultDataType);
   static bool fTokensInitialized;
   static ParamMap itsTokenParameterNamesAndIds;
+  // Tietyt tuottajat laitetaan tanne nimen, tuottaja-id:n ja oletus datatyypin kanssa.
   static ProducerMap itsTokenProducerNamesAndIds;
   static ConstantMap itsTokenConstants;
   static std::vector<std::string> itsTokenConditionalCommands;
@@ -391,8 +426,8 @@ class NFmiSmartToolIntepreter
   static std::vector<std::string> itsTokenDoubleRampFunctions;
   static std::vector<std::string> itsTokenRampFunctions;
   static std::vector<std::string> itsTokenMacroParamIdentifiers;  // tänne listataan result jne.
-                                                                    // sanat joita käytetään
-                                                                    // makrojen visualisoinnissa
+                                                                  // sanat joita käytetään
+                                                                  // makrojen visualisoinnissa
   static std::vector<std::string> itsTokenDeltaZIdentifiers;  // tänne listataan deltaz 'funktiot'
 
   typedef std::map<std::string, FmiMaskOperation> MaskOperMap;
@@ -431,23 +466,32 @@ class NFmiSmartToolIntepreter
   typedef std::map<std::string, NFmiAreaMask::MathFunctionType> MathFunctionMap;
   static MathFunctionMap itsMathFunctions;
 
-  typedef std::map<std::string, FmiLevelType> ResolutionLevelTypesMap;
   static ResolutionLevelTypesMap itsResolutionLevelTypes;
 
   typedef std::map<std::string, int> ScriptVariableMap;
-  ScriptVariableMap itsTokenScriptVariableNames;  // skriptissä varatut muuttujat (var x = ?)
-                                                  // talletetaan tänne, että voidaan tarkistaa
-                                                  // niiden olemassa olo
-  int itsScriptVariableParamIdCounter;  // pitää keksia muutujille id, joten tehdää juokseva counter
-
-  // normaali ja macroParam sijoituksia halutaan seurata, että ei tapahdu vahinkoja eli niitä olisi
-  // sekaisin, jolloin seuramukset ovat vahingollisia
-  bool fNormalAssigmentFound;  // loytyykö skriptistä normaaleja sijoituksia esim. T = ???
-  bool fMacroParamFound;  // loytyykö skriptistä ns. macroParameri sijoituksia eli RESULT = ?????
-  bool fMacroParamSkriptInProgress;  // Tieto siitä tulkitaanko macroParam-skriptiä vai tavallista
+  // skriptissä varatut muuttujat (var x = ?) talletetaan tänne, 
+  // että voidaan tarkistaa niiden olemassa olo
+  ScriptVariableMap itsTokenScriptVariableNames;
+  // pitää keksia muutujille id, joten tehdää juokseva counter normaali 
+  // ja macroParam sijoituksia halutaan seurata, että ei tapahdu vahinkoja 
+  // eli niitä olisi sekaisin, jolloin seuramukset ovat vahingollisia.
+  // Alustetaan tämä jollain isolla 'random' id numerolla, jotta ei
+  // mene päällekkäin oikeiden parametri id numeroiden kanssa.
+  int itsScriptVariableParamIdCounter = 918273645;
+  typedef std::map<std::string, double> ScriptConstVariableMap;
+  // skriptissä varatut nimetyt vakiomuuttujat (const x = ?) talletetaan tänne,
+  // että voidaan tarkistaa niiden olemassa olo
+  ScriptConstVariableMap itsTokenScriptConstVariableNames;
+  // loytyykö skriptistä normaaleja sijoituksia esim. T = ???
+  bool fNormalAssigmentFound;  
+  // loytyykö skriptistä ns. macroParameri sijoituksia eli RESULT = ?????
+  bool fMacroParamFound;  
+  // Tieto siitä tulkitaanko macroParam-skriptiä vai tavallista
   // skriptiä. Poikkeus heitetään jos macrpParam-skripti päällä,
   // mutta tehdään tavallinen sijoitus
-
+  bool fMacroParamSkriptInProgress;
+  // Kulloisenkin tulkattavan rivin sisältö
+  std::string itsCalculationLineText;
   // GetToken ja IsDelim otettu H. Schilbertin  C++: the Complete Refeference third ed.
   // jouduin muuttamaan niitä vähän sopimaan tähän ympäristöön.
   bool GetToken();
@@ -468,4 +512,8 @@ class NFmiSmartToolIntepreter
 
   static std::string itsBaseDelimiterChars;
   static std::string itsFullDelimiterChars;
+  // Ainakin SymbolTooltipFile:ä määriteltäessä on hyvä olla tiedossa SmartMetin käytössä olevat
+  // perushakemistot, jotta voidaan täydentää #include ja SymbolTooltipFile polut absoluuttisiksi.
+  static std::string itsAbsoluteSmarttoolsBasePath;
+  static std::string itsAbsoluteMacroParamBasePath;
 };
