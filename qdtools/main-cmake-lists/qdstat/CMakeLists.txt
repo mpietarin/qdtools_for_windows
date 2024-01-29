@@ -27,4 +27,5 @@ target_include_directories(
     PUBLIC ${MacGyver_INCLUDE_DIRS}
     PUBLIC ${Newbase_INCLUDE_DIRS}
     PUBLIC ${BOOST_INCLUDE_DIR}
+    PUBLIC ${FMT_INCLUDE_DIR}
     )
