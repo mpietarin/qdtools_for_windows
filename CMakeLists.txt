@@ -38,11 +38,19 @@ include(
 #    )
 
 add_subdirectory(
+    modules/macgyver
+    )
+
+add_subdirectory(
     modules/newbase
     )
 
 add_subdirectory(
     modules/smarttools
+    )
+
+add_subdirectory(
+    modules/imagine
     )
 
 add_subdirectory(
