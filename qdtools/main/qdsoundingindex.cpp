@@ -16,19 +16,23 @@ static void Usage(const std::string& theExecutableName)
   NFmiFileString fileNameStr(theExecutableName);
   std::string usedFileName(
       fileNameStr.FileName().CharPtr());  // ota pois mahd. polku executablen nimestä
-  std::cerr << "Usage: " << std::endl
-            << usedFileName.c_str() << " [options] qdin dqout" << std::endl
-            << std::endl
-            << "Options:" << std::endl
-            << std::endl
-            << "\t-n producer-name <default=qdin-producer-name>\tSets producer name." << std::endl
-            << "\t-t thread count <default=all>\tHow many worker threads will be doing the calculations." << std::endl
-            << std::endl;
+  std::cerr
+      << "Usage: " << std::endl
+      << usedFileName.c_str() << " [options] qdin dqout" << std::endl
+      << std::endl
+      << "Options:" << std::endl
+      << std::endl
+      << "\t-n producer-name <default=qdin-producer-name>\tSets producer name." << std::endl
+      << "\t-t thread count <default=all>\tHow many worker threads will be doing the calculations."
+      << std::endl
+      << "\t-g ground-data-file <default=empty>\tSame producer surface data with station-pressure parameter (id=472) in it."
+      << std::endl
+      << std::endl;
 }
 
 static void run(int argc, const char* argv[])
 {
-  NFmiCmdLine cmdLine(argc, argv, "n!t!");
+  NFmiCmdLine cmdLine(argc, argv, "n!t!g!");
   if (cmdLine.NumberofParameters() < 2)
   {
     Usage(argv[0]);
@@ -44,13 +48,21 @@ static void run(int argc, const char* argv[])
   // Default 0 uses all available CPU cores
   int workerThreadCount = 0;
   if (cmdLine.isOption('t')) workerThreadCount = std::stoi(cmdLine.OptionValue('t'));
+  // File to same producer and same origin-time surface data with StationPressure parameter (id=472).
+  // With this data program can prevent sounding from starting below ground in e.g. mountain area if
+  // the level data is pressure-level type which has no knowledge of earth's ground.
+  std::string possibleGroundDataFileFilter;
+  if (cmdLine.isOption('g'))
+  {
+    possibleGroundDataFileFilter = cmdLine.OptionValue('g');
+  }
 
   std::cerr << "starting the " << argv[0] << " execution" << std::endl;
 
   NFmiMilliSecondTimer debugTimer;
   debugTimer.StartTimer();
   boost::shared_ptr<NFmiQueryData> data = NFmiSoundingIndexCalculator::CreateNewSoundingIndexData(
-      fileIn, producerName, true, 0, false, workerThreadCount);
+      fileIn, producerName, possibleGroundDataFileFilter, true, nullptr, false, workerThreadCount);
   debugTimer.StopTimer();
 
   std::string debugStr("Making ");
