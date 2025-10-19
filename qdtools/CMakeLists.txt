@@ -100,3 +100,11 @@ add_subdirectory(
 add_subdirectory(
 	main-cmake-lists/gribtoqd
 )
+
+add_subdirectory(
+	main-cmake-lists/qdcombine
+)
+
+add_subdirectory(
+	main-cmake-lists/calctopodata
+)
